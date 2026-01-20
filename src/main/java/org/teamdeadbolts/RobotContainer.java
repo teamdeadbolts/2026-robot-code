@@ -34,6 +34,20 @@ public class RobotContainer {
     // private IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
     // private ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
 
+    private SavedLoggedNetworkNumber pathplannerTranslationP =
+            SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Translation/kP", 0.0);
+    private SavedLoggedNetworkNumber pathplannerTranslationI =
+            SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Translation/kI", 0);
+    private SavedLoggedNetworkNumber pathplannerTranslationD =
+            SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Translation/kD", 0);
+
+    private SavedLoggedNetworkNumber pathplannerRotationP =
+            SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Rotation/kP", 0);
+    private SavedLoggedNetworkNumber pathplannerRotationI =
+            SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Rotation/kI", 0);
+    private SavedLoggedNetworkNumber pathplannerRotationD =
+            SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Rotation/kD", 0);
+
     private CommandXboxController primaryController = new CommandXboxController(0);
 
     private RobotState robotState = RobotState.getInstance();
@@ -51,38 +65,8 @@ public class RobotContainer {
     public RobotContainer() {
         robotState.initPoseEstimator(
                 new Rotation3d(swerveSubsystem.getGyroRotation()), swerveSubsystem.getModulePositions());
-        // RobotConfig robotConfig = new RobotConfig(
-        //         Mass.ofBaseUnits(30, Pounds),
-        //         MomentOfInertia.ofBaseUnits(5, KilogramSquareMeters),
-        //         new ModuleConfig(
-        //                 SwerveConstants.WHEEL_CIRCUMFERENCE / (2 * Math.PI),
-        //                 5,
-        //                 1,
-        //                 new DCMotor(0, 0, 0, 0, 0, 0),
-        //                 120,
-        //                 4),
-        //         new Translation2d[] {});
-        RobotConfig config = null;
-        try {
-            config = RobotConfig.fromGUISettings();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
 
-        AutoBuilder.configure(
-                () -> robotState.getRobotPose().toPose2d(),
-                (pose2d) -> robotState.setEstimatedPose(new Pose3d(pose2d)),
-                robotState::getRobotRelativeRobotVelocities,
-                (speeds) -> swerveSubsystem.drive(speeds, false, false, false),
-                new PPHolonomicDriveController(new PIDConstants(0), new PIDConstants(0)),
-                config,
-                () -> {
-                    return false;
-                },
-                this.swerveSubsystem);
-
-        autoChooser = AutoBuilder.buildAutoChooser();
-        SmartDashboard.putData("AutoChooser", autoChooser);
+        configurePathplanner();
         configureBindings();
     }
 
@@ -112,6 +96,7 @@ public class RobotContainer {
                         () -> {
                             // CtreConfigs.init();
                             swerveSubsystem.refreshTuning(false);
+                            configurePathplanner();
                         },
                         swerveSubsystem));
 
@@ -124,6 +109,36 @@ public class RobotContainer {
         primaryController.povRight().whileTrue(swerveSubsystem.runDriveDynamTest(Direction.kReverse));
         primaryController.povDown().whileTrue(swerveSubsystem.runDriveQuasiTest(Direction.kForward));
         primaryController.povLeft().whileTrue(swerveSubsystem.runDriveQuasiTest(Direction.kReverse));
+    }
+
+    private void configurePathplanner() {
+        RobotConfig config = null;
+        try {
+            config = RobotConfig.fromGUISettings();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        AutoBuilder.configure(
+                () -> robotState.getRobotPose().toPose2d(),
+                (pose2d) -> robotState.setEstimatedPose(new Pose3d(pose2d)),
+                robotState::getRobotRelativeRobotVelocities,
+                (speeds) -> swerveSubsystem.drive(speeds, false, false, false),
+                new PPHolonomicDriveController(
+                        new PIDConstants(
+                                pathplannerTranslationP.get(),
+                                pathplannerTranslationI.get(),
+                                pathplannerTranslationD.get()),
+                        new PIDConstants(
+                                pathplannerRotationP.get(), pathplannerRotationI.get(), pathplannerRotationD.get())),
+                config,
+                () -> {
+                    return false;
+                },
+                this.swerveSubsystem);
+
+        autoChooser = AutoBuilder.buildAutoChooser();
+        SmartDashboard.putData("AutoChooser", autoChooser);
     }
 
     public Command getAutonomousCommand() {

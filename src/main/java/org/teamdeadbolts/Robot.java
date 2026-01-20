@@ -15,6 +15,7 @@ import org.teamdeadbolts.utils.tuning.ConfigManager;
 
 public class Robot extends LoggedRobot {
     private Command autonomousCommand;
+    private RobotState robotState = RobotState.getInstance();
 
     private final RobotContainer robotContainer;
 
@@ -75,10 +76,14 @@ public class Robot extends LoggedRobot {
         if (autonomousCommand != null) {
             autonomousCommand.cancel();
         }
+
+        robotState.resetTimer();
     }
 
     @Override
-    public void teleopPeriodic() {}
+    public void teleopPeriodic() {
+        robotState.updateActiveAlliance();
+    }
 
     @Override
     public void teleopExit() {}

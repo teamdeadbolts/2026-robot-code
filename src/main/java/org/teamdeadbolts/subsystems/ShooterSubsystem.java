@@ -74,6 +74,8 @@ public class ShooterSubsystem extends SubsystemBase {
             SavedLoggedNetworkNumber.get("Tuning/Shooter/HoodIterationsPerStep", 5); // Iterations
 
     private static final double kG = 9.81; // m/s^2
+    private double targetWheelSpeed;
+    private double currentWheelSpeed;
 
     public ShooterSubsystem() {
         ConfigManager.getInstance().onReady(this::reconfigure);
@@ -99,6 +101,10 @@ public class ShooterSubsystem extends SubsystemBase {
         return targetState;
     }
 
+    public double getRPMError() {
+        return targetWheelSpeed - currentWheelSpeed;
+    }
+
     @Override
     public void periodic() {
         double currentHoodAngle = absEncoder.getPosition().getValueAsDouble();
@@ -107,8 +113,8 @@ public class ShooterSubsystem extends SubsystemBase {
         double currentTurrentPosition = turretMotor.getPosition().getValueAsDouble();
         double targetTurretPosition = currentTurrentPosition;
 
-        double currentWheelSpeed = wheelMotor.getVelocity().getValueAsDouble();
-        double targetWheelSpeed = currentWheelSpeed;
+        currentWheelSpeed = wheelMotor.getVelocity().getValueAsDouble();
+        // targetWheelSpeed = currentWheelSpeed;
 
         Pose2d robotPose = RobotState.getInstance().getRobotPose().toPose2d();
         ChassisSpeeds robotSpeeds = RobotState.getInstance().getFieldRelativeRobotVelocities();
@@ -117,8 +123,8 @@ public class ShooterSubsystem extends SubsystemBase {
 
         switch (targetState) {
             case OFF:
-                wheelMotor.setVoltage(0);
                 targetHoodAngle = ShooterConstants.SHOOTER_HOOD_MAX_ANGLE_DEGREES;
+                targetWheelSpeed = 0;
                 break;
             case PASS_LEFT:
             case PASS_RIGHT:

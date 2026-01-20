@@ -94,8 +94,6 @@ public class VisionSubsystem extends SubsystemBase {
                     robotPoses.add(observation.pose());
                 }
 
-                System.out.println(acceptPose + " " + observation.tagDist());
-
                 if (enableVision.get() && acceptPose) {
                     RobotState.getInstance()
                             .addVisionMeasurement(observation.pose(), observation.timestamp(), observation.tagDist());

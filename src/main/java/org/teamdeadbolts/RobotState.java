@@ -7,6 +7,12 @@ import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
+
+import java.util.Optional;
+
 import org.teamdeadbolts.constants.SwerveConstants;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
@@ -28,6 +34,9 @@ public class RobotState {
     private SwerveDrivePoseEstimator3d poseEstimator3d;
     private ChassisSpeeds fieldRelativeVelocities = new ChassisSpeeds(); // Speed of the robot field rel
     private ChassisSpeeds robotRelativeVelocities = new ChassisSpeeds(); // Speed of the robot robot rel
+    private char activeAlliance = 0;
+    private boolean isTransitionShift = true;
+    private Timer activeTimer = new Timer();
 
     private static RobotState INSTANCE = new RobotState();
 
@@ -81,6 +90,34 @@ public class RobotState {
         return this.robotRelativeVelocities;
     }
 
+    public Optional<Alliance> getActiveAlliance() {
+        if (activeAlliance == 'R')
+            return Optional.of(Alliance.Red);
+        else if (activeAlliance == 'B')
+            return Optional.of(Alliance.Blue);
+        else
+            return Optional.empty();
+    }
+
+    public double getTimeUntilActiveSwitch() {
+        if (activeAlliance == 0 || isTransitionShift)
+            return -1;
+        
+        return 25 - activeTimer.get();
+    }
+
+
+    public Timer getActiveTimer() {
+        return this.activeTimer;
+    }
+
+    public void resetTimer() {
+        this.activeTimer.reset();
+        this.activeTimer.start();
+    }
+
+
+
     /**
      * Set the robot pose
      *
@@ -89,15 +126,6 @@ public class RobotState {
     public void setEstimatedPose(Pose3d newPose) {
         this.poseEstimator3d.resetPose(newPose);
     }
-
-    // /**
-    //  * Set the robot velocities
-    //  *
-    //  * @param newVelocities The new robot velocities
-    //  */
-    // public void setRobotVelocities(ChassisSpeeds newVelocities) {
-    //     this.robotSpeeds = newVelocities;
-    // }
 
     public void setRobotRelativeVelocities(ChassisSpeeds newVelocities) {
         this.robotRelativeVelocities = newVelocities;
@@ -109,6 +137,25 @@ public class RobotState {
 
     public void updateFromSwerve(SwerveModulePosition[] positions, Rotation3d gyroRotation) {
         poseEstimator3d.update(gyroRotation, positions);
+    }
+
+    public void updateActiveAlliance() {
+        if (activeAlliance == 0) {
+            activeAlliance = DriverStation.getGameSpecificMessage().charAt(0);
+        }
+        
+        if (isTransitionShift && activeTimer.hasElapsed(10)) {
+            isTransitionShift = false;
+            activeTimer.reset();
+        }
+
+        if (activeTimer.hasElapsed(25)) {
+            activeTimer.reset();
+            if (activeAlliance == 'R')
+                activeAlliance = 'B';
+            else
+                activeAlliance = 'R';
+        }
     }
 
     public void addVisionMeasurement(Pose3d visionPose, double timestamp, double distance) {
