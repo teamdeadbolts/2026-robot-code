@@ -9,6 +9,7 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.util.Units;
 import org.teamdeadbolts.subsystems.drive.SwerveModule.SwerveModuleConfig;
+import org.teamdeadbolts.utils.Zone;
 
 public class SwerveConstants {
     public static final double WHEEL_CIRCUMFERENCE = Units.inchesToMeters(2 * 2.25 * Math.PI);
@@ -42,4 +43,13 @@ public class SwerveConstants {
             new Translation2d(CHASSIS_SIZE / 2.0, -CHASSIS_SIZE / 2.0), // Front Right (A)
             new Translation2d(-CHASSIS_SIZE / 2.0, CHASSIS_SIZE / 2.0), // Back Left (B)
             new Translation2d(-CHASSIS_SIZE / 2.0, -CHASSIS_SIZE / 2.0)); // Back Right (A)
+
+    // TODO: Find these
+    public static final Zone BLUE_TOP_BUMP_ZONE = new Zone();
+    public static final Zone BLUE_BOTTOM_BUMP_ZONE = new Zone();
+    public static final Zone RED_TOP_BUMP_ZONE = new Zone();
+    public static final Zone RED_BOTTOM_BUMP_ZONE = new Zone();
+
+    public static final Zone RED_SCORE_ZONE = new Zone();
+    public static final Zone BLUE_SCORE_ZONE = new Zone();
 }

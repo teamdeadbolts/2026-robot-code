@@ -1,11 +1,17 @@
 /* The Deadbolts (C) 2025 */
 package org.teamdeadbolts.commands;
 
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.Command;
 import java.util.function.DoubleSupplier;
 import org.littletonrobotics.junction.Logger;
+import org.teamdeadbolts.RobotState;
+import org.teamdeadbolts.constants.SwerveConstants;
 import org.teamdeadbolts.subsystems.drive.SwerveSubsystem;
+import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
 public class DriveCommand extends Command {
     private SwerveSubsystem swerveSubsystem;
@@ -14,13 +20,22 @@ public class DriveCommand extends Command {
     private DoubleSupplier rotationSupplier;
     private boolean fieldRelative;
 
+    private SavedLoggedNetworkNumber controllerDeadband =
+            SavedLoggedNetworkNumber.get("Tuning/Drive/ControllerDeadband", 0.08);
+
+    private SavedLoggedNetworkNumber maxRobotSpeed = SavedLoggedNetworkNumber.get("Tuning/Drive/MaxRobotSpeed", 1.0);
+    private SavedLoggedNetworkNumber bumbSpeed = SavedLoggedNetworkNumber.get("Tuning/Drive/BumpSpeed", 0.5);
+
+    private SavedLoggedNetworkNumber maxRobotAnglarSpeed =
+            SavedLoggedNetworkNumber.get("Tuning/Drive/MaxRobotAngluarSpeed", 1.0);
+
     /**
      * Command to drive swerve
      *
      * @param swerveSubsystem The instance of {@link SwerveSubsystem}
-     * @param forwardSupplier A supplier for forward motion (in <strong>m/s</strong>)
-     * @param sidewaysSupplier A supplier for sideways motion (in <strong>m/s</strong>)
-     * @param rotationSuplier A supplier for rotaional motion (in <strong>rads/s</strong>)
+     * @param forwardSupplier A supplier for forward motion (in <strong>%</strong>)
+     * @param sidewaysSupplier A supplier for sideways motion (in <strong>%/strong>)
+     * @param rotationSuplier A supplier for rotaional motion (in <strong>%</strong>)
      * @param fieldRelative Weather or not to drive the robot field relative
      */
     public DriveCommand(
@@ -40,15 +55,29 @@ public class DriveCommand extends Command {
 
     @Override
     public void execute() {
-        Logger.recordOutput("ForwardMS", forwardSupplier.getAsDouble());
-        Logger.recordOutput("SidewaysMS", sidewaysSupplier.getAsDouble());
-        Logger.recordOutput("Angle RadsS", rotationSupplier.getAsDouble());
+        Translation2d robotTrans =
+                RobotState.getInstance().getRobotPose().toPose2d().getTranslation();
 
-        swerveSubsystem.drive(
-                new ChassisSpeeds(
-                        forwardSupplier.getAsDouble(), sidewaysSupplier.getAsDouble(), rotationSupplier.getAsDouble()),
-                fieldRelative,
-                false,
-                false);
+        double forwardPercent = MathUtil.applyDeadband(forwardSupplier.getAsDouble(), controllerDeadband.get(), 1);
+        double sidewaysPercent = MathUtil.applyDeadband(sidewaysSupplier.getAsDouble(), controllerDeadband.get(), 1);
+        double rotationPercent = MathUtil.applyDeadband(rotationSupplier.getAsDouble(), controllerDeadband.get(), 1);
+
+        double forwardMps = forwardPercent * maxRobotSpeed.get();
+        double sidewaysMps = sidewaysPercent * maxRobotSpeed.get();
+        double rotationMps = rotationPercent * Units.degreesToRadians(maxRobotAnglarSpeed.get());
+
+        if (SwerveConstants.RED_TOP_BUMP_ZONE.contains(robotTrans)
+                || SwerveConstants.RED_BOTTOM_BUMP_ZONE.contains(robotTrans)
+                || SwerveConstants.BLUE_TOP_BUMP_ZONE.contains(robotTrans)
+                || SwerveConstants.BLUE_BOTTOM_BUMP_ZONE.contains(robotTrans)) {
+            forwardMps = forwardMps * bumbSpeed.get();
+            sidewaysMps = sidewaysMps * bumbSpeed.get();
+        }
+
+        Logger.recordOutput("ForwardPercent", forwardSupplier.getAsDouble());
+        Logger.recordOutput("SidewaysPercent", sidewaysSupplier.getAsDouble());
+        Logger.recordOutput("AnglePercent", rotationSupplier.getAsDouble());
+
+        swerveSubsystem.drive(new ChassisSpeeds(forwardMps, sidewaysMps, rotationMps), fieldRelative, false, false);
     }
 }

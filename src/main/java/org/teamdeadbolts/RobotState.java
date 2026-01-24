@@ -8,11 +8,9 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
-
+import edu.wpi.first.wpilibj.Timer;
 import java.util.Optional;
-
 import org.teamdeadbolts.constants.SwerveConstants;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
@@ -91,21 +89,16 @@ public class RobotState {
     }
 
     public Optional<Alliance> getActiveAlliance() {
-        if (activeAlliance == 'R')
-            return Optional.of(Alliance.Red);
-        else if (activeAlliance == 'B')
-            return Optional.of(Alliance.Blue);
-        else
-            return Optional.empty();
+        if (activeAlliance == 'R') return Optional.of(Alliance.Red);
+        else if (activeAlliance == 'B') return Optional.of(Alliance.Blue);
+        else return Optional.empty();
     }
 
     public double getTimeUntilActiveSwitch() {
-        if (activeAlliance == 0 || isTransitionShift)
-            return -1;
-        
+        if (activeAlliance == 0 || isTransitionShift) return -1;
+
         return 25 - activeTimer.get();
     }
-
 
     public Timer getActiveTimer() {
         return this.activeTimer;
@@ -115,8 +108,6 @@ public class RobotState {
         this.activeTimer.reset();
         this.activeTimer.start();
     }
-
-
 
     /**
      * Set the robot pose
@@ -140,10 +131,10 @@ public class RobotState {
     }
 
     public void updateActiveAlliance() {
-        if (activeAlliance == 0) {
+        if (activeAlliance == 0 && !DriverStation.getGameSpecificMessage().isBlank()) {
             activeAlliance = DriverStation.getGameSpecificMessage().charAt(0);
         }
-        
+
         if (isTransitionShift && activeTimer.hasElapsed(10)) {
             isTransitionShift = false;
             activeTimer.reset();
@@ -151,10 +142,8 @@ public class RobotState {
 
         if (activeTimer.hasElapsed(25)) {
             activeTimer.reset();
-            if (activeAlliance == 'R')
-                activeAlliance = 'B';
-            else
-                activeAlliance = 'R';
+            if (activeAlliance == 'R') activeAlliance = 'B';
+            else activeAlliance = 'R';
         }
     }
 

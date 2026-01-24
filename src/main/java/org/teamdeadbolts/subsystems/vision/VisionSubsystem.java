@@ -42,18 +42,7 @@ public class VisionSubsystem extends SubsystemBase {
         for (int i = 0; i < ios.length; i++) {
             this.ctxs[i] = new PhotonVisionIOCtxAutoLogged();
         }
-        // this.swerveSubsystem = swerveSubsystem;
-        // swerveSubsystem.setModulePositionCallback(this::updateFromSwerve);
     }
-
-    // private void updateFromSwerve(SwerveModulePosition[] positions, Rotation2d gyroRotation) {
-    //     estimatedPose = poseEstimator3d.update(new Rotation3d(gyroRotation), positions);
-    // }
-
-    // public void setPosition(Pose3d pose) {
-    //     this.poseEstimator3d.resetPosition(
-    //             new Rotation3d(this.swerveSubsystem.getGyroRotation()), swerveSubsystem.getModulePositions(), pose);
-    // }
 
     @Override
     public void periodic() {

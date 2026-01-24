@@ -5,7 +5,6 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
@@ -54,14 +53,6 @@ public class RobotContainer {
 
     private SendableChooser<Command> autoChooser = new SendableChooser<>();
 
-    private SavedLoggedNetworkNumber controllerDeadband =
-            SavedLoggedNetworkNumber.get("Tuning/Drive/ControllerDeadband", 0.08);
-
-    private SavedLoggedNetworkNumber maxRobotSpeed = SavedLoggedNetworkNumber.get("Tuning/Drive/MaxRobotSpeed", 1.0);
-
-    private SavedLoggedNetworkNumber maxRobotAnglarSpeed =
-            SavedLoggedNetworkNumber.get("Tuning/Drive/MaxRobotAngluarSpeed", 1.0);
-
     public RobotContainer() {
         robotState.initPoseEstimator(
                 new Rotation3d(swerveSubsystem.getGyroRotation()), swerveSubsystem.getModulePositions());
@@ -74,12 +65,9 @@ public class RobotContainer {
         // Xbox controllers push "up" = neg valve so invert everything
         swerveSubsystem.setDefaultCommand(new DriveCommand(
                 swerveSubsystem,
-                () -> -MathUtil.applyDeadband(primaryController.getLeftY(), controllerDeadband.get())
-                        * maxRobotSpeed.get(),
-                () -> -MathUtil.applyDeadband(primaryController.getLeftX(), controllerDeadband.get())
-                        * maxRobotSpeed.get(),
-                () -> -MathUtil.applyDeadband(primaryController.getRightX(), controllerDeadband.get())
-                        * Math.toRadians(maxRobotAnglarSpeed.get()),
+                primaryController::getLeftY,
+                primaryController::getLeftX,
+                primaryController::getRightX,
                 true));
 
         // shooterSubsystem.setDefaultCommand(new DefaultShooterCommand(shooterSubsystem, indexerSubsystem));
