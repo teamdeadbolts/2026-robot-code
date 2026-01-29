@@ -3,8 +3,8 @@ package org.teamdeadbolts.subsystems;
 
 import com.ctre.phoenix6.hardware.TalonFX;
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.controller.BangBangController;
 import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -44,7 +44,7 @@ public class ShooterSubsystem extends SubsystemBase {
 
     private PIDController hoodController = new PIDController(0.0, 0.0, 0.0);
     private PIDController turretController = new PIDController(0.0, 0.0, 0.0);
-    private SimpleMotorFeedforward wheelFF = new SimpleMotorFeedforward(0.0, 0.0, 0.0);
+    private BangBangController whellController = new BangBangController();
 
     private SavedLoggedNetworkNumber hoodControllerP =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/HoodController/kP", 0.1);
@@ -60,12 +60,9 @@ public class ShooterSubsystem extends SubsystemBase {
     private SavedLoggedNetworkNumber turretControllerD =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/TurretController/kD", 0.0);
 
-    private SavedLoggedNetworkNumber wheelFFS =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/WheelController/kS", 0.1);
-    private SavedLoggedNetworkNumber wheelFFV =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/WheelController/kV", 0.0);
-    private SavedLoggedNetworkNumber wheelFFA =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/WheelController/kA", 0.0);
+    private SavedLoggedNetworkNumber wheelFFS = SavedLoggedNetworkNumber.get("Tuning/Shooter/WheelController/kS", 0.1);
+
+    private SavedLoggedNetworkNumber wheelMaxVolts = SavedLoggedNetworkNumber.get("Tuning/Shooter/WheelMaxVolts", 12.0);
 
     private SavedLoggedNetworkNumber shooterWheelSpinupSpeed =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/ShooterWheelSpinupSpeed", 5000.0); // RPM
@@ -88,10 +85,6 @@ public class ShooterSubsystem extends SubsystemBase {
     public void reconfigure() {
         hoodController.setPID(hoodControllerP.get(), hoodControllerI.get(), hoodControllerD.get());
         turretController.setPID(turretControllerP.get(), turretControllerI.get(), turretControllerD.get());
-        // wheelFF.set(wheelControllerP.get(), wheelControllerI.get(), wheelControllerD.get());
-        wheelFF.setKs(wheelFFS.get());
-        wheelFF.setKv(wheelFFV.get());
-        wheelFF.setKa(wheelFFA.get());
 
         ShooterConstants.init();
         hoodMotor.getConfigurator().apply(ShooterConstants.SHOOTER_HOOD_MOTOR_CONFIG);
@@ -193,7 +186,9 @@ public class ShooterSubsystem extends SubsystemBase {
         }
 
         if (targetWheelSpeed.isPresent()) {
-            double wheelOutput = wheelFF.calculate(targetWheelSpeed.get());
+            double wheelOutput =
+                    whellController.calculate(targetWheelSpeed.get(), currentWheelSpeed) * wheelMaxVolts.get()
+                            + wheelFFS.get();
             wheelMotor.setVoltage(wheelOutput);
             Logger.recordOutput("ShooterSubsystem/WheelOutput", wheelOutput);
             Logger.recordOutput("ShooterSubsystem/TargetWheelSpeed", targetWheelSpeed.get());

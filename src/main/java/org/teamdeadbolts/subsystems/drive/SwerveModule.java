@@ -71,6 +71,24 @@ public class SwerveModule {
         this.turningMotor = new TalonFX(config.turningMotorId());
         this.resetToAbs();
         this.driveMotor.setPosition(0.0);
+
+        tP.onChange(p -> this.tProfiledPIDController.setP(p));
+        tI.onChange(i -> this.tProfiledPIDController.setI(i));
+        tD.onChange(d -> this.tProfiledPIDController.setD(d));
+
+        dP.onChange(p -> this.dPIDController.setP(p));
+        dI.onChange(i -> this.dPIDController.setI(i));
+        dD.onChange(d -> this.dPIDController.setD(d));
+
+        dFFkS.onChange(kS -> this.driveFF.setKs(kS));
+        dFFkV.onChange(kV -> this.driveFF.setKv(kV));
+        dFFkA.onChange(kA -> this.driveFF.setKa(kA));
+
+        tFFkS.onChange(kS -> this.turnFF.setKs(kS));
+        tFFkV.onChange(kV -> this.turnFF.setKv(kV));
+        tMaxAccel.onChange(a -> this.tProfiledPIDController.setConstraints(new Constraints(tMaxVel.get(), a)));
+        tMaxVel.onChange(v -> this.tProfiledPIDController.setConstraints(new Constraints(v, tMaxAccel.get())));
+        configure();
     }
 
     /** Update motor and PID configurations from NetworkTables */

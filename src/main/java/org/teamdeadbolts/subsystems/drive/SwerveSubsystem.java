@@ -59,6 +59,12 @@ public class SwerveSubsystem extends SubsystemBase {
         };
 
         ConfigManager.getInstance().onReady(() -> this.refreshTuning(true));
+
+        slewRateRotaional.onChange(rs -> this.slewRateLimiterRotaional = new SlewRateLimiter(rs));
+        slewRateTranslational.onChange(rt -> {
+            this.slewRateLimiterTranslationalX = new SlewRateLimiter(rt);
+            this.slewRateLimiterTranslationalY = new SlewRateLimiter(rt);
+        });
     }
 
     /**
@@ -180,14 +186,14 @@ public class SwerveSubsystem extends SubsystemBase {
      */
     public void refreshTuning(boolean a) {
         if (a) CtreConfigs.init();
-        System.out.println("Refreshing tuning");
-        this.slewRateLimiterTranslationalX = new SlewRateLimiter(slewRateTranslational.get());
-        this.slewRateLimiterTranslationalY = new SlewRateLimiter(slewRateTranslational.get());
-        this.slewRateLimiterRotaional = new SlewRateLimiter(slewRateRotaional.get());
+        // System.out.println("Refreshing tuning");
+        // this.slewRateLimiterTranslationalX = new SlewRateLimiter(slewRateTranslational.get());
+        // this.slewRateLimiterTranslationalY = new SlewRateLimiter(slewRateTranslational.get());
+        // this.slewRateLimiterRotaional = new SlewRateLimiter(slewRateRotaional.get());
 
-        for (SwerveModule m : modules) {
-            m.configure();
-        }
+        // for (SwerveModule m : modules) {
+        //     m.configure();
+        // }
     }
 
     public SwerveModule getModule(int id) {

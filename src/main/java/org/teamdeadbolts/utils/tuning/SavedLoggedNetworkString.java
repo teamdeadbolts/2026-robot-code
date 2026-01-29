@@ -2,10 +2,12 @@
 package org.teamdeadbolts.utils.tuning;
 
 import java.util.HashMap;
+import java.util.List;
+import java.util.function.Consumer;
 import org.littletonrobotics.junction.networktables.LoggedNetworkString;
 import org.teamdeadbolts.utils.tuning.ConfigManager.Tuneable;
 
-public class SavedLoggedNetworkString extends LoggedNetworkString implements Tuneable {
+public class SavedLoggedNetworkString extends LoggedNetworkString implements Tuneable<String> {
     private String key; // This is annoying
     private String lastValue = "";
     private ConfigManager configManager = ConfigManager.getInstance();
@@ -14,6 +16,7 @@ public class SavedLoggedNetworkString extends LoggedNetworkString implements Tun
 
     private String immediateValue;
     private boolean hasImmediateValue = false;
+    private List<Consumer<String>> actions;
 
     /**
      * Get an instance of a SavedLoggedNetworkString
@@ -32,6 +35,7 @@ public class SavedLoggedNetworkString extends LoggedNetworkString implements Tun
         configManager.registerTunable(this);
     }
 
+    @Override
     public void initFromConfig() {
         if (!configManager.contains(key)) {
             System.out.printf("Creating new config alue %s\n", key);
@@ -49,6 +53,11 @@ public class SavedLoggedNetworkString extends LoggedNetworkString implements Tun
                 System.out.printf("Warning: %s is of the wrong type\n", key);
             }
         }
+    }
+
+    @Override
+    public void onChange(Consumer<String> action) {
+        actions.add(action);
     }
 
     @Override

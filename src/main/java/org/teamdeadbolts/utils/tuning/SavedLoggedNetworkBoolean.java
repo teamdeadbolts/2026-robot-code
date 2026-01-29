@@ -1,17 +1,21 @@
 /* The Deadbolts (C) 2025 */
 package org.teamdeadbolts.utils.tuning;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.function.Consumer;
 import org.littletonrobotics.junction.networktables.LoggedNetworkBoolean;
 import org.teamdeadbolts.utils.tuning.ConfigManager.Tuneable;
 
-public class SavedLoggedNetworkBoolean extends LoggedNetworkBoolean implements Tuneable {
+public class SavedLoggedNetworkBoolean extends LoggedNetworkBoolean implements Tuneable<Boolean> {
     private String key; // This is annoying
     private boolean lastValue = false;
     private ConfigManager configManager = ConfigManager.getInstance();
 
     private boolean immediateValue;
     private boolean hasImmediateValue = false;
+    private List<Consumer<Boolean>> actions = new ArrayList<>();
 
     private static final HashMap<String, SavedLoggedNetworkBoolean> INSTANCES = new HashMap<>();
 
@@ -32,6 +36,7 @@ public class SavedLoggedNetworkBoolean extends LoggedNetworkBoolean implements T
         configManager.registerTunable(this);
     }
 
+    @Override
     public void initFromConfig() {
         if (!configManager.contains(key)) {
             System.out.printf("Creating new config value %s\n", key);
@@ -51,9 +56,15 @@ public class SavedLoggedNetworkBoolean extends LoggedNetworkBoolean implements T
     }
 
     @Override
+    public void onChange(Consumer<Boolean> action) {
+        actions.add(action);
+    }
+
+    @Override
     public void set(boolean value) {
         super.set(value);
         configManager.set(this.key, value);
+        actions.forEach(a -> a.accept(value));
     }
 
     @Override
