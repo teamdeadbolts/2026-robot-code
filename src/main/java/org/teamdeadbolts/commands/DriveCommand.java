@@ -58,9 +58,9 @@ public class DriveCommand extends Command {
         Translation2d robotTrans =
                 RobotState.getInstance().getRobotPose().toPose2d().getTranslation();
 
-        double forwardPercent = MathUtil.applyDeadband(forwardSupplier.getAsDouble(), controllerDeadband.get(), 1);
-        double sidewaysPercent = MathUtil.applyDeadband(sidewaysSupplier.getAsDouble(), controllerDeadband.get(), 1);
-        double rotationPercent = MathUtil.applyDeadband(rotationSupplier.getAsDouble(), controllerDeadband.get(), 1);
+        double forwardPercent = MathUtil.applyDeadband(-forwardSupplier.getAsDouble(), controllerDeadband.get(), 1);
+        double sidewaysPercent = MathUtil.applyDeadband(-sidewaysSupplier.getAsDouble(), controllerDeadband.get(), 1);
+        double rotationPercent = MathUtil.applyDeadband(-rotationSupplier.getAsDouble(), controllerDeadband.get(), 1);
 
         double forwardMps = forwardPercent * maxRobotSpeed.get();
         double sidewaysMps = sidewaysPercent * maxRobotSpeed.get();
@@ -74,9 +74,9 @@ public class DriveCommand extends Command {
             sidewaysMps = sidewaysMps * bumbSpeed.get();
         }
 
-        Logger.recordOutput("ForwardPercent", forwardSupplier.getAsDouble());
-        Logger.recordOutput("SidewaysPercent", sidewaysSupplier.getAsDouble());
-        Logger.recordOutput("AnglePercent", rotationSupplier.getAsDouble());
+        Logger.recordOutput("Drive/ForwardPercent", forwardSupplier.getAsDouble());
+        Logger.recordOutput("Drive/SidewaysPercent", sidewaysSupplier.getAsDouble());
+        Logger.recordOutput("Drive/AnglePercent", rotationSupplier.getAsDouble());
 
         swerveSubsystem.drive(new ChassisSpeeds(forwardMps, sidewaysMps, rotationMps), fieldRelative, false, false);
     }

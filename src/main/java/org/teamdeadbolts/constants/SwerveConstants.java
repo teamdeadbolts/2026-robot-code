@@ -52,4 +52,7 @@ public class SwerveConstants {
 
     public static final Zone RED_SCORE_ZONE = new Zone();
     public static final Zone BLUE_SCORE_ZONE = new Zone();
+
+    public static final Zone RED_CLOSE_ZONE = new Zone();
+    public static final Zone BLUE_CLOSE_ZONE = new Zone();
 }

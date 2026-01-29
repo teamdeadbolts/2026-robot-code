@@ -3,18 +3,17 @@ package org.teamdeadbolts.commands;
 
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
-
 import org.teamdeadbolts.RobotState;
+import org.teamdeadbolts.constants.SwerveConstants;
 import org.teamdeadbolts.subsystems.HopperSubsystem;
 import org.teamdeadbolts.subsystems.IndexerSubsystem;
 import org.teamdeadbolts.subsystems.IntakeSubsystem;
 import org.teamdeadbolts.subsystems.ShooterSubsystem;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
-import org.teamdeadbolts.constants.SwerveConstants;
 
 public class ScoreCommand extends Command {
     private ShooterSubsystem shooterSubsystem;
@@ -37,7 +36,6 @@ public class ScoreCommand extends Command {
     private Timer lastBallTimer = new Timer();
 
     private Alliance alliance; // Wont change in match
-
 
     private SavedLoggedNetworkNumber maxRPMError = SavedLoggedNetworkNumber.get("Tuning/Scoring/MaxRPMError", 0);
     private SavedLoggedNetworkNumber earlyShootThreshold =
@@ -120,9 +118,23 @@ public class ScoreCommand extends Command {
                 isFinished = true;
             }
 
-            if ((alliance == Alliance.Blue && !SwerveConstants.BLUE_SCORE_ZONE.contains(robotTrans) || alliance == Alliance.Red && !SwerveConstants.RED_SCORE_ZONE.contains(robotTrans))) {
+            if (SwerveConstants.RED_CLOSE_ZONE.contains(robotTrans)
+                    || SwerveConstants.BLUE_CLOSE_ZONE.contains(robotTrans)) {
+                shooterSubsystem.setState(ShooterSubsystem.State.SPINUP);
+            } else {
+                shooterSubsystem.setState(ShooterSubsystem.State.SHOOT);
+            }
+
+            if ((alliance == Alliance.Blue && !SwerveConstants.BLUE_SCORE_ZONE.contains(robotTrans)
+                    || alliance == Alliance.Red && !SwerveConstants.RED_SCORE_ZONE.contains(robotTrans))) {
                 isFinished = true;
-                CommandScheduler.getInstance().schedule(new ScoreCommand(shooterSubsystem, indexerSubsystem, hopperSubsystem, intakeSubsystem, PassingTarget.LEFT)); // This should work...
+                CommandScheduler.getInstance()
+                        .schedule(new ScoreCommand(
+                                shooterSubsystem,
+                                indexerSubsystem,
+                                hopperSubsystem,
+                                intakeSubsystem,
+                                PassingTarget.LEFT)); // This should work...
             }
         }
     }

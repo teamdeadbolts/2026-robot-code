@@ -15,6 +15,7 @@ import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import org.teamdeadbolts.commands.DriveCommand;
+import org.teamdeadbolts.subsystems.ShooterSubsystem;
 import org.teamdeadbolts.subsystems.drive.SwerveSubsystem;
 import org.teamdeadbolts.subsystems.vision.PhotonVisionIO;
 import org.teamdeadbolts.subsystems.vision.VisionSubsystem;
@@ -31,7 +32,7 @@ public class RobotContainer {
     // private HopperSubsystem hopperSubsystem = new HopperSubsystem();
     // private IndexerSubsystem indexerSubsystem = new IndexerSubsystem();
     // private IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
-    // private ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
+    private ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
 
     private SavedLoggedNetworkNumber pathplannerTranslationP =
             SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Translation/kP", 0.0);
@@ -70,7 +71,8 @@ public class RobotContainer {
                 primaryController::getRightX,
                 true));
 
-        // shooterSubsystem.setDefaultCommand(new DefaultShooterCommand(shooterSubsystem, indexerSubsystem));
+        shooterSubsystem.setDefaultCommand(
+                new RunCommand(() -> shooterSubsystem.setState(ShooterSubsystem.State.OFF), shooterSubsystem));
         // hopperSubsystem.setDefaultCommand(
         //         new RunCommand(() -> hopperSubsystem.setState(HopperSubsystem.State.HOLD), hopperSubsystem));
         // intakeSubsystem.setDefaultCommand(
@@ -85,6 +87,7 @@ public class RobotContainer {
                             // CtreConfigs.init();
                             swerveSubsystem.refreshTuning(false);
                             configurePathplanner();
+                            shooterSubsystem.reconfigure();
                         },
                         swerveSubsystem));
 
@@ -94,8 +97,13 @@ public class RobotContainer {
                 .y()
                 .whileTrue(new RunCommand(() -> robotState.setEstimatedPose(new Pose3d()), swerveSubsystem));
 
-        primaryController.povRight().whileTrue(swerveSubsystem.runDriveDynamTest(Direction.kReverse));
-        primaryController.povDown().whileTrue(swerveSubsystem.runDriveQuasiTest(Direction.kForward));
+        primaryController
+                .povRight()
+                .whileTrue(new RunCommand(() -> shooterSubsystem.resetTurrentPosition(), shooterSubsystem));
+        primaryController
+                .povDown()
+                .whileTrue(
+                        new RunCommand(() -> shooterSubsystem.setState(ShooterSubsystem.State.TEST), shooterSubsystem));
         primaryController.povLeft().whileTrue(swerveSubsystem.runDriveQuasiTest(Direction.kReverse));
     }
 
