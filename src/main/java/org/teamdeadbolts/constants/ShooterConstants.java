@@ -41,8 +41,8 @@ public class ShooterConstants {
     public static final Pose3d SHOOT_POSE_BLUE = new Pose3d();
 
     public static final Transform3d SHOOTER_OFFSET = new Transform3d(
-            Units.inchesToMeters(-15 + 6.125),
-            Units.inchesToMeters(-15 + 6.125),
+            Units.inchesToMeters(-27.5 / 2 + 6.125),
+            Units.inchesToMeters(27.5 / 2 - 6.125),
             Units.inchesToMeters(13.5),
             new Rotation3d());
 

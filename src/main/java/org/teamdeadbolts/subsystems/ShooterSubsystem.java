@@ -3,8 +3,8 @@ package org.teamdeadbolts.subsystems;
 
 import com.ctre.phoenix6.hardware.TalonFX;
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.controller.BangBangController;
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -44,7 +44,7 @@ public class ShooterSubsystem extends SubsystemBase {
 
     private PIDController hoodController = new PIDController(0.0, 0.0, 0.0);
     private PIDController turretController = new PIDController(0.0, 0.0, 0.0);
-    private BangBangController whellController = new BangBangController();
+    private SimpleMotorFeedforward wheelController = new SimpleMotorFeedforward(0, 0, 0);
 
     private SavedLoggedNetworkNumber hoodControllerP =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/HoodController/kP", 0.1);
@@ -61,8 +61,8 @@ public class ShooterSubsystem extends SubsystemBase {
             SavedLoggedNetworkNumber.get("Tuning/Shooter/TurretController/kD", 0.0);
 
     private SavedLoggedNetworkNumber wheelFFS = SavedLoggedNetworkNumber.get("Tuning/Shooter/WheelController/kS", 0.1);
-
-    private SavedLoggedNetworkNumber wheelMaxVolts = SavedLoggedNetworkNumber.get("Tuning/Shooter/WheelMaxVolts", 12.0);
+    private SavedLoggedNetworkNumber wheelFFV = SavedLoggedNetworkNumber.get("Tuning/Shooter/WheelController/kV", 1);
+    private SavedLoggedNetworkNumber wheelFFA = SavedLoggedNetworkNumber.get("Tuning/Shooter/WheelController/kA", 0.0);
 
     private SavedLoggedNetworkNumber shooterWheelSpinupSpeed =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/ShooterWheelSpinupSpeed", 5000.0); // RPM
@@ -72,6 +72,10 @@ public class ShooterSubsystem extends SubsystemBase {
     private SavedLoggedNetworkNumber hoodInterationsPerStep =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/HoodIterationsPerStep", 5); // Iterations
 
+    private SavedLoggedNetworkNumber testHoodAngle = SavedLoggedNetworkNumber.get("Tuning/Shooter/TestHoodAngle", 45);
+    private SavedLoggedNetworkNumber testShooterRPM =
+            SavedLoggedNetworkNumber.get("Tuning/Shooter/TestShooterRPM", 2500);
+
     private static final double kG = 9.81; // m/s^2
     private Optional<Double> targetWheelSpeed;
     private double currentWheelSpeed;
@@ -80,11 +84,17 @@ public class ShooterSubsystem extends SubsystemBase {
         ConfigManager.getInstance().onReady(this::reconfigure);
         resetTurrentPosition();
         hoodMotor.setPosition(Units.degreesToRotations(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
+        wheelFFS.onChange(wheelController::setKs);
+        wheelFFV.onChange(wheelController::setKv);
+        wheelFFA.onChange(wheelController::setKa);
     }
 
     public void reconfigure() {
         hoodController.setPID(hoodControllerP.get(), hoodControllerI.get(), hoodControllerD.get());
         turretController.setPID(turretControllerP.get(), turretControllerI.get(), turretControllerD.get());
+        wheelController.setKs(wheelFFS.get());
+        wheelController.setKv(wheelFFV.get());
+        wheelController.setKa(wheelFFA.get());
 
         ShooterConstants.init();
         hoodMotor.getConfigurator().apply(ShooterConstants.SHOOTER_HOOD_MOTOR_CONFIG);
@@ -130,7 +140,7 @@ public class ShooterSubsystem extends SubsystemBase {
         switch (targetState) {
             case OFF:
                 targetHoodAngle = Optional.of(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES);
-                targetWheelSpeed = Optional.of(0.0);
+                // targetWheelSpeed = Optional.
                 break;
             case PASS_LEFT:
             case PASS_RIGHT:
@@ -166,12 +176,9 @@ public class ShooterSubsystem extends SubsystemBase {
                 targetHoodAngle = Optional.of(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES);
                 break;
             case TEST:
-                targetTurretPosition = Optional.of(calculateFieldRelativeTurrent(new Translation2d(1, 1)));
-                targetHoodAngle = Optional.of(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES
-                        + Math.sin(System.currentTimeMillis() / 2000.0 * 2.0 * Math.PI)
-                                * (ShooterConstants.SHOOTER_HOOD_MAX_ANGLE_DEGREES
-                                        - ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
-
+                // targetTurretPosition = Optional.of(calculateFieldRelativeTurrent(new Translation2d(2.836, 0.016)));
+                targetWheelSpeed = Optional.of(Units.rotationsPerMinuteToRadiansPerSecond(testShooterRPM.get()));
+                targetHoodAngle = Optional.of(testHoodAngle.get());
                 break;
         }
 
@@ -186,9 +193,7 @@ public class ShooterSubsystem extends SubsystemBase {
         }
 
         if (targetWheelSpeed.isPresent()) {
-            double wheelOutput =
-                    whellController.calculate(targetWheelSpeed.get(), currentWheelSpeed) * wheelMaxVolts.get()
-                            + wheelFFS.get();
+            double wheelOutput = wheelController.calculate(targetWheelSpeed.get());
             wheelMotor.setVoltage(wheelOutput);
             Logger.recordOutput("ShooterSubsystem/WheelOutput", wheelOutput);
             Logger.recordOutput("ShooterSubsystem/TargetWheelSpeed", targetWheelSpeed.get());
@@ -216,7 +221,8 @@ public class ShooterSubsystem extends SubsystemBase {
 
         Logger.recordOutput("ShooterSubsystem/CurrentHoodAngle", Units.radiansToDegrees(currentHoodAngle));
         Logger.recordOutput("ShooterSubsystem/CurrentTurretPosition", currentTurrentPosition);
-        Logger.recordOutput("ShooterSubsystem/CurrentWheelSpeed", currentWheelSpeed);
+        Logger.recordOutput(
+                "ShooterSubsystem/CurrentWheelSpeed", Units.radiansPerSecondToRotationsPerMinute(currentWheelSpeed));
 
         Transform2d turretOffsetWithRotation = new Transform2d(
                 ShooterConstants.SHOOTER_OFFSET.getTranslation().toTranslation2d(),

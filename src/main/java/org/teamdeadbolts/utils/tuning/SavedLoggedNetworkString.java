@@ -1,6 +1,7 @@
 /* The Deadbolts (C) 2025 */
 package org.teamdeadbolts.utils.tuning;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
@@ -16,7 +17,7 @@ public class SavedLoggedNetworkString extends LoggedNetworkString implements Tun
 
     private String immediateValue;
     private boolean hasImmediateValue = false;
-    private List<Consumer<String>> actions;
+    private List<Consumer<String>> actions = new ArrayList<>();
 
     /**
      * Get an instance of a SavedLoggedNetworkString
@@ -66,6 +67,13 @@ public class SavedLoggedNetworkString extends LoggedNetworkString implements Tun
         configManager.set(this.key, value);
         immediateValue = value;
         hasImmediateValue = true;
+        actions.forEach(a -> a.accept(value));
+    }
+
+    @Override
+    public String get() {
+        if (hasImmediateValue) return immediateValue;
+        return super.get();
     }
 
     @Override

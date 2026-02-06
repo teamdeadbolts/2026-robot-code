@@ -28,7 +28,6 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.RobotState;
 import org.teamdeadbolts.constants.SwerveConstants;
-import org.teamdeadbolts.utils.CtreConfigs;
 import org.teamdeadbolts.utils.tuning.ConfigManager;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
@@ -185,7 +184,7 @@ public class SwerveSubsystem extends SubsystemBase {
      * Refresh the tuning values from AdvantageKit
      */
     public void refreshTuning(boolean a) {
-        if (a) CtreConfigs.init();
+        // if (a) CtreConfigs.init();
         // System.out.println("Refreshing tuning");
         // this.slewRateLimiterTranslationalX = new SlewRateLimiter(slewRateTranslational.get());
         // this.slewRateLimiterTranslationalY = new SlewRateLimiter(slewRateTranslational.get());

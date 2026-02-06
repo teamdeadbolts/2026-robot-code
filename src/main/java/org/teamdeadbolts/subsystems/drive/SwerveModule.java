@@ -15,6 +15,7 @@ import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.constants.SwerveConstants;
 import org.teamdeadbolts.utils.CtreConfigs;
 import org.teamdeadbolts.utils.MathUtils;
+import org.teamdeadbolts.utils.tuning.ConfigManager;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
 public class SwerveModule {
@@ -88,11 +89,12 @@ public class SwerveModule {
         tFFkV.onChange(kV -> this.turnFF.setKv(kV));
         tMaxAccel.onChange(a -> this.tProfiledPIDController.setConstraints(new Constraints(tMaxVel.get(), a)));
         tMaxVel.onChange(v -> this.tProfiledPIDController.setConstraints(new Constraints(v, tMaxAccel.get())));
-        configure();
+        ConfigManager.getInstance().onReady(this::configure);
     }
 
     /** Update motor and PID configurations from NetworkTables */
     public void configure() {
+        CtreConfigs.init();
         this.driveMotor.getConfigurator().apply(CtreConfigs.swerveDriveFXConfig);
         this.turningMotor.getConfigurator().apply(CtreConfigs.swerveTurningFXConfig);
         this.encoder.getConfigurator().apply(CtreConfigs.swerveCANcoderConfiguration);
