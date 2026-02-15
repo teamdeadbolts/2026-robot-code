@@ -12,7 +12,7 @@ import org.teamdeadbolts.constants.SwerveConstants;
 import org.teamdeadbolts.subsystems.HopperSubsystem;
 import org.teamdeadbolts.subsystems.IndexerSubsystem;
 import org.teamdeadbolts.subsystems.IntakeSubsystem;
-import org.teamdeadbolts.subsystems.ShooterSubsystem;
+import org.teamdeadbolts.subsystems.shooter.ShooterSubsystem;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
 public class ScoreCommand extends Command {

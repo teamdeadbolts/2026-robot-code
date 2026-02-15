@@ -23,4 +23,8 @@ public class MathUtils {
     public static double RPSToMPS(double wRPS, double c) {
         return wRPS * c;
     }
+
+    public static double MPSToRPM(double mps, double r) {
+        return (60.0 / (2.0 * Math.PI * r)) * mps;
+    }
 }
