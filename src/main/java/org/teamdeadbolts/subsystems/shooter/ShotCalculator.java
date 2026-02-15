@@ -11,6 +11,7 @@ import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.util.Units;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
+import org.opencv.core.Mat;
 import org.teamdeadbolts.RobotState;
 import org.teamdeadbolts.constants.ShooterConstants;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
@@ -32,16 +33,16 @@ public class ShotCalculator {
 
         double dx = Math.hypot(target.getX() - turrentFieldPose.getX(), target.getY() - turrentFieldPose.getY());
 
-        double h = (target.getZ() + heightAbove.get()) - turrentFieldPose.getZ();
+        double H = (target.getZ() + heightAbove.get()) - turrentFieldPose.getZ();
 
-        double hoodAngle = Math.atan2(2 * h, dx);
+        double hoodAngle = Math.atan2(2.0 * H, dx);
 
-        double numerator = G * dx;
-        double denominator = Math.sin(hoodAngle) * Math.cos(hoodAngle);
-        Logger.recordOutput("ShooterCalc/Numer", numerator);
-        Logger.recordOutput("ShooterCalc/Denom", denominator);
+        double vSquared =
+            (G * dx) /
+            (Math.sin(hoodAngle) * Math.cos(hoodAngle));
 
-        double velocity = Math.sqrt(numerator / denominator);
+        double velocity = Math.sqrt(vSquared);
+
 
         ShotParametersAutoLogged result = new ShotParametersAutoLogged();
         result.hoodAngle = MathUtil.clamp(
