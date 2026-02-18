@@ -11,7 +11,6 @@ import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.util.Units;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
-import org.opencv.core.Mat;
 import org.teamdeadbolts.RobotState;
 import org.teamdeadbolts.constants.ShooterConstants;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
@@ -20,41 +19,47 @@ public class ShotCalculator {
     @AutoLog
     public static class ShotParameters {
         public double hoodAngle;
-        public double turrentAngle;
+        public double turretAngle;
         public double wheelSpeed;
     }
 
     private static final double G = 9.81;
-    private static final SavedLoggedNetworkNumber heightAbove =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/HeightAboveTarget", 0);
+
+    private static final SavedLoggedNetworkNumber calcIterations =
+            SavedLoggedNetworkNumber.get("Tuning/Shooter/CalcIterations", 3);
+
+    private static final SavedLoggedNetworkNumber impactAngle =
+            SavedLoggedNetworkNumber.get("Tuning/Shooter/ImpactAngleDegrees", 20);
+
+    private static final SavedLoggedNetworkNumber slipCoe =
+            SavedLoggedNetworkNumber.get("Tuning/Shooter/SlipCoefficient", 1.0);
 
     public static ShotParametersAutoLogged calculateShot(Pose3d robotPose, Translation3d target) {
-        Pose3d turrentFieldPose = robotPose.transformBy(ShooterConstants.SHOOTER_OFFSET);
+        Pose3d fieldRelTurret = robotPose.transformBy(ShooterConstants.SHOOTER_OFFSET);
 
-        double dx = Math.hypot(target.getX() - turrentFieldPose.getX(), target.getY() - turrentFieldPose.getY());
+        Translation2d turretPos2d = fieldRelTurret.getTranslation().toTranslation2d();
+        double distFromPivotToTarget = turretPos2d.getDistance(target.toTranslation2d());
 
-        double H = (target.getZ() + heightAbove.get()) - turrentFieldPose.getZ();
+        double heightFromPivotToTarget = target.getZ() - fieldRelTurret.getZ();
 
-        double hoodAngle = Math.atan2(2.0 * H, dx);
+        Translation2d relativeTarget = new Translation2d(distFromPivotToTarget, heightFromPivotToTarget);
 
-        double vSquared =
-            (G * dx) /
-            (Math.sin(hoodAngle) * Math.cos(hoodAngle));
+        double impactAngleRad = Math.toRadians(impactAngle.get());
+        double hoodAngle = findLaunchAngle(relativeTarget, impactAngleRad);
 
-        double velocity = Math.sqrt(vSquared);
+        double wheelVel = calculateVel(hoodAngle, relativeTarget);
 
+        double turretAngle = calculateFieldRelativeTurrent(target.toTranslation2d());
 
-        ShotParametersAutoLogged result = new ShotParametersAutoLogged();
-        result.hoodAngle = MathUtil.clamp(
-                Math.PI / 2 - hoodAngle,
-                Units.degreesToRadians(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES),
-                Units.degreesToRadians(ShooterConstants.SHOOTER_HOOD_MAX_ANGLE_DEGREES));
-        result.turrentAngle = calculateFieldRelativeTurrent(new Translation2d(target.getX(), target.getY()));
-        double wheelSpeed = shooterMPSToRPM(velocity);
-        Logger.recordOutput("ShooterCalc/TargetVelMPM", velocity);
-        result.wheelSpeed = wheelSpeed;
-
-        return result;
+        ShotParametersAutoLogged shot = new ShotParametersAutoLogged();
+        Logger.recordOutput("ShotCalc/PivToTarget", distFromPivotToTarget);
+        Logger.recordOutput("ShotCalc/HeightFromPivot", heightFromPivotToTarget);
+        Logger.recordOutput("ShotCalc/HoodAngle", Units.radiansToDegrees(hoodAngle));
+        Logger.recordOutput("ShotCalc/Velocity", wheelVel);
+        shot.hoodAngle = Math.PI / 2 - hoodAngle;
+        shot.turretAngle = turretAngle;
+        shot.wheelSpeed = shooterMPSToRPM(wheelVel);
+        return shot;
     }
 
     private static double calculateFieldRelativeTurrent(Translation2d targetLocation) {
@@ -71,10 +76,46 @@ public class ShotCalculator {
         return MathUtil.inputModulus(robotRelAngle.getRadians() + Math.PI, -Math.PI, Math.PI);
     }
 
-    private static double shooterMPSToRPM(double mps) {
-        return (60.0 * mps)
-                / (Math.PI
-                        * (ShooterConstants.SHOOTER_BIG_WHEEL_RADIUS_METERS
-                                + ShooterConstants.SHOOTER_SMALL_WHEEL_RADIUS_METERS));
+    public static double shooterMPSToRPM(double mps) {
+        double compressionOffsetMeters = Units.inchesToMeters((6.0 - 4.986) / 2.0);
+
+        double effectiveBigRadius = ShooterConstants.SHOOTER_BIG_WHEEL_RADIUS_METERS - compressionOffsetMeters;
+        double effectiveSmallRadius = ShooterConstants.SHOOTER_SMALL_WHEEL_RADIUS_METERS - compressionOffsetMeters;
+
+        // return (60.0 * mps * slipCoe.get()) / (Math.PI * (effectiveBigRadius + effectiveSmallRadius));
+        return (60.0 * mps) / ((5.0 / 6.0) * Math.PI * (2.0 * ShooterConstants.SHOOTER_BIG_WHEEL_RADIUS_METERS));
+    }
+
+    private static double findLaunchAngle(Translation2d trans, double alpha) {
+        double low = Math.PI / 2 - Math.toRadians(ShooterConstants.SHOOTER_HOOD_MAX_ANGLE_DEGREES);
+        double high = Math.PI / 2 - Math.toRadians(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES);
+
+        for (int i = 0; i < calcIterations.get(); i++) {
+            double mid = (low + high) / 2;
+            if (evaluateError(mid, trans, alpha) > 0) {
+                high = mid;
+            } else {
+                low = mid;
+            }
+        }
+
+        return (low + high) / 2;
+    }
+
+    private static double evaluateError(double theta, Translation2d trans, double alpha) {
+        double dx = trans.getX() - (ShooterConstants.EXIT_RADIUS_METERS * Math.cos(theta));
+        double dy = trans.getY() - (ShooterConstants.EXIT_RADIUS_METERS * Math.sin(theta));
+
+        return Math.tan(theta) - ((2 * dy / dx) + Math.tan(alpha));
+    }
+
+    private static double calculateVel(double theta, Translation2d trans) {
+        double dx = trans.getX() - (ShooterConstants.EXIT_RADIUS_METERS * Math.cos(theta));
+        double dy = trans.getY() - (ShooterConstants.EXIT_RADIUS_METERS * Math.sin(theta));
+
+        double cos = Math.cos(theta);
+
+        double denom = 2 * Math.pow(cos, 2) * (dx * Math.tan(theta) - dy);
+        return Math.sqrt((G * Math.pow(dx, 2)) / denom);
     }
 }
