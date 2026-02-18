@@ -1,6 +1,8 @@
 /* The Deadbolts (C) 2025 */
 package org.teamdeadbolts.constants;
 
+import com.ctre.phoenix6.configs.CANcoderConfiguration;
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
@@ -10,6 +12,8 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.util.Units;
 import org.teamdeadbolts.subsystems.drive.SwerveModule.SwerveModuleConfig;
 import org.teamdeadbolts.utils.Zone;
+import org.teamdeadbolts.utils.tuning.ConfigManager;
+import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
 public class SwerveConstants {
     public static final double WHEEL_CIRCUMFERENCE = Units.inchesToMeters(2 * 2.25 * Math.PI);
@@ -55,4 +59,44 @@ public class SwerveConstants {
 
     public static final Zone RED_CLOSE_ZONE = new Zone();
     public static final Zone BLUE_CLOSE_ZONE = new Zone();
+
+    public static final TalonFXConfiguration TURNING_MOTOR_CONFIG = new TalonFXConfiguration();
+    public static final TalonFXConfiguration DRIVE_MOTOR_CONFIG = new TalonFXConfiguration();
+    public static final CANcoderConfiguration CANCODER_CONFIG = new CANcoderConfiguration();
+
+
+    private static final SavedLoggedNetworkNumber tCurrentLimit =
+            SavedLoggedNetworkNumber.get("Tuning/Swerve/Turn/CurrentLimit", 0.0);
+
+    private static final SavedLoggedNetworkNumber dCurrentLimit =
+            SavedLoggedNetworkNumber.get("Tuning/Swerve/Drive/CurrentLimit", 0.0);
+
+    static {
+        ConfigManager.getInstance().onReady(SwerveConstants::init);
+    }
+
+    public static void init() {
+        tCurrentLimit.initFromConfig();
+        dCurrentLimit.initFromConfig();
+
+        TURNING_MOTOR_CONFIG.MotorOutput.Inverted = TURN_INVERTED_MODE;
+        TURNING_MOTOR_CONFIG.MotorOutput.NeutralMode = TURN_NEUTRAL_MODE;
+
+        TURNING_MOTOR_CONFIG.Feedback.SensorToMechanismRatio = TURN_GEAR_RATIO;
+        TURNING_MOTOR_CONFIG.ClosedLoopGeneral.ContinuousWrap = true;
+
+        TURNING_MOTOR_CONFIG.CurrentLimits.SupplyCurrentLimitEnable = true;
+        TURNING_MOTOR_CONFIG.CurrentLimits.SupplyCurrentLimit = tCurrentLimit.get();
+
+        DRIVE_MOTOR_CONFIG.MotorOutput.Inverted = DRIVE_INVERTED_MODE;
+        DRIVE_MOTOR_CONFIG.MotorOutput.NeutralMode = DRIVE_NEUTRAL_MODE;
+
+        DRIVE_MOTOR_CONFIG.Feedback.SensorToMechanismRatio = DRIVE_GEAR_RATIO_R2;
+
+        DRIVE_MOTOR_CONFIG.CurrentLimits.SupplyCurrentLimitEnable = true;
+        DRIVE_MOTOR_CONFIG.CurrentLimits.SupplyCurrentLimit = dCurrentLimit.get();
+
+        CANCODER_CONFIG.MagnetSensor.SensorDirection = SENSOR_DIRECTION;
+
+    }
 }

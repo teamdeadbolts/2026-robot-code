@@ -13,7 +13,6 @@ import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.util.Units;
 import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.constants.SwerveConstants;
-import org.teamdeadbolts.utils.CtreConfigs;
 import org.teamdeadbolts.utils.MathUtils;
 import org.teamdeadbolts.utils.tuning.ConfigManager;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
@@ -94,10 +93,10 @@ public class SwerveModule {
 
     /** Update motor and PID configurations from NetworkTables */
     public void configure() {
-        CtreConfigs.init();
-        this.driveMotor.getConfigurator().apply(CtreConfigs.swerveDriveFXConfig);
-        this.turningMotor.getConfigurator().apply(CtreConfigs.swerveTurningFXConfig);
-        this.encoder.getConfigurator().apply(CtreConfigs.swerveCANcoderConfiguration);
+        // CtreConfigs.init();
+        this.driveMotor.getConfigurator().apply(SwerveConstants.DRIVE_MOTOR_CONFIG);
+        this.turningMotor.getConfigurator().apply(SwerveConstants.TURNING_MOTOR_CONFIG);
+        this.encoder.getConfigurator().apply(SwerveConstants.CANCODER_CONFIG);
 
         this.driveFF.setKs(dFFkS.get());
         this.driveFF.setKv(dFFkV.get());
