@@ -15,6 +15,7 @@ import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import org.teamdeadbolts.commands.DriveCommand;
+import org.teamdeadbolts.constants.VisionConstants;
 import org.teamdeadbolts.subsystems.IndexerSubsystem;
 import org.teamdeadbolts.subsystems.drive.SwerveSubsystem;
 import org.teamdeadbolts.subsystems.shooter.ShooterSubsystem;
@@ -26,14 +27,17 @@ public class RobotContainer {
 
     private SwerveSubsystem swerveSubsystem = new SwerveSubsystem();
 
-    @SuppressWarnings("unused")
-    private VisionSubsystem visionSubsystem =
-            new VisionSubsystem(swerveSubsystem, new PhotonVisionIO("CenterCam", new Transform3d()));
-
     // private HopperSubsystem hopperSubsystem = new HopperSubsystem();
     private IndexerSubsystem indexerSubsystem = new IndexerSubsystem();
     // private IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
     private ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
+
+    @SuppressWarnings("unused")
+    private VisionSubsystem visionSubsystem = new VisionSubsystem(
+            swerveSubsystem,
+            new PhotonVisionIO("CenterCam", new Transform3d()),
+            new PhotonVisionIO(
+                    "TurretCam", () -> shooterSubsystem.getTurretOffset().plus(VisionConstants.TURRET_CAM_TO_TURRENT)));
 
     private SavedLoggedNetworkNumber pathplannerTranslationP =
             SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Translation/kP", 0.0);

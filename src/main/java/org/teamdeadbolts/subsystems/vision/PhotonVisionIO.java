@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
 import org.photonvision.PhotonCamera;
 import org.photonvision.targeting.PhotonPipelineResult;
@@ -18,8 +19,9 @@ import org.photonvision.targeting.PhotonTrackedTarget;
 import org.teamdeadbolts.constants.VisionConstants;
 
 public class PhotonVisionIO {
-    private final Transform3d offset;
     private final PhotonCamera camera;
+    private Transform3d offset = null;
+    private Supplier<Transform3d> offsetSupplier = null;
     private final Map<Integer, Pose3d> tagPoseCache = new HashMap<>();
 
     private HashSet<Integer> tagIds = new HashSet<>(8);
@@ -39,9 +41,22 @@ public class PhotonVisionIO {
         }
     }
 
+    public PhotonVisionIO(String camName, Supplier<Transform3d> offsetSupplier) {
+        this.camera = new PhotonCamera(camName);
+        this.offsetSupplier = offsetSupplier;
+
+        for (AprilTag tag : VisionConstants.FIELD_LAYOUT.getTags()) {
+            tagPoseCache.put(tag.ID, tag.pose);
+        }
+    }
+
     public void update(PhotonVisionIOCtx ctx) {
         Tracer tracer = new Tracer();
         long startTime = RobotController.getFPGATime();
+        Transform3d currOffset = this.offset;
+        if (offsetSupplier != null) {
+            currOffset = offsetSupplier.get();
+        }
 
         tracer.addEpoch("Start");
 
@@ -70,7 +85,7 @@ public class PhotonVisionIO {
                     Transform3d fieldToTarget = new Transform3d(tagPose.getTranslation(), tagPose.getRotation());
                     Transform3d camToTarget = best.bestCameraToTarget;
                     Transform3d fieldToCam = fieldToTarget.plus(camToTarget.inverse());
-                    Transform3d fieldToRobot = fieldToCam.plus(offset.inverse());
+                    Transform3d fieldToRobot = fieldToCam.plus(currOffset.inverse());
 
                     tracer.addEpoch("Pose calcs");
 

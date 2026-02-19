@@ -64,7 +64,6 @@ public class SwerveConstants {
     public static final TalonFXConfiguration DRIVE_MOTOR_CONFIG = new TalonFXConfiguration();
     public static final CANcoderConfiguration CANCODER_CONFIG = new CANcoderConfiguration();
 
-
     private static final SavedLoggedNetworkNumber tCurrentLimit =
             SavedLoggedNetworkNumber.get("Tuning/Swerve/Turn/CurrentLimit", 0.0);
 
@@ -97,6 +96,5 @@ public class SwerveConstants {
         DRIVE_MOTOR_CONFIG.CurrentLimits.SupplyCurrentLimit = dCurrentLimit.get();
 
         CANCODER_CONFIG.MagnetSensor.SensorDirection = SENSOR_DIRECTION;
-
     }
 }

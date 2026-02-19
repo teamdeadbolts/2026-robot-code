@@ -8,7 +8,9 @@ import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform2d;
+import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -112,6 +114,18 @@ public class ShooterSubsystem extends SubsystemBase {
 
     public void resetTurrentPosition() {
         this.turretMotor.setPosition(0);
+    }
+
+    public Pose3d getFieldRelativeTurrentPose() {
+        Pose3d robotPose = RobotState.getInstance().getRobotPose();
+        return robotPose.transformBy(getTurretOffset());
+    }
+
+    public Transform3d getTurretOffset() {
+        double currentTurrentPosition =
+                Units.rotationsToRadians(turretMotor.getPosition().getValueAsDouble());
+        return new Transform3d(
+                ShooterConstants.SHOOTER_OFFSET.getTranslation(), new Rotation3d(0, 0, currentTurrentPosition));
     }
 
     @Override
@@ -236,13 +250,7 @@ public class ShooterSubsystem extends SubsystemBase {
         Logger.recordOutput(
                 "ShooterSubsystem/CurrentWheelSpeed", Units.radiansPerSecondToRotationsPerMinute(currentWheelSpeed));
 
-        Transform2d turretOffsetWithRotation = new Transform2d(
-                ShooterConstants.SHOOTER_OFFSET.getTranslation().toTranslation2d(),
-                Rotation2d.fromRadians(currentTurrentPosition));
-
-        Pose2d turretFieldPose = robotPose.toPose2d().transformBy(turretOffsetWithRotation);
-
-        Logger.recordOutput("ShooterSubsystem/TurretPose", turretFieldPose);
+        Logger.recordOutput("ShooterSubsystem/TurretPose", getFieldRelativeTurrentPose());
     }
 
     private double calculateTurrentSetpoint(double currentAngle, double targetAngle) {
