@@ -28,21 +28,21 @@ public class IntakeSubsystem extends SubsystemBase {
 
     private PIDController armController = new PIDController(0.0, 0.0, 0.0);
 
-    private SavedLoggedNetworkNumber intakeDeployedAngle =
+    private final SavedLoggedNetworkNumber intakeDeployedAngle =
             SavedLoggedNetworkNumber.get("Tuning/Intake/IntakeDeployedAngle", 90.0);
-    private SavedLoggedNetworkNumber intakeStowedAngle =
+    private final SavedLoggedNetworkNumber intakeStowedAngle =
             SavedLoggedNetworkNumber.get("Tuning/Intake/IntakeStowedAngle", 0.0);
-    private SavedLoggedNetworkNumber intakeShootArmSpeed =
+    private final SavedLoggedNetworkNumber intakeShootArmSpeed =
             SavedLoggedNetworkNumber.get("Tuning/Intake/IntakeShootArmSpeed", 5.0); // Degrees per second
 
-    private SavedLoggedNetworkNumber armControllerP =
+    private final SavedLoggedNetworkNumber armControllerP =
             SavedLoggedNetworkNumber.get("Tuning/Intake/ArmController/kP", 0.1);
-    private SavedLoggedNetworkNumber armControllerI =
+    private final SavedLoggedNetworkNumber armControllerI =
             SavedLoggedNetworkNumber.get("Tuning/Intake/ArmController/kI", 0.0);
-    private SavedLoggedNetworkNumber armControllerD =
+    private final SavedLoggedNetworkNumber armControllerD =
             SavedLoggedNetworkNumber.get("Tuning/Intake/ArmController/kD", 0.0);
 
-    private SavedLoggedNetworkNumber wheelIntakeVoltage =
+    private final SavedLoggedNetworkNumber wheelIntakeVoltage =
             SavedLoggedNetworkNumber.get("Tuning/Intake/WheelIntakeVoltage", 6.0);
 
     public IntakeSubsystem() {

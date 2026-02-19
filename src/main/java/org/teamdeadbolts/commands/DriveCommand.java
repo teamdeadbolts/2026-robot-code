@@ -20,13 +20,13 @@ public class DriveCommand extends Command {
     private DoubleSupplier rotationSupplier;
     private boolean fieldRelative;
 
-    private SavedLoggedNetworkNumber controllerDeadband =
+    private final SavedLoggedNetworkNumber controllerDeadband =
             SavedLoggedNetworkNumber.get("Tuning/Drive/ControllerDeadband", 0.08);
 
-    private SavedLoggedNetworkNumber maxRobotSpeed = SavedLoggedNetworkNumber.get("Tuning/Drive/MaxRobotSpeed", 1.0);
-    private SavedLoggedNetworkNumber bumbSpeed = SavedLoggedNetworkNumber.get("Tuning/Drive/BumpSpeed", 0.5);
+    private final SavedLoggedNetworkNumber maxRobotSpeed = SavedLoggedNetworkNumber.get("Tuning/Drive/MaxRobotSpeed", 1.0);
+    private final SavedLoggedNetworkNumber bumbSpeed = SavedLoggedNetworkNumber.get("Tuning/Drive/BumpSpeed", 0.5);
 
-    private SavedLoggedNetworkNumber maxRobotAnglarSpeed =
+    private final SavedLoggedNetworkNumber maxRobotAnglarSpeed =
             SavedLoggedNetworkNumber.get("Tuning/Drive/MaxRobotAngluarSpeed", 1.0);
 
     /**

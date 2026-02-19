@@ -37,10 +37,10 @@ public class ScoreCommand extends Command {
 
     private Alliance alliance; // Wont change in match
 
-    private SavedLoggedNetworkNumber maxRPMError = SavedLoggedNetworkNumber.get("Tuning/Scoring/MaxRPMError", 0);
-    private SavedLoggedNetworkNumber earlyShootThreshold =
+    private final SavedLoggedNetworkNumber maxRPMError = SavedLoggedNetworkNumber.get("Tuning/Scoring/MaxRPMError", 0);
+    private final SavedLoggedNetworkNumber earlyShootThreshold =
             SavedLoggedNetworkNumber.get("Tuning/Scoring/EarlyShootThreshold", 2);
-    private SavedLoggedNetworkNumber flushTime = SavedLoggedNetworkNumber.get("Tuning/Scoring/FlushTime", 0.5);
+    private final SavedLoggedNetworkNumber flushTime = SavedLoggedNetworkNumber.get("Tuning/Scoring/FlushTime", 0.5);
 
     public ScoreCommand(
             ShooterSubsystem shooterSubsystem,

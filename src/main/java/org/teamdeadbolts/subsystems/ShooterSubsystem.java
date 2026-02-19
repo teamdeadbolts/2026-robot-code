@@ -46,34 +46,34 @@ public class ShooterSubsystem extends SubsystemBase {
     private PIDController turretController = new PIDController(0.0, 0.0, 0.0);
     private SimpleMotorFeedforward wheelController = new SimpleMotorFeedforward(0, 0, 0);
 
-    private SavedLoggedNetworkNumber hoodControllerP =
+    private final SavedLoggedNetworkNumber hoodControllerP =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/HoodController/kP", 0.1);
-    private SavedLoggedNetworkNumber hoodControllerI =
+    private final SavedLoggedNetworkNumber hoodControllerI =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/HoodController/kI", 0.0);
-    private SavedLoggedNetworkNumber hoodControllerD =
+    private final SavedLoggedNetworkNumber hoodControllerD =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/HoodController/kD", 0.0);
 
-    private SavedLoggedNetworkNumber turretControllerP =
+    private final SavedLoggedNetworkNumber turretControllerP =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/TurretController/kP", 0.1);
-    private SavedLoggedNetworkNumber turretControllerI =
+    private final SavedLoggedNetworkNumber turretControllerI =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/TurretController/kI", 0.0);
-    private SavedLoggedNetworkNumber turretControllerD =
+    private final SavedLoggedNetworkNumber turretControllerD =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/TurretController/kD", 0.0);
 
-    private SavedLoggedNetworkNumber wheelFFS = SavedLoggedNetworkNumber.get("Tuning/Shooter/WheelController/kS", 0.1);
-    private SavedLoggedNetworkNumber wheelFFV = SavedLoggedNetworkNumber.get("Tuning/Shooter/WheelController/kV", 1);
-    private SavedLoggedNetworkNumber wheelFFA = SavedLoggedNetworkNumber.get("Tuning/Shooter/WheelController/kA", 0.0);
+    private final SavedLoggedNetworkNumber wheelFFS = SavedLoggedNetworkNumber.get("Tuning/Shooter/WheelController/kS", 0.1);
+    private final SavedLoggedNetworkNumber wheelFFV = SavedLoggedNetworkNumber.get("Tuning/Shooter/WheelController/kV", 1);
+    private final SavedLoggedNetworkNumber wheelFFA = SavedLoggedNetworkNumber.get("Tuning/Shooter/WheelController/kA", 0.0);
 
-    private SavedLoggedNetworkNumber shooterWheelSpinupSpeed =
+    private final SavedLoggedNetworkNumber shooterWheelSpinupSpeed =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/ShooterWheelSpinupSpeed", 5000.0); // RPM
 
-    private SavedLoggedNetworkNumber hoodStepSize =
+    private final SavedLoggedNetworkNumber hoodStepSize =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/HoodStepSize", 0.5); // Degrees
-    private SavedLoggedNetworkNumber hoodInterationsPerStep =
+    private final SavedLoggedNetworkNumber hoodInterationsPerStep =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/HoodIterationsPerStep", 5); // Iterations
 
-    private SavedLoggedNetworkNumber testHoodAngle = SavedLoggedNetworkNumber.get("Tuning/Shooter/TestHoodAngle", 45);
-    private SavedLoggedNetworkNumber testShooterRPM =
+    private final SavedLoggedNetworkNumber testHoodAngle = SavedLoggedNetworkNumber.get("Tuning/Shooter/TestHoodAngle", 45);
+    private final SavedLoggedNetworkNumber testShooterRPM =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/TestShooterRPM", 2500);
 
     private static final double kG = 9.81; // m/s^2
