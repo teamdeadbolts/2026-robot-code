@@ -9,7 +9,6 @@ import static edu.wpi.first.units.Units.Volts;
 import choreo.trajectory.SwerveSample;
 import com.studica.frc.AHRS;
 import com.studica.frc.AHRS.NavXComType;
-
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -42,7 +41,8 @@ public class SwerveSubsystem extends SubsystemBase {
     private SlewRateLimiter slewRateLimiterTranslationalY;
     private SlewRateLimiter slewRateLimiterRotaional;
 
-    private final SavedLoggedNetworkNumber maxModuleSpeed = SavedLoggedNetworkNumber.get("Tuning/Swerve/MaxModuleSpeed", 1.0);
+    private final SavedLoggedNetworkNumber maxModuleSpeed =
+            SavedLoggedNetworkNumber.get("Tuning/Swerve/MaxModuleSpeed", 1.0);
     private final SavedLoggedNetworkNumber slewRateTranslational =
             SavedLoggedNetworkNumber.get("Tuning/Swerve/TranslationSlew", 1.0);
     private final SavedLoggedNetworkNumber slewRateRotaional =
@@ -56,16 +56,12 @@ public class SwerveSubsystem extends SubsystemBase {
             SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Translation/kP", 0.0);
     private final SavedLoggedNetworkNumber trajTransI =
             SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Translation/kI", 0);
-    private final SavedLoggedNetworkNumber trajTransD = 
+    private final SavedLoggedNetworkNumber trajTransD =
             SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Translation/kD", 0);
 
-    private final SavedLoggedNetworkNumber trajRotP =
-            SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Rotation/kP", 0);
-    private final SavedLoggedNetworkNumber trajRotI =
-            SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Rotation/kI", 0);
-    private final SavedLoggedNetworkNumber trajRotD =
-            SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Rotation/kD", 0);
-
+    private final SavedLoggedNetworkNumber trajRotP = SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Rotation/kP", 0);
+    private final SavedLoggedNetworkNumber trajRotI = SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Rotation/kI", 0);
+    private final SavedLoggedNetworkNumber trajRotD = SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Rotation/kD", 0);
 
     private SysIdRoutine driveRoutine = new SysIdRoutine(
             new SysIdRoutine.Config(null, null, Time.ofBaseUnits(3, Seconds)),
@@ -163,10 +159,10 @@ public class SwerveSubsystem extends SubsystemBase {
     public void followTrajectory(SwerveSample sample) {
         Pose2d currPose = RobotState.getInstance().getRobotPose().toPose2d();
         ChassisSpeeds speeds = new ChassisSpeeds(
-            sample.vx + trajXController.calculate(currPose.getX(), sample.x),
-            sample.vy + trajYController.calculate(currPose.getY(), sample.y),
-            sample.omega + trajHeadingController.calculate(currPose.getRotation().getRadians(), sample.heading)
-        );
+                sample.vx + trajXController.calculate(currPose.getX(), sample.x),
+                sample.vy + trajYController.calculate(currPose.getY(), sample.y),
+                sample.omega
+                        + trajHeadingController.calculate(currPose.getRotation().getRadians(), sample.heading));
 
         this.drive(speeds, true, false, true);
     }

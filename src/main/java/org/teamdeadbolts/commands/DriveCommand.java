@@ -23,7 +23,8 @@ public class DriveCommand extends Command {
     private final SavedLoggedNetworkNumber controllerDeadband =
             SavedLoggedNetworkNumber.get("Tuning/Drive/ControllerDeadband", 0.08);
 
-    private final SavedLoggedNetworkNumber maxRobotSpeed = SavedLoggedNetworkNumber.get("Tuning/Drive/MaxRobotSpeed", 1.0);
+    private final SavedLoggedNetworkNumber maxRobotSpeed =
+            SavedLoggedNetworkNumber.get("Tuning/Drive/MaxRobotSpeed", 1.0);
     private final SavedLoggedNetworkNumber bumbSpeed = SavedLoggedNetworkNumber.get("Tuning/Drive/BumpSpeed", 0.5);
 
     private final SavedLoggedNetworkNumber maxRobotAnglarSpeed =
