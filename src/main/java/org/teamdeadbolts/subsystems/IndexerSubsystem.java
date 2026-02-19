@@ -2,7 +2,6 @@
 package org.teamdeadbolts.subsystems;
 
 import com.ctre.phoenix6.hardware.TalonFX;
-import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
@@ -18,9 +17,9 @@ public class IndexerSubsystem extends SubsystemBase {
         SHOOT,
     }
 
-    private TalonFX floorMotor = new TalonFX(IndexerConstants.INDEXER_FLOOR_MOTOR_CAN_ID);
+    // private TalonFX floorMotor = new TalonFX(IndexerConstants.INDEXER_FLOOR_MOTOR_CAN_ID);
     private TalonFX kickerMotor = new TalonFX(IndexerConstants.INDEXER_KICKER_MOTOR_CAN_ID);
-    private DigitalInput ballSensor = new DigitalInput(IndexerConstants.INDEXER_BALL_SENSOR_CHANNEL);
+    // private DigitalInput ballSensor = new DigitalInput(IndexerConstants.INDEXER_BALL_SENSOR_CHANNEL);
 
     @AutoLogOutput
     private State targetState = State.OFF;
@@ -43,7 +42,7 @@ public class IndexerSubsystem extends SubsystemBase {
 
     public void reconfigure() {
         IndexerConstants.init();
-        floorMotor.getConfigurator().apply(IndexerConstants.INDEXER_FLOOR_MOTOR_CONFIG);
+        // floorMotor.getConfigurator().apply(IndexerConstants.INDEXER_FLOOR_MOTOR_CONFIG);
         kickerMotor.getConfigurator().apply(IndexerConstants.INDEXER_KICKER_MOTOR_CONFIG);
     }
 
@@ -56,29 +55,30 @@ public class IndexerSubsystem extends SubsystemBase {
     }
 
     public boolean hasBall() {
-        return !ballSensor.get();
+        return false;
+        // return !ballSensor.get();
     }
 
     @Override
     public void periodic() {
         switch (targetState) {
             case OFF:
-                floorMotor.setVoltage(0);
+                // floorMotor.setVoltage(0);
                 kickerMotor.setVoltage(0);
                 break;
             case INTAKE:
-                floorMotor.setVoltage(floorMotorIntakeVolts.get());
+                // floorMotor.setVoltage(floorMotorIntakeVolts.get());
                 kickerMotor.setVoltage(kickerMotorShootVolts.get());
                 break;
             case JIGGLE:
                 double jiggleVolts =
                         Math.sin(2 * Math.PI * jiggleFrequency.get() * (System.currentTimeMillis() / 1000.0))
                                 * floorMotorJiggleVolts.get();
-                floorMotor.setVoltage(jiggleVolts);
+                // floorMotor.setVoltage(jiggleVolts);
                 kickerMotor.setVoltage(0);
                 break;
             case SHOOT:
-                floorMotor.setVoltage(floorMotorShootVolts.get());
+                // floorMotor.setVoltage(floorMotorShootVolts.get());
                 kickerMotor.setVoltage(kickerMotorShootVolts.get());
                 break;
         }

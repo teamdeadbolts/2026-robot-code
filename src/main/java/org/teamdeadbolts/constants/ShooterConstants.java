@@ -27,11 +27,9 @@ public class ShooterConstants {
 
     public static final double EXIT_SPEED_EFFICIENCY = 0.95;
 
-    public static final double SHOOTER_WHEEL_RADIUS_METERS = Units.inchesToMeters(1.5);
-
-    public static final ExitOffset[] EXIT_OFFSETS = new ExitOffset[] {}; // TOOD
-
-    public static record ExitOffset(double hoodRad, double x, double y, double z) {}
+    public static final double SHOOTER_BIG_WHEEL_RADIUS_METERS = Units.inchesToMeters(1.5);
+    public static final double SHOOTER_SMALL_WHEEL_RADIUS_METERS = Units.inchesToMeters(1.0);
+    public static final double EXIT_RADIUS_METERS = Units.inchesToMeters(4);
 
     public static final Pose3d PASS_LEFT_POSE_RED = new Pose3d();
     public static final Pose3d PASS_RIGHT_POSE_BLUE = new Pose3d();
@@ -60,6 +58,8 @@ public class ShooterConstants {
             SavedLoggedNetworkNumber.get("Tuning/Shooter/ShooterHoodMotorCurrentLimit", 20);
     private static final SavedLoggedNetworkNumber shooterWheelMotorCurrentLimit =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/ShooterWheelMotorCurrentLimit", 20);
+
+    public static final double HEIGHT_ABOVE = 1;
 
     static {
         ConfigManager.getInstance().onReady(ShooterConstants::init);

@@ -15,8 +15,9 @@ import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import org.teamdeadbolts.commands.DriveCommand;
-import org.teamdeadbolts.subsystems.ShooterSubsystem;
+import org.teamdeadbolts.subsystems.IndexerSubsystem;
 import org.teamdeadbolts.subsystems.drive.SwerveSubsystem;
+import org.teamdeadbolts.subsystems.shooter.ShooterSubsystem;
 import org.teamdeadbolts.subsystems.vision.PhotonVisionIO;
 import org.teamdeadbolts.subsystems.vision.VisionSubsystem;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
@@ -30,7 +31,7 @@ public class RobotContainer {
             new VisionSubsystem(swerveSubsystem, new PhotonVisionIO("CenterCam", new Transform3d()));
 
     // private HopperSubsystem hopperSubsystem = new HopperSubsystem();
-    // private IndexerSubsystem indexerSubsystem = new IndexerSubsystem();
+    private IndexerSubsystem indexerSubsystem = new IndexerSubsystem();
     // private IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
     private ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
 
@@ -77,8 +78,8 @@ public class RobotContainer {
         //         new RunCommand(() -> hopperSubsystem.setState(HopperSubsystem.State.HOLD), hopperSubsystem));
         // intakeSubsystem.setDefaultCommand(
         //         new RunCommand(() -> intakeSubsystem.setState(IntakeSubsystem.State.STOWED), intakeSubsystem));
-        // indexerSubsystem.setDefaultCommand(
-        // new RunCommand(() -> indexerSubsystem.setState(IndexerSubsystem.State.OFF), indexerSubsystem));
+        indexerSubsystem.setDefaultCommand(
+                new RunCommand(() -> indexerSubsystem.setState(IndexerSubsystem.State.OFF), indexerSubsystem));
 
         primaryController
                 .a()
@@ -102,8 +103,13 @@ public class RobotContainer {
                 .whileTrue(new RunCommand(() -> shooterSubsystem.resetTurrentPosition(), shooterSubsystem));
         primaryController
                 .povDown()
-                .whileTrue(
-                        new RunCommand(() -> shooterSubsystem.setState(ShooterSubsystem.State.TEST), shooterSubsystem));
+                .whileTrue(new RunCommand(
+                        () -> {
+                            shooterSubsystem.setState(ShooterSubsystem.State.TEST);
+                            indexerSubsystem.setState(IndexerSubsystem.State.SHOOT);
+                        },
+                        shooterSubsystem,
+                        indexerSubsystem));
         primaryController.povLeft().whileTrue(swerveSubsystem.runDriveQuasiTest(Direction.kReverse));
     }
 

@@ -3,7 +3,7 @@ package org.teamdeadbolts.commands;
 
 import edu.wpi.first.wpilibj2.command.Command;
 import org.teamdeadbolts.subsystems.IndexerSubsystem;
-import org.teamdeadbolts.subsystems.ShooterSubsystem;
+import org.teamdeadbolts.subsystems.shooter.ShooterSubsystem;
 
 public class DefaultShooterCommand extends Command {
     private ShooterSubsystem shooterSubsystem;
