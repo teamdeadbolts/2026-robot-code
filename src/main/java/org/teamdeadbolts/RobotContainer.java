@@ -13,10 +13,9 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import org.teamdeadbolts.commands.DriveCommand;
-import org.teamdeadbolts.constants.VisionConstants;
 import org.teamdeadbolts.subsystems.IndexerSubsystem;
+import org.teamdeadbolts.subsystems.IntakeSubsystem;
 import org.teamdeadbolts.subsystems.drive.SwerveSubsystem;
 import org.teamdeadbolts.subsystems.shooter.ShooterSubsystem;
 import org.teamdeadbolts.subsystems.vision.PhotonVisionIO;
@@ -29,15 +28,16 @@ public class RobotContainer {
 
     // private HopperSubsystem hopperSubsystem = new HopperSubsystem();
     private IndexerSubsystem indexerSubsystem = new IndexerSubsystem();
-    // private IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
+    private IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
     private ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
 
     @SuppressWarnings("unused")
     private VisionSubsystem visionSubsystem = new VisionSubsystem(
-            swerveSubsystem,
-            new PhotonVisionIO("CenterCam", new Transform3d()),
-            new PhotonVisionIO(
-                    "TurretCam", () -> shooterSubsystem.getTurretOffset().plus(VisionConstants.TURRET_CAM_TO_TURRENT)));
+            swerveSubsystem, new PhotonVisionIO("CenterCam", new Transform3d())
+            // new PhotonVisionIO(
+            //         "TurretCam", () ->
+            // shooterSubsystem.getTurretOffset().plus(VisionConstants.TURRET_CAM_TO_TURRENT)));
+            );
 
     private SavedLoggedNetworkNumber pathplannerTranslationP =
             SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Translation/kP", 0.0);
@@ -80,8 +80,8 @@ public class RobotContainer {
                 new RunCommand(() -> shooterSubsystem.setState(ShooterSubsystem.State.OFF), shooterSubsystem));
         // hopperSubsystem.setDefaultCommand(
         //         new RunCommand(() -> hopperSubsystem.setState(HopperSubsystem.State.HOLD), hopperSubsystem));
-        // intakeSubsystem.setDefaultCommand(
-        //         new RunCommand(() -> intakeSubsystem.setState(IntakeSubsystem.State.STOWED), intakeSubsystem));
+        intakeSubsystem.setDefaultCommand(
+                new RunCommand(() -> intakeSubsystem.setState(IntakeSubsystem.State.OFF), intakeSubsystem));
         indexerSubsystem.setDefaultCommand(
                 new RunCommand(() -> indexerSubsystem.setState(IndexerSubsystem.State.OFF), indexerSubsystem));
 
@@ -92,7 +92,8 @@ public class RobotContainer {
                             // CtreConfigs.init();
                             swerveSubsystem.refreshTuning(false);
                             configurePathplanner();
-                            shooterSubsystem.reconfigure();
+                            intakeSubsystem.reconfigure();
+                            // shooterSubsystem.reconfigure();
                         },
                         swerveSubsystem));
 
@@ -102,19 +103,58 @@ public class RobotContainer {
                 .y()
                 .whileTrue(new RunCommand(() -> robotState.setEstimatedPose(new Pose3d()), swerveSubsystem));
 
-        primaryController
-                .povRight()
-                .whileTrue(new RunCommand(() -> shooterSubsystem.resetTurrentPosition(), shooterSubsystem));
+        // primaryController
+        //         .povRight()
+        //         .whileTrue(new RunCommand(() -> shooterSubsystem.resetTurrentPosition(), shooterSubsystem));
         primaryController
                 .povDown()
                 .whileTrue(new RunCommand(
                         () -> {
-                            shooterSubsystem.setState(ShooterSubsystem.State.TEST);
-                            indexerSubsystem.setState(IndexerSubsystem.State.SHOOT);
+                            // shooterSubsystem.setState(ShooterSubsystem.State.TEST);
+                            indexerSubsystem.setState(IndexerSubsystem.State.REVERSE);
                         },
-                        shooterSubsystem,
+                        // shooterSubsystem,
                         indexerSubsystem));
-        primaryController.povLeft().whileTrue(swerveSubsystem.runDriveQuasiTest(Direction.kReverse));
+        primaryController
+                .povUp()
+                .whileTrue(new RunCommand(
+                        () -> {
+                            indexerSubsystem.setState(IndexerSubsystem.State.SHOOT);
+                            shooterSubsystem.setState(ShooterSubsystem.State.TEST);
+                        },
+                        intakeSubsystem));
+
+        primaryController
+                .povLeft()
+                .whileTrue(new RunCommand(
+                        () -> {
+                            intakeSubsystem.setState(IntakeSubsystem.State.DEPLOYED);
+                        },
+                        intakeSubsystem));
+        primaryController
+                .povRight()
+                .whileTrue(new RunCommand(
+                        () -> {
+                            intakeSubsystem.setState(IntakeSubsystem.State.STOWED);
+                        },
+                        intakeSubsystem));
+        primaryController
+                .rightBumper()
+                .whileTrue(new RunCommand(
+                        () -> {
+                            intakeSubsystem.setState(IntakeSubsystem.State.INTAKE);
+                        },
+                        intakeSubsystem));
+
+        primaryController
+                .leftBumper()
+                .whileTrue(new RunCommand(
+                        () -> {
+                            indexerSubsystem.setState(IndexerSubsystem.State.JIGGLE);
+                        },
+                        indexerSubsystem));
+
+        // primaryController.povLeft().whileTrue(swerveSubsystem.runDriveQuasiTest(Direction.kReverse));
     }
 
     private void configurePathplanner() {

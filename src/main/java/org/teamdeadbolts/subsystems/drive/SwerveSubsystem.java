@@ -227,7 +227,7 @@ public class SwerveSubsystem extends SubsystemBase {
     public void periodic() {
         Logger.recordOutput("Swerve/GyroRotationDeg", getGyroRotation().getDegrees());
         for (SwerveModule m : this.modules) {
-            m.tick();
+            m.periodic();
         }
 
         RobotState.getInstance().updateFromSwerve(getModulePositions(), new Rotation3d(getGyroRotation()));

@@ -1,6 +1,7 @@
 /* The Deadbolts (C) 2026 */
 package org.teamdeadbolts.subsystems;
 
+import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.hardware.TalonFX;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -10,6 +11,7 @@ import org.teamdeadbolts.utils.tuning.ConfigManager;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
 public class HopperSubsystem extends SubsystemBase {
+
     public enum State {
         HOLD,
         FAST_UP,
@@ -21,7 +23,8 @@ public class HopperSubsystem extends SubsystemBase {
     @AutoLogOutput
     private State targetState = State.HOLD;
 
-    private TalonFX hopperMotor = new TalonFX(HopperConstants.HOPPER_MOTOR_CAN_ID);
+    private CANBus canBus = new CANBus("*");
+    private TalonFX hopperMotor = new TalonFX(HopperConstants.HOPPER_MOTOR_CAN_ID, canBus);
     private DigitalInput lowerLimitSwitch = new DigitalInput(HopperConstants.HOPPER_LOWER_LIMIT_SWITCH_CHANNEL);
     private DigitalInput upperLimitSwitch = new DigitalInput(HopperConstants.HOPPER_UPPER_LIMIT_SWITCH_CHANNEL);
 

@@ -7,7 +7,7 @@ import org.teamdeadbolts.utils.tuning.ConfigManager;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
 public class IndexerConstants {
-    public static final int INDEXER_FLOOR_MOTOR_CAN_ID = -1;
+    public static final int INDEXER_FLOOR_MOTOR_CAN_ID = 30;
     public static final int INDEXER_KICKER_MOTOR_CAN_ID = 31;
     public static final int INDEXER_BALL_SENSOR_CHANNEL = -1;
 

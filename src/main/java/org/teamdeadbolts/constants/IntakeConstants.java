@@ -3,13 +3,14 @@ package org.teamdeadbolts.constants;
 
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.signals.InvertedValue;
 import org.teamdeadbolts.utils.tuning.ConfigManager;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
 public class IntakeConstants {
-    public static final int INTAKE_ARM_MOTOR_CAN_ID = -1;
-    public static final int INTAKE_WHEEL_MOTOR_CAN_ID = -1;
-    public static final int INTAKE_ABS_ENCODER_CAN_ID = -1;
+    public static final int INTAKE_ARM_MOTOR_CAN_ID = 41;
+    public static final int INTAKE_DRIVE_MOTOR_CAN_ID = 42;
+    public static final int INTAKE_ABS_ENCODER_CAN_ID = 43;
 
     public static final TalonFXConfiguration INTAKE_ARM_MOTOR_CONFIG = new TalonFXConfiguration();
     public static final TalonFXConfiguration INTAKE_WHEEL_MOTOR_CONFIG = new TalonFXConfiguration();
@@ -28,6 +29,7 @@ public class IntakeConstants {
         intakeArmMotorCurrentLimit.initFromConfig();
         INTAKE_ARM_MOTOR_CONFIG.CurrentLimits.SupplyCurrentLimitEnable = true;
         INTAKE_ARM_MOTOR_CONFIG.CurrentLimits.SupplyCurrentLimit = intakeArmMotorCurrentLimit.get();
+        INTAKE_ARM_MOTOR_CONFIG.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
 
         intakeWheelMotorCurrentLimit.initFromConfig();
         INTAKE_WHEEL_MOTOR_CONFIG.CurrentLimits.SupplyCurrentLimitEnable = true;

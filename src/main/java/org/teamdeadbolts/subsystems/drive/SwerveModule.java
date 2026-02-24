@@ -1,6 +1,7 @@
 /* The Deadbolts (C) 2025 */
 package org.teamdeadbolts.subsystems.drive;
 
+import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import edu.wpi.first.math.controller.PIDController;
@@ -24,6 +25,8 @@ public class SwerveModule {
     private TalonFX driveMotor;
     private TalonFX turningMotor;
     private CANcoder encoder;
+
+    private CANBus canBus = new CANBus("*");
 
     /** Tuning values */
     private final SavedLoggedNetworkNumber dFFkS = SavedLoggedNetworkNumber.get("Tuning/Swerve/Drive/kS", 0.0);
@@ -66,9 +69,9 @@ public class SwerveModule {
         this.offset = config.offset();
         this.moduleNumber = config.moduleNumber();
 
-        this.encoder = new CANcoder(config.encoderId());
-        this.driveMotor = new TalonFX(config.driveMotorId());
-        this.turningMotor = new TalonFX(config.turningMotorId());
+        this.encoder = new CANcoder(config.encoderId(), canBus);
+        this.driveMotor = new TalonFX(config.driveMotorId(), canBus);
+        this.turningMotor = new TalonFX(config.turningMotorId(), canBus);
         this.resetToAbs();
         this.driveMotor.setPosition(0.0);
 
@@ -199,7 +202,7 @@ public class SwerveModule {
         this.turningMotor.setVoltage(volts);
     }
 
-    public void tick() {
+    public void periodic() {
         double turnMeasurement = this.getRotation().getRadians();
         double turnSetpoint = this.targetAngle.getRadians();
 

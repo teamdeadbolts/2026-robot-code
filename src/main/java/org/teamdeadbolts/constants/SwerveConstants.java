@@ -33,13 +33,13 @@ public class SwerveConstants {
 
     /* Module constants */
     public static final SwerveModuleConfig FRONT_LEFT_CONFIG =
-            new SwerveModuleConfig(0, Rotation2d.fromDegrees(51.855), 0, 1, 2);
+            new SwerveModuleConfig(0, Rotation2d.fromDegrees(-74.883 + 180), 0, 1, 2);
     public static final SwerveModuleConfig FRONT_RIGHT_CONFIG =
-            new SwerveModuleConfig(1, Rotation2d.fromDegrees(18.545), 3, 4, 5);
+            new SwerveModuleConfig(1, Rotation2d.fromDegrees(99.668), 3, 4, 5);
     public static final SwerveModuleConfig BACK_LEFT_CONFIG =
-            new SwerveModuleConfig(2, Rotation2d.fromDegrees(-146.426 + 180), 6, 7, 8);
+            new SwerveModuleConfig(2, Rotation2d.fromDegrees(140.977), 6, 7, 8);
     public static final SwerveModuleConfig BACK_RIGHT_CONFIG =
-            new SwerveModuleConfig(3, Rotation2d.fromDegrees(7.471), 9, 10, 11);
+            new SwerveModuleConfig(3, Rotation2d.fromDegrees(125.068), 9, 10, 11);
 
     /* Kinematics */
     public static final SwerveDriveKinematics SWERVE_KINEMATICS = new SwerveDriveKinematics(

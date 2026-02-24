@@ -23,7 +23,7 @@ public class IntakeCommand extends Command {
     @Override
     public void initialize() {
         intakeSubsystem.setState(IntakeSubsystem.State.INTAKE);
-        indexerSubsystem.setState(IndexerSubsystem.State.INTAKE);
+        // indexerSubsystem.setState(IndexerSubsystem.State.INTAKE);
         hopperSubsystem.setState(HopperSubsystem.State.FAST_UP);
     }
 
