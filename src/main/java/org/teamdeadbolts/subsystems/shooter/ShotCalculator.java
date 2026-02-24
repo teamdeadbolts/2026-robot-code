@@ -13,6 +13,7 @@ import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.RobotState;
 import org.teamdeadbolts.constants.ShooterConstants;
+import org.teamdeadbolts.utils.ExtrapolatingDoubleMap;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
 public class ShotCalculator {
@@ -21,6 +22,13 @@ public class ShotCalculator {
         public double hoodAngle;
         public double turretAngle;
         public double wheelSpeed;
+        public double ballVelocity;
+
+        @Override
+        public String toString() {
+            return "ShotParameters{" + "hoodAngle=" + hoodAngle + ", turretAngle=" + turretAngle + ", wheelSpeed="
+                    + wheelSpeed + ", ballVelocity=" + ballVelocity + "}";
+        }
     }
 
     private static final double G = 9.81;
@@ -31,34 +39,76 @@ public class ShotCalculator {
     private static final SavedLoggedNetworkNumber impactAngle =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/ImpactAngleDegrees", 20);
 
-    private static final SavedLoggedNetworkNumber slipCoe =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/SlipCoefficient", 1.0);
+    private static final SavedLoggedNetworkNumber shootLatancyMs =
+            SavedLoggedNetworkNumber.get("Tuning/Shooter/ShootLatancyMs", 100);
+    private static final SavedLoggedNetworkNumber timeToKeepVel =
+            SavedLoggedNetworkNumber.get("Tuning/Shooter/TimeToKeepVelMs", 1000);
 
-    public static ShotParametersAutoLogged calculateShot(Pose3d robotPose, Translation3d target) {
+    private final ExtrapolatingDoubleMap vxMap = new ExtrapolatingDoubleMap(timeToKeepVel.get());
+    private final ExtrapolatingDoubleMap vyMap = new ExtrapolatingDoubleMap(timeToKeepVel.get());
+    private final ExtrapolatingDoubleMap vthetaMap = new ExtrapolatingDoubleMap(timeToKeepVel.get());
+
+    public ShotCalculator() {}
+    ;
+
+    public void updateVelocityState(double timestamp, double vx, double vy, double vtheta) {
+        vxMap.put(timestamp, vx);
+        vyMap.put(timestamp, vy);
+        vthetaMap.put(timestamp, vtheta);
+    }
+
+    public ShotParametersAutoLogged calculateShot(Pose3d robotPose, Translation3d target, double currentTime) {
         Pose3d fieldRelTurret = robotPose.transformBy(ShooterConstants.SHOOTER_OFFSET);
-
         Translation2d turretPos2d = fieldRelTurret.getTranslation().toTranslation2d();
-        double distFromPivotToTarget = turretPos2d.getDistance(target.toTranslation2d());
 
-        double heightFromPivotToTarget = target.getZ() - fieldRelTurret.getZ();
+        double pVx = vxMap.get(currentTime + shootLatancyMs.get());
+        double pVy = vyMap.get(currentTime + shootLatancyMs.get());
+        double pVtheta = vthetaMap.get(currentTime + shootLatancyMs.get());
 
-        Translation2d relativeTarget = new Translation2d(distFromPivotToTarget, heightFromPivotToTarget);
+        Rotation2d robotAngle = robotPose.toPose2d().getRotation();
+        Translation2d robotRelOffset =
+                ShooterConstants.SHOOTER_OFFSET.getTranslation().toTranslation2d();
+        Translation2d fieldRelOffset = robotRelOffset.rotateBy(robotAngle);
 
+        double tVx = pVx - (pVtheta * fieldRelOffset.getY());
+        double tVy = pVy - (pVtheta * fieldRelOffset.getX());
+        Translation2d turretVel = new Translation2d(tVx, tVy);
+
+        Translation2d virtTarget2d = target.toTranslation2d();
+        double targetZ = target.getZ();
         double impactAngleRad = Math.toRadians(impactAngle.get());
-        double hoodAngle = findLaunchAngle(relativeTarget, impactAngleRad);
 
-        double wheelVel = calculateVel(hoodAngle, relativeTarget);
+        double hoodAngle = 0.0;
+        double ballVelocity = 0.0;
+        double distFromPivotToTarget = 0.0;
+        double heightFromPivotToTarget = targetZ - fieldRelTurret.getZ();
+        for (int i = 0; i < calcIterations.get(); i++) {
+            distFromPivotToTarget = turretPos2d.getDistance(virtTarget2d);
+            Translation2d relVirtTarget = new Translation2d(distFromPivotToTarget, heightFromPivotToTarget);
 
-        double turretAngle = calculateFieldRelativeTurrent(target.toTranslation2d());
+            hoodAngle = findLaunchAngle(relVirtTarget, impactAngleRad);
+            ballVelocity = calculateVel(hoodAngle, relVirtTarget);
+
+            double v0x = ballVelocity * Math.cos(hoodAngle);
+            double flightTime = (distFromPivotToTarget / v0x) * 1000;
+            double totalTime = flightTime + shootLatancyMs.get();
+
+            virtTarget2d = target.toTranslation2d().minus(turretVel.times(totalTime / 1000));
+        }
+
+        double turretAngle = calculateFieldRelativeTurrent(virtTarget2d);
 
         ShotParametersAutoLogged shot = new ShotParametersAutoLogged();
-        Logger.recordOutput("ShotCalc/PivToTarget", distFromPivotToTarget);
+        Logger.recordOutput("ShotCalc/VirtualTarget", virtTarget2d);
+        Logger.recordOutput("ShotCalc/PivToVirtualTarget", distFromPivotToTarget);
         Logger.recordOutput("ShotCalc/HeightFromPivot", heightFromPivotToTarget);
         Logger.recordOutput("ShotCalc/HoodAngle", Units.radiansToDegrees(hoodAngle));
-        Logger.recordOutput("ShotCalc/Velocity", wheelVel);
+        Logger.recordOutput("ShotCalc/Velocity", ballVelocity);
         shot.hoodAngle = Math.PI / 2 - hoodAngle;
         shot.turretAngle = turretAngle;
-        shot.wheelSpeed = shooterMPSToRPM(wheelVel);
+        shot.wheelSpeed = shooterMPSToRPM(ballVelocity);
+        shot.ballVelocity = ballVelocity;
+
         return shot;
     }
 
