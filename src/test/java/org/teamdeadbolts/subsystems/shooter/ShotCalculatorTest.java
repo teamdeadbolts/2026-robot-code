@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -69,7 +70,7 @@ public class ShotCalculatorTest {
     public void testStaticShot() {
         Pose3d robotPOse = new Pose3d();
         Translation3d target = new Translation3d(5, 0, 0);
-        calculator.updateVelocityState(1000.0, 0, 0, 0);
+        calculator.updateVelocityState(1000.0, new ChassisSpeeds());
 
         ShotParametersAutoLogged shot = calculator.calculateShot(robotPOse, target, 1000);
 
@@ -84,13 +85,13 @@ public class ShotCalculatorTest {
         Translation3d target = new Translation3d(5.0, 0.0, 2.0);
 
         // Simulate driving steadily TOWARDS the target at 2 m/s on the X axis
-        calculator.updateVelocityState(1000.0, 2.0, 0.0, 0.0);
-        calculator.updateVelocityState(1020.0, 2.0, 0.0, 0.0);
+        calculator.updateVelocityState(1000.0, new ChassisSpeeds(2, 0, 0));
+        calculator.updateVelocityState(1020.0, new ChassisSpeeds(2, 0, 0));
 
         ShotParametersAutoLogged movingShot = calculator.calculateShot(robotPose, target, 1020.0);
 
         ShotCalculator staticCalc = new ShotCalculator();
-        staticCalc.updateVelocityState(1020.0, 0.0, 0.0, 0.0);
+        staticCalc.updateVelocityState(1020, new ChassisSpeeds());
         ShotParametersAutoLogged staticShot = staticCalc.calculateShot(robotPose, target, 1020.0);
         System.out.printf("MPS Diff: %s\n", staticShot.ballVelocity - movingShot.ballVelocity);
 
@@ -103,8 +104,8 @@ public class ShotCalculatorTest {
         Pose3d robotPose = new Pose3d();
         Translation3d target = new Translation3d(5.0, 0.0, 2.0);
 
-        calculator.updateVelocityState(1000.0, 0.0, 0.0, 2.0);
-        calculator.updateVelocityState(1020.0, 0.0, 0.0, 2.0);
+        calculator.updateVelocityState(1000.0, new ChassisSpeeds(0, 0, 2));
+        calculator.updateVelocityState(1020.0, new ChassisSpeeds(0, 0, 2));
 
         ShotParametersAutoLogged shot = calculator.calculateShot(robotPose, target, 1020.0);
 
@@ -126,7 +127,7 @@ public class ShotCalculatorTest {
             Pose3d robotPose = new Pose3d();
             Translation3d target = new Translation3d(dist, 0.0, 2.0);
 
-            calculator.updateVelocityState(0.0, 0.0, 0.0, 0.0);
+            calculator.updateVelocityState(0.0, new ChassisSpeeds());
             ShotParametersAutoLogged shot = calculator.calculateShot(robotPose, target, 0.0);
 
             double hoodDeg = Math.toDegrees(shot.hoodAngle);

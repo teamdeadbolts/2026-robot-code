@@ -12,6 +12,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Transform3d;
+import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -80,7 +81,11 @@ public class ShooterSubsystem extends SubsystemBase {
     private Optional<Double> targetWheelSpeed;
     private double currentWheelSpeed;
 
+    private ShotCalculator shotCalculator;
+
     public ShooterSubsystem() {
+        this.shotCalculator = new ShotCalculator();
+
         ConfigManager.getInstance().onReady(this::reconfigure);
         resetTurrentPosition();
         hoodMotor.setPosition(Units.degreesToRotations(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
@@ -146,6 +151,7 @@ public class ShooterSubsystem extends SubsystemBase {
 
         Pose3d robotPose = RobotState.getInstance().getRobotPose();
         ChassisSpeeds robotSpeeds = RobotState.getInstance().getFieldRelativeRobotVelocities();
+        shotCalculator.updateVelocityState((double) System.currentTimeMillis(), robotSpeeds);
 
         Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Red);
 
@@ -188,16 +194,15 @@ public class ShooterSubsystem extends SubsystemBase {
                 targetHoodAngle = Optional.of(Units.degreesToRadians(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
                 break;
             case TEST:
-                // targetTurretPosition = Optional.of(calculateFieldRelativeTurrent(new Translation2d(2.836, 0.016)));
-                // ShotParametersAutoLogged shot = ShotCalculator.calculateShot(
-                //         robotPose, new Translation3d(testTargetX.get(), testTargetY.get(), 0));
-                // Logger.processInputs("ShooterSubsystem/Shot", shot);
-                // Logger.recordOutput(
-                //         "ShooterSubsystem/TestTargetPose",
-                //         new Pose2d(testTargetX.get(), testTargetY.get(), new Rotation2d()));
-                // targetHoodAngle = Optional.of(shot.hoodAngle);
-                // targetTurretPosition = Optional.of(shot.turretAngle);
-                targetWheelSpeed = Optional.of(ShotCalculator.shooterMPSToRPM(testShooterMPS.get()));
+                ShotParametersAutoLogged shot = shotCalculator.calculateShot(
+                        robotPose, new Translation3d(testTargetX.get(), testTargetY.get(), 0), (double)
+                                (System.currentTimeMillis()));
+                Logger.processInputs("ShooterSubsystem/Shot", shot);
+                Logger.recordOutput(
+                        "ShooterSubsystem/TestTargetPose",
+                        new Pose2d(testTargetX.get(), testTargetY.get(), new Rotation2d()));
+                targetHoodAngle = Optional.of(shot.hoodAngle);
+                targetTurretPosition = Optional.of(shot.turretAngle);
 
                 break;
         }

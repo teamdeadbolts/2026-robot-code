@@ -8,6 +8,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
@@ -51,10 +52,10 @@ public class ShotCalculator {
     public ShotCalculator() {}
     ;
 
-    public void updateVelocityState(double timestamp, double vx, double vy, double vtheta) {
-        vxMap.put(timestamp, vx);
-        vyMap.put(timestamp, vy);
-        vthetaMap.put(timestamp, vtheta);
+    public void updateVelocityState(double timestamp, ChassisSpeeds speeds) {
+        vxMap.put(timestamp, speeds.vxMetersPerSecond);
+        vyMap.put(timestamp, speeds.vyMetersPerSecond);
+        vthetaMap.put(timestamp, speeds.omegaRadiansPerSecond);
     }
 
     public ShotParametersAutoLogged calculateShot(Pose3d robotPose, Translation3d target, double currentTime) {
@@ -99,7 +100,8 @@ public class ShotCalculator {
         double turretAngle = calculateFieldRelativeTurrent(virtTarget2d);
 
         ShotParametersAutoLogged shot = new ShotParametersAutoLogged();
-        Logger.recordOutput("ShotCalc/VirtualTarget", virtTarget2d);
+        Logger.recordOutput("ShotCalc/VirtualTarget", new Pose2d(virtTarget2d, new Rotation2d()));
+        Logger.recordOutput("ShotCalc/TurretVel", turretVel);
         Logger.recordOutput("ShotCalc/PivToVirtualTarget", distFromPivotToTarget);
         Logger.recordOutput("ShotCalc/HeightFromPivot", heightFromPivotToTarget);
         Logger.recordOutput("ShotCalc/HoodAngle", Units.radiansToDegrees(hoodAngle));

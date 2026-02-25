@@ -150,9 +150,9 @@ public class RobotContainer {
                 .leftBumper()
                 .whileTrue(new RunCommand(
                         () -> {
-                            indexerSubsystem.setState(IndexerSubsystem.State.JIGGLE);
+                            shooterSubsystem.setState(ShooterSubsystem.State.TEST);
                         },
-                        indexerSubsystem));
+                        shooterSubsystem));
 
         // primaryController.povLeft().whileTrue(swerveSubsystem.runDriveQuasiTest(Direction.kReverse));
     }
