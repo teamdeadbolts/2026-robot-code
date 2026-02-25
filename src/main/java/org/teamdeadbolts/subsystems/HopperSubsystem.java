@@ -28,11 +28,11 @@ public class HopperSubsystem extends SubsystemBase {
     private DigitalInput lowerLimitSwitch = new DigitalInput(HopperConstants.HOPPER_LOWER_LIMIT_SWITCH_CHANNEL);
     private DigitalInput upperLimitSwitch = new DigitalInput(HopperConstants.HOPPER_UPPER_LIMIT_SWITCH_CHANNEL);
 
-    private SavedLoggedNetworkNumber hopperMotorFastVolts =
+    private final SavedLoggedNetworkNumber hopperMotorFastVolts =
             SavedLoggedNetworkNumber.get("Tuning/Hopper/HopperMotorFastVolts", 1.0);
-    private SavedLoggedNetworkNumber hopperMotorSlowVolts =
+    private final SavedLoggedNetworkNumber hopperMotorSlowVolts =
             SavedLoggedNetworkNumber.get("Tuning/Hopper/HopperMotorSlowVolts", 0.5);
-    private SavedLoggedNetworkNumber hopperMotorHoldVolts =
+    private final SavedLoggedNetworkNumber hopperMotorHoldVolts =
             SavedLoggedNetworkNumber.get("Tuning/Hopper/HopperMotorHoldVolts", 0.0);
 
     public HopperSubsystem() {

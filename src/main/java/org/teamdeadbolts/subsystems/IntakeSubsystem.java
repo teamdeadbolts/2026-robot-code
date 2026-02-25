@@ -36,18 +36,18 @@ public class IntakeSubsystem extends SubsystemBase {
             new ProfiledPIDController(0.0, 0.0, 0.0, new TrapezoidProfile.Constraints(0.0, 0.0));
     private ArmFeedforward armFeedforward = new ArmFeedforward(0.0, 0.0, 0.0);
 
-    private SavedLoggedNetworkNumber intakeDeployedAngle =
+    private final SavedLoggedNetworkNumber intakeDeployedAngle =
             SavedLoggedNetworkNumber.get("Tuning/Intake/IntakeDeployedAngle", 90.0);
-    private SavedLoggedNetworkNumber intakeStowedAngle =
+    private final SavedLoggedNetworkNumber intakeStowedAngle =
             SavedLoggedNetworkNumber.get("Tuning/Intake/IntakeStowedAngle", 0.0);
-    private SavedLoggedNetworkNumber intakeShootArmSpeed =
+    private final SavedLoggedNetworkNumber intakeShootArmSpeed =
             SavedLoggedNetworkNumber.get("Tuning/Intake/IntakeShootArmSpeed", 5.0); // Degrees per second
 
-    private SavedLoggedNetworkNumber armControllerP =
+    private final SavedLoggedNetworkNumber armControllerP =
             SavedLoggedNetworkNumber.get("Tuning/Intake/ArmController/kP", 0.1);
-    private SavedLoggedNetworkNumber armControllerI =
+    private final SavedLoggedNetworkNumber armControllerI =
             SavedLoggedNetworkNumber.get("Tuning/Intake/ArmController/kI", 0.0);
-    private SavedLoggedNetworkNumber armControllerD =
+    private final SavedLoggedNetworkNumber armControllerD =
             SavedLoggedNetworkNumber.get("Tuning/Intake/ArmController/kD", 0.0);
 
     private SavedLoggedNetworkNumber armControllerMaxVel =

@@ -6,9 +6,12 @@ import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
 
+import choreo.trajectory.SwerveSample;
 import com.studica.frc.AHRS;
 import com.studica.frc.AHRS.NavXComType;
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.filter.SlewRateLimiter;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -38,11 +41,27 @@ public class SwerveSubsystem extends SubsystemBase {
     private SlewRateLimiter slewRateLimiterTranslationalY;
     private SlewRateLimiter slewRateLimiterRotaional;
 
-    private SavedLoggedNetworkNumber maxModuleSpeed = SavedLoggedNetworkNumber.get("Tuning/Swerve/MaxModuleSpeed", 1.0);
-    private SavedLoggedNetworkNumber slewRateTranslational =
+    private final SavedLoggedNetworkNumber maxModuleSpeed =
+            SavedLoggedNetworkNumber.get("Tuning/Swerve/MaxModuleSpeed", 1.0);
+    private final SavedLoggedNetworkNumber slewRateTranslational =
             SavedLoggedNetworkNumber.get("Tuning/Swerve/TranslationSlew", 1.0);
-    private SavedLoggedNetworkNumber slewRateRotaional =
+    private final SavedLoggedNetworkNumber slewRateRotaional =
             SavedLoggedNetworkNumber.get("Tuning/Swerve/RotationSlew", 1.0);
+
+    private final PIDController trajXController = new PIDController(0.0, 0.0, 0.0);
+    private final PIDController trajYController = new PIDController(0.0, 0.0, 0.0);
+    private final PIDController trajHeadingController = new PIDController(0, 0.0, 0.0);
+
+    private final SavedLoggedNetworkNumber trajTransP =
+            SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Translation/kP", 0.0);
+    private final SavedLoggedNetworkNumber trajTransI =
+            SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Translation/kI", 0);
+    private final SavedLoggedNetworkNumber trajTransD =
+            SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Translation/kD", 0);
+
+    private final SavedLoggedNetworkNumber trajRotP = SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Rotation/kP", 0);
+    private final SavedLoggedNetworkNumber trajRotI = SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Rotation/kI", 0);
+    private final SavedLoggedNetworkNumber trajRotD = SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Rotation/kD", 0);
 
     private SysIdRoutine driveRoutine = new SysIdRoutine(
             new SysIdRoutine.Config(null, null, Time.ofBaseUnits(3, Seconds)),
@@ -57,6 +76,8 @@ public class SwerveSubsystem extends SubsystemBase {
             new SwerveModule(SwerveConstants.BACK_RIGHT_CONFIG)
         };
 
+        trajHeadingController.enableContinuousInput(-Math.PI, Math.PI);
+
         ConfigManager.getInstance().onReady(() -> this.refreshTuning(true));
 
         slewRateRotaional.onChange(rs -> this.slewRateLimiterRotaional = new SlewRateLimiter(rs));
@@ -64,6 +85,25 @@ public class SwerveSubsystem extends SubsystemBase {
             this.slewRateLimiterTranslationalX = new SlewRateLimiter(rt);
             this.slewRateLimiterTranslationalY = new SlewRateLimiter(rt);
         });
+
+        trajTransP.onChange((p) -> {
+            trajXController.setP(p);
+            trajYController.setP(p);
+        });
+
+        trajTransI.onChange((i) -> {
+            trajXController.setI(i);
+            trajYController.setI(i);
+        });
+
+        trajTransD.onChange((d) -> {
+            trajXController.setD(d);
+            trajYController.setD(d);
+        });
+
+        trajRotP.onChange(trajHeadingController::setP);
+        trajRotI.onChange(trajHeadingController::setI);
+        trajRotD.onChange(trajHeadingController::setD);
     }
 
     /**
@@ -114,6 +154,17 @@ public class SwerveSubsystem extends SubsystemBase {
                     : speeds;
         }
         return speeds;
+    }
+
+    public void followTrajectory(SwerveSample sample) {
+        Pose2d currPose = RobotState.getInstance().getRobotPose().toPose2d();
+        ChassisSpeeds speeds = new ChassisSpeeds(
+                sample.vx + trajXController.calculate(currPose.getX(), sample.x),
+                sample.vy + trajYController.calculate(currPose.getY(), sample.y),
+                sample.omega
+                        + trajHeadingController.calculate(currPose.getRotation().getRadians(), sample.heading));
+
+        this.drive(speeds, true, false, true);
     }
 
     /**

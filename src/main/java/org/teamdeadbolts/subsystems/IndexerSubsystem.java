@@ -26,14 +26,16 @@ public class IndexerSubsystem extends SubsystemBase {
     @AutoLogOutput
     private State targetState = State.OFF;
 
-    private SavedLoggedNetworkNumber floorMotorShootVolts =
+    private final SavedLoggedNetworkNumber floorMotorIntakeVolts =
+            SavedLoggedNetworkNumber.get("Tuning/Indexer/IndexerFloorMotorIntakeVolts", 6.0);
+    private final SavedLoggedNetworkNumber floorMotorShootVolts =
             SavedLoggedNetworkNumber.get("Tuning/Indexer/IndexerFloorMotorShootVolts", 6.0);
-    private SavedLoggedNetworkNumber floorMotorJiggleVolts =
+    private final SavedLoggedNetworkNumber floorMotorJiggleVolts =
             SavedLoggedNetworkNumber.get("Tuning/Indexer/IndexerFloorMotorJiggleVolts", 3.0);
-    private SavedLoggedNetworkNumber kickerMotorShootVolts =
+    private final SavedLoggedNetworkNumber kickerMotorShootVolts =
             SavedLoggedNetworkNumber.get("Tuning/Indexer/IndexerKickerMotorShootVolts", 6.0);
 
-    private SavedLoggedNetworkNumber jiggleFrequency =
+    private final SavedLoggedNetworkNumber jiggleFrequency =
             SavedLoggedNetworkNumber.get("Tuning/Indexer/IndexerJiggleFrequency", 1.0);
 
     public IndexerSubsystem() {
