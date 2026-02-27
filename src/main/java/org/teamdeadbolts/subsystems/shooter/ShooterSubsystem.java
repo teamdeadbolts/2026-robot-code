@@ -12,27 +12,35 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Transform3d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.RobotState;
 import org.teamdeadbolts.constants.ShooterConstants;
+import org.teamdeadbolts.constants.VisionConstants;
+import org.teamdeadbolts.utils.Zone;
 import org.teamdeadbolts.utils.tuning.ConfigManager;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
 public class ShooterSubsystem extends SubsystemBase {
     public enum State {
         OFF,
+        APRILTAG_TRACK,
         SPINUP,
         SHOOT,
         PASS_LEFT,
         PASS_RIGHT,
+        ZERO,
         TEST;
     }
 
@@ -55,6 +63,13 @@ public class ShooterSubsystem extends SubsystemBase {
             SavedLoggedNetworkNumber.get("Tuning/Shooter/HoodController/kI", 0.0);
     private final SavedLoggedNetworkNumber hoodControllerD =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/HoodController/kD", 0.0);
+
+    private final SavedLoggedNetworkNumber hoodZeroVoltage =
+            SavedLoggedNetworkNumber.get("Tuning/Shooter/HoodZeroVoltage", 0.0);
+    private final SavedLoggedNetworkNumber hoodZeroCurrent =
+            SavedLoggedNetworkNumber.get("Tuning/Shooter/HoodZeroCurrent", 0.0);
+    private final SavedLoggedNetworkNumber hoodZeroVelTol =
+            SavedLoggedNetworkNumber.get("Tuning/Shooter/HoodZeroVelTol", 0.0);
 
     private final SavedLoggedNetworkNumber turretControllerP =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/TurretController/kP", 0.1);
@@ -83,8 +98,13 @@ public class ShooterSubsystem extends SubsystemBase {
     private final SavedLoggedNetworkNumber testTargetX = SavedLoggedNetworkNumber.get("Tuning/Shooter/TestTargetX", 0);
     private final SavedLoggedNetworkNumber testTargetY = SavedLoggedNetworkNumber.get("Tuning/Shooter/TestTargetY", 0);
 
+    private final SavedLoggedNetworkNumber aprilTagTrackRange =
+            SavedLoggedNetworkNumber.get("Tuning/Shooter/AprilTagTrackRange", 0);
+
     private Optional<Double> targetWheelSpeed;
     private double currentWheelSpeed;
+
+    private Zone aprilTagTrackZone = new Zone();
 
     private ShotCalculator shotCalculator;
 
@@ -165,16 +185,63 @@ public class ShooterSubsystem extends SubsystemBase {
                 targetHoodAngle = Optional.of(Units.degreesToRadians(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
                 // targetWheelSpeed = Optional.
                 break;
+            case APRILTAG_TRACK:
+                Pose3d turretPose = getFieldRelativeTurrentPose();
+                Pose2d robotPose2d = robotPose.toPose2d();
+                Translation2d turretOffset =
+                        ShooterConstants.SHOOTER_OFFSET.getTranslation().toTranslation2d();
+                Rotation2d towardsCenterAngle = turretOffset.times(-1.0).getAngle();
+                Translation2d shiftRobotRel = new Translation2d(Units.inchesToMeters(3.0), towardsCenterAngle); // Temp
+                Translation2d vertexRobotRel = turretOffset.plus(shiftRobotRel);
+
+                double dirX = Math.signum(turretOffset.getX());
+                double dirY = Math.signum(turretOffset.getY());
+
+                Translation2d forwardLeg = vertexRobotRel.plus(new Translation2d(aprilTagTrackRange.get() * dirX, 0));
+                Translation2d sideLeg = vertexRobotRel.plus(new Translation2d(0, aprilTagTrackRange.get() * dirY));
+
+                Translation2d vertexFieldRel =
+                        vertexRobotRel.rotateBy(robotPose2d.getRotation()).plus(robotPose2d.getTranslation());
+                Translation2d forwardLegFieldRel =
+                        forwardLeg.rotateBy(robotPose2d.getRotation()).plus(robotPose2d.getTranslation());
+                Translation2d sideLegFieldRel =
+                        sideLeg.rotateBy(robotPose2d.getRotation()).plus(robotPose2d.getTranslation());
+
+                aprilTagTrackZone.setVertices(vertexFieldRel, forwardLegFieldRel, sideLegFieldRel);
+
+                Logger.recordOutput("ShooterSubsystem/AprilTagTrack/RangeVertex", vertexFieldRel);
+                Logger.recordOutput("ShooterSubsystem/AprilTagTrack/RangeForward", forwardLegFieldRel);
+                Logger.recordOutput("ShooterSubsystem/AprilTagTrack/RangeSide", sideLegFieldRel);
+
+
+                List<Pose3d> filteredTagPoses = VisionConstants.FIELD_LAYOUT.getTags().stream()
+                        .map(t -> t.pose)
+                        .filter(p -> aprilTagTrackZone.contains(p.toPose2d().getTranslation()))
+                        .collect(Collectors.toList());
+
+                // Find the tag pose closet to the turret pose
+                Optional<Pose3d> targetPose = filteredTagPoses.stream()
+                        .min(Comparator.comparingDouble(
+                                p -> p.getTranslation().getDistance(turretPose.getTranslation())));
+
+                if (targetPose.isPresent()) {
+                    targetTurretPosition = Optional.of(shotCalculator.calculateLatancyOffsetTurrentAngle(
+                            robotPose2d, targetPose.get().toPose2d().getTranslation(), System.currentTimeMillis()));
+                    
+                    Logger.recordOutput("ShooterSubsystem/AprilTagTrack/TargetTagPose", targetPose.get());
+                }
+
+                break;
             case PASS_LEFT:
             case PASS_RIGHT:
-                Pose3d targetPose;
+                Pose3d passTargetPose;
 
                 if (alliance == Alliance.Red) {
-                    targetPose = targetState == State.PASS_LEFT
+                    passTargetPose = targetState == State.PASS_LEFT
                             ? ShooterConstants.PASS_LEFT_POSE_RED
                             : ShooterConstants.PASS_RIGHT_POSE_RED;
                 } else {
-                    targetPose = targetState == State.PASS_LEFT
+                    passTargetPose = targetState == State.PASS_LEFT
                             ? ShooterConstants.PASS_LEFT_POSE_BLUE
                             : ShooterConstants.PASS_RIGHT_POSE_BLUE;
                 }
@@ -196,7 +263,7 @@ public class ShooterSubsystem extends SubsystemBase {
                 break;
             case SPINUP:
                 targetWheelSpeed = Optional.of(shooterWheelSpinupSpeed.get());
-                targetHoodAngle = Optional.of(Units.degreesToRadians(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
+                targetHoodAngle = Optional.of(Units.degreesToRadians(ShooterConstants.SHOOTER_HOOD_MAX_ANGLE_DEGREES));
                 break;
             case TEST:
                 ShotParametersAutoLogged shot = shotCalculator.calculateShot(
@@ -210,6 +277,15 @@ public class ShooterSubsystem extends SubsystemBase {
                 targetTurretPosition = Optional.of(shot.turretAngle);
 
                 break;
+            case ZERO:
+                hoodMotor.setVoltage(-hoodZeroVoltage.get());
+                if (hoodMotor.getStatorCurrent().getValueAsDouble() >= hoodZeroCurrent.get()
+                        && Math.abs(hoodMotor.getVelocity().getValueAsDouble())
+                                <= Units.degreesToRotations(hoodZeroVelTol.get())) {
+                    targetState = State.OFF;
+                    hoodMotor.setPosition(Units.degreesToRotations(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
+                }
+                break;
         }
 
         if (targetHoodAngle.isPresent()) {
@@ -222,7 +298,7 @@ public class ShooterSubsystem extends SubsystemBase {
             Logger.recordOutput("ShooterSubsystem/TargetHoodAngle", Units.radiansToDegrees(targetHoodAngle.get()));
             Logger.recordOutput("ShooterSubsystem/HoodOutput", hoodOutput);
         } else {
-            hoodMotor.setVoltage(0);
+            if (targetState != State.ZERO) hoodMotor.setVoltage(0);
         }
 
         if (targetWheelSpeed.isPresent()) {
@@ -264,6 +340,8 @@ public class ShooterSubsystem extends SubsystemBase {
                 "ShooterSubsystem/CurrentWheelSpeed", Units.radiansPerSecondToRotationsPerMinute(currentWheelSpeed));
 
         Logger.recordOutput("ShooterSubsystem/TurretPose", getFieldRelativeTurrentPose());
+        Logger.recordOutput(
+                "ShooterSubsystem/HoodAmps", hoodMotor.getStatorCurrent().getValueAsDouble());
     }
 
     private double calculateTurrentSetpoint(double currentAngle, double targetAngle) {

@@ -19,20 +19,17 @@ public class Zone {
     public Zone(Translation2d... vertices) {
         this.vertices = new ArrayList<>();
         for (Translation2d vertex : vertices) {
-            if (vertex.getX() < minX) {
-                minX = vertex.getX();
-            }
-            if (vertex.getX() > maxX) {
-                maxX = vertex.getX();
-            }
-            if (vertex.getY() < minY) {
-                minY = vertex.getY();
-            }
-            if (vertex.getY() > maxY) {
-                maxY = vertex.getY();
-            }
             this.vertices.add(vertex);
         }
+        calculateMinMax();
+    }
+
+    public void setVertices(Translation2d... vertices) {
+        this.vertices.clear();
+        for (Translation2d vertex : vertices) {
+            this.vertices.add(vertex);
+        }
+        calculateMinMax();
     }
 
     // https://stackoverflow.com/questions/217578/how-can-i-determine-whether-a-2d-point-is-within-a-polygon
@@ -59,5 +56,22 @@ public class Zone {
 
     public ArrayList<Translation2d> getVertices() {
         return vertices;
+    }
+
+    private void calculateMinMax() {
+        for (Translation2d vertex : vertices) {
+            if (vertex.getX() < minX) {
+                minX = vertex.getX();
+            }
+            if (vertex.getX() > maxX) {
+                maxX = vertex.getX();
+            }
+            if (vertex.getY() < minY) {
+                minY = vertex.getY();
+            }
+            if (vertex.getY() > maxY) {
+                maxY = vertex.getY();
+            }
+        }
     }
 }

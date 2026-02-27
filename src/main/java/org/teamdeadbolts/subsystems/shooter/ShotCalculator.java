@@ -12,7 +12,6 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
-import org.teamdeadbolts.RobotState;
 import org.teamdeadbolts.constants.ShooterConstants;
 import org.teamdeadbolts.utils.ExtrapolatingDoubleMap;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
@@ -97,7 +96,7 @@ public class ShotCalculator {
             virtTarget2d = target.toTranslation2d().minus(turretVel.times(totalTime / 1000));
         }
 
-        double turretAngle = calculateFieldRelativeTurrent(virtTarget2d);
+        double turretAngle = calculateFieldRelativeTurrent(robotPose.toPose2d(), virtTarget2d);
 
         ShotParametersAutoLogged shot = new ShotParametersAutoLogged();
         Logger.recordOutput("ShotCalc/VirtualTarget", new Pose2d(virtTarget2d, new Rotation2d()));
@@ -114,8 +113,21 @@ public class ShotCalculator {
         return shot;
     }
 
-    private static double calculateFieldRelativeTurrent(Translation2d targetLocation) {
-        Pose2d robotPose = RobotState.getInstance().getRobotPose().toPose2d();
+    public double calculateLatancyOffsetTurrentAngle(
+            Pose2d robotPose, Translation2d targetLocation, double currrentTime) {
+        double latancy = shootLatancyMs.get();
+
+        Pose2d predictedRobotPose = new Pose2d(
+                new Translation2d(
+                        robotPose.getX() + vxMap.get(currrentTime + latancy) * latancy / 1000,
+                        robotPose.getY() + vyMap.get(currrentTime + latancy) * latancy / 1000),
+                new Rotation2d(
+                        robotPose.getRotation().getRadians() + vthetaMap.get(currrentTime + latancy) * latancy / 1000));
+
+        return calculateFieldRelativeTurrent(predictedRobotPose, targetLocation);
+    }
+
+    private static double calculateFieldRelativeTurrent(Pose2d robotPose, Translation2d targetLocation) {
 
         Transform2d turretOffset =
                 new Transform2d(ShooterConstants.SHOOTER_OFFSET.getTranslation().toTranslation2d(), new Rotation2d());

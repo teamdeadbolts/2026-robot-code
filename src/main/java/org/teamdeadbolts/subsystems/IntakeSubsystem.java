@@ -143,8 +143,6 @@ public class IntakeSubsystem extends SubsystemBase {
                 wheelMotor.setVoltage(0);
                 break;
             case SHOOT:
-                // targetAngle = Optional.of(currentAngle
-                //         + Units.degreesToRadians(intakeShootArmSpeed.get()) * (1.0 / 50.0)); // 50 Times a second
                 shootTargetAngle += Units.degreesToRadians(intakeShootArmSpeed.get()) * (1.0 / 50.0);
                 targetAngle = Optional.of(shootTargetAngle);
                 if (targetAngle.isPresent()

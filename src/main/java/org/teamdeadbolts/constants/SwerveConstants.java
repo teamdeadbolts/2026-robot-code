@@ -51,8 +51,13 @@ public class SwerveConstants {
     // TODO: Find these
     public static final Zone BLUE_TOP_BUMP_ZONE = new Zone();
     public static final Zone BLUE_BOTTOM_BUMP_ZONE = new Zone();
+    public static final Zone BLUE_BOTTOM_TRENCH_ZONE = new Zone();
+    public static final Zone BLUE_TOP_TRENCH_ZONE = new Zone();
+
     public static final Zone RED_TOP_BUMP_ZONE = new Zone();
     public static final Zone RED_BOTTOM_BUMP_ZONE = new Zone();
+    public static final Zone RED_BOTTOM_TRENCH_ZONE = new Zone();
+    public static final Zone RED_TOP_TRENCH_ZONE = new Zone();
 
     public static final Zone RED_SCORE_ZONE = new Zone();
     public static final Zone BLUE_SCORE_ZONE = new Zone();

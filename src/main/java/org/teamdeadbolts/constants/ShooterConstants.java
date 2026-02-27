@@ -80,12 +80,12 @@ public class ShooterConstants {
         SHOOTER_HOOD_MOTOR_CONFIG.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
         // SHOOTER_HOOD_MOTOR_CONFIG.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
 
-        SHOOTER_HOOD_MOTOR_CONFIG.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
-        SHOOTER_HOOD_MOTOR_CONFIG.SoftwareLimitSwitch.ForwardSoftLimitThreshold =
-                Units.degreesToRotations(SHOOTER_HOOD_MAX_ANGLE_DEGREES);
-        SHOOTER_HOOD_MOTOR_CONFIG.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
-        SHOOTER_HOOD_MOTOR_CONFIG.SoftwareLimitSwitch.ReverseSoftLimitThreshold =
-                Units.degreesToRotations(SHOOTER_HOOD_MIN_ANGLE_DEGREES);
+        // SHOOTER_HOOD_MOTOR_CONFIG.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
+        // SHOOTER_HOOD_MOTOR_CONFIG.SoftwareLimitSwitch.ForwardSoftLimitThreshold =
+        //         Units.degreesToRotations(SHOOTER_HOOD_MAX_ANGLE_DEGREES + 3);
+        // SHOOTER_HOOD_MOTOR_CONFIG.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
+        // SHOOTER_HOOD_MOTOR_CONFIG.SoftwareLimitSwitch.ReverseSoftLimitThreshold =
+        //         Units.degreesToRotations(SHOOTER_HOOD_MIN_ANGLE_DEGREES - 3);
 
         shooterWheelMotorCurrentLimit.initFromConfig();
         SHOOTER_WHEEL_MOTOR_CONFIG.CurrentLimits.SupplyCurrentLimitEnable = true;

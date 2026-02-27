@@ -104,10 +104,9 @@ public class RobotContainer {
                 .povUp()
                 .whileTrue(new RunCommand(
                         () -> {
-                            indexerSubsystem.setState(IndexerSubsystem.State.SHOOT);
-                            shooterSubsystem.setState(ShooterSubsystem.State.TEST);
+                            shooterSubsystem.setState(ShooterSubsystem.State.ZERO);
                         },
-                        intakeSubsystem));
+                        shooterSubsystem));
 
         primaryController
                 .povLeft()
@@ -135,7 +134,8 @@ public class RobotContainer {
                 .leftBumper()
                 .whileTrue(new RunCommand(
                         () -> {
-                            shooterSubsystem.setState(ShooterSubsystem.State.TEST);
+                            shooterSubsystem.setState(ShooterSubsystem.State.SPINUP);
+                            indexerSubsystem.setState(IndexerSubsystem.State.SHOOT);
                         },
                         shooterSubsystem));
 
