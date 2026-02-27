@@ -1,7 +1,6 @@
 /* The Deadbolts (C) 2025 */
 package org.teamdeadbolts;
 
-import choreo.auto.AutoFactory;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
@@ -16,7 +15,6 @@ import org.teamdeadbolts.subsystems.drive.SwerveSubsystem;
 import org.teamdeadbolts.subsystems.shooter.ShooterSubsystem;
 import org.teamdeadbolts.subsystems.vision.PhotonVisionIO;
 import org.teamdeadbolts.subsystems.vision.VisionSubsystem;
-import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
 public class RobotContainer {
 
@@ -35,30 +33,16 @@ public class RobotContainer {
             // shooterSubsystem.getTurretOffset().plus(VisionConstants.TURRET_CAM_TO_TURRENT)));
             );
 
-    private SavedLoggedNetworkNumber pathplannerTranslationP =
-            SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Translation/kP", 0.0);
-    private final SavedLoggedNetworkNumber pathplannerTranslationI =
-            SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Translation/kI", 0);
-    private final SavedLoggedNetworkNumber pathplannerTranslationD =
-            SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Translation/kD", 0);
-
-    private final SavedLoggedNetworkNumber pathplannerRotationP =
-            SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Rotation/kP", 0);
-    private final SavedLoggedNetworkNumber pathplannerRotationI =
-            SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Rotation/kI", 0);
-    private final SavedLoggedNetworkNumber pathplannerRotationD =
-            SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Rotation/kD", 0);
-
     private CommandXboxController primaryController = new CommandXboxController(0);
 
     private RobotState robotState = RobotState.getInstance();
 
-    private final AutoFactory autoFactory = new AutoFactory(
-            robotState.getRobotPose()::toPose2d,
-            (pose) -> robotState.setEstimatedPose(new Pose3d(pose)),
-            swerveSubsystem::followTrajectory,
-            true,
-            swerveSubsystem);
+    // private final AutoFactory autoFactory = new AutoFactory(
+    //         robotState.getRobotPose()::toPose2d,
+    //         (pose) -> robotState.setEstimatedPose(new Pose3d(pose)),
+    //         swerveSubsystem::followTrajectory,
+    //         true,
+    //         swerveSubsystem);
 
     private SendableChooser<Command> autoChooser = new SendableChooser<>();
 
@@ -83,7 +67,7 @@ public class RobotContainer {
         // hopperSubsystem.setDefaultCommand(
         //         new RunCommand(() -> hopperSubsystem.setState(HopperSubsystem.State.HOLD), hopperSubsystem));
         intakeSubsystem.setDefaultCommand(
-                new RunCommand(() -> intakeSubsystem.setState(IntakeSubsystem.State.OFF), intakeSubsystem));
+                new RunCommand(() -> intakeSubsystem.setState(IntakeSubsystem.State.STOWED), intakeSubsystem));
         indexerSubsystem.setDefaultCommand(
                 new RunCommand(() -> indexerSubsystem.setState(IndexerSubsystem.State.OFF), indexerSubsystem));
 
@@ -112,10 +96,10 @@ public class RobotContainer {
                 .whileTrue(new RunCommand(
                         () -> {
                             // shooterSubsystem.setState(ShooterSubsystem.State.TEST);
-                            indexerSubsystem.setState(IndexerSubsystem.State.REVERSE);
+                            intakeSubsystem.setState(IntakeSubsystem.State.SHOOT);
                         },
                         // shooterSubsystem,
-                        indexerSubsystem));
+                        intakeSubsystem));
         primaryController
                 .povUp()
                 .whileTrue(new RunCommand(

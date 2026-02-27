@@ -4,6 +4,7 @@ package org.teamdeadbolts.constants;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.signals.InvertedValue;
+import com.ctre.phoenix6.signals.NeutralModeValue;
 import org.teamdeadbolts.utils.tuning.ConfigManager;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
@@ -30,6 +31,7 @@ public class IntakeConstants {
         INTAKE_ARM_MOTOR_CONFIG.CurrentLimits.SupplyCurrentLimitEnable = true;
         INTAKE_ARM_MOTOR_CONFIG.CurrentLimits.SupplyCurrentLimit = intakeArmMotorCurrentLimit.get();
         INTAKE_ARM_MOTOR_CONFIG.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
+        INTAKE_ARM_MOTOR_CONFIG.MotorOutput.NeutralMode = NeutralModeValue.Brake;
 
         intakeWheelMotorCurrentLimit.initFromConfig();
         INTAKE_WHEEL_MOTOR_CONFIG.CurrentLimits.SupplyCurrentLimitEnable = true;
