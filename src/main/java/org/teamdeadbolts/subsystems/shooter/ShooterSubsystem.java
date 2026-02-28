@@ -213,7 +213,6 @@ public class ShooterSubsystem extends SubsystemBase {
                 Logger.recordOutput("ShooterSubsystem/AprilTagTrack/RangeForward", forwardLegFieldRel);
                 Logger.recordOutput("ShooterSubsystem/AprilTagTrack/RangeSide", sideLegFieldRel);
 
-
                 List<Pose3d> filteredTagPoses = VisionConstants.FIELD_LAYOUT.getTags().stream()
                         .map(t -> t.pose)
                         .filter(p -> aprilTagTrackZone.contains(p.toPose2d().getTranslation()))
@@ -227,7 +226,7 @@ public class ShooterSubsystem extends SubsystemBase {
                 if (targetPose.isPresent()) {
                     targetTurretPosition = Optional.of(shotCalculator.calculateLatancyOffsetTurrentAngle(
                             robotPose2d, targetPose.get().toPose2d().getTranslation(), System.currentTimeMillis()));
-                    
+
                     Logger.recordOutput("ShooterSubsystem/AprilTagTrack/TargetTagPose", targetPose.get());
                 }
 

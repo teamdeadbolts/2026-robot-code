@@ -1,12 +1,14 @@
 /* The Deadbolts (C) 2025 */
 package org.teamdeadbolts;
 
+import choreo.auto.AutoFactory;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.RunCommand;
+import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import org.teamdeadbolts.commands.DriveCommand;
 import org.teamdeadbolts.subsystems.IndexerSubsystem;
@@ -37,12 +39,7 @@ public class RobotContainer {
 
     private RobotState robotState = RobotState.getInstance();
 
-    // private final AutoFactory autoFactory = new AutoFactory(
-    //         robotState.getRobotPose()::toPose2d,
-    //         (pose) -> robotState.setEstimatedPose(new Pose3d(pose)),
-    //         swerveSubsystem::followTrajectory,
-    //         true,
-    //         swerveSubsystem);
+    private final AutoFactory autoFactory;
 
     private SendableChooser<Command> autoChooser = new SendableChooser<>();
 
@@ -50,7 +47,15 @@ public class RobotContainer {
         robotState.initPoseEstimator(
                 new Rotation3d(swerveSubsystem.getGyroRotation()), swerveSubsystem.getModulePositions());
 
+        this.autoFactory = new AutoFactory(
+                robotState.getRobotPose()::toPose2d,
+                (pose) -> robotState.setEstimatedPose(new Pose3d(pose)),
+                swerveSubsystem::followTrajectory,
+                true,
+                swerveSubsystem);
+
         configureBindings();
+        configureAuto();
     }
 
     private void configureBindings() {
@@ -76,7 +81,6 @@ public class RobotContainer {
                 .whileTrue(new RunCommand(
                         () -> {
                             // CtreConfigs.init();
-                            swerveSubsystem.refreshTuning(false);
                             intakeSubsystem.reconfigure();
                             // shooterSubsystem.reconfigure();
                         },
@@ -88,9 +92,8 @@ public class RobotContainer {
                 .y()
                 .whileTrue(new RunCommand(() -> robotState.setEstimatedPose(new Pose3d()), swerveSubsystem));
 
-        // primaryController
-        //         .povRight()
-        //         .whileTrue(new RunCommand(() -> shooterSubsystem.resetTurrentPosition(), shooterSubsystem));
+        primaryController.b().whileTrue(getAutonomousCommand());
+
         primaryController
                 .povDown()
                 .whileTrue(new RunCommand(
@@ -142,7 +145,24 @@ public class RobotContainer {
         // primaryController.povLeft().whileTrue(swerveSubsystem.runDriveQuasiTest(Direction.kReverse));
     }
 
+    private void configureAuto() {
+        autoFactory.bind(
+                "Index",
+                new RunCommand(
+                        () -> {
+                            indexerSubsystem.setState(IndexerSubsystem.State.SHOOT);
+                            System.out.println("Auto Command");
+                        },
+                        indexerSubsystem));
+
+        autoChooser.addOption(
+                "Test",
+                new SequentialCommandGroup(
+                        autoFactory.resetOdometry("TestPath"), autoFactory.trajectoryCmd("TestPath")));
+    }
+
     public Command getAutonomousCommand() {
-        return autoChooser.getSelected();
+        // return autoChooser.getSelected();
+        return new SequentialCommandGroup(autoFactory.resetOdometry("TestPath"), autoFactory.trajectoryCmd("TestPath"));
     }
 }

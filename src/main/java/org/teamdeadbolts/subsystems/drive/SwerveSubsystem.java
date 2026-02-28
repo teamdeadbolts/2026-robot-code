@@ -53,15 +53,13 @@ public class SwerveSubsystem extends SubsystemBase {
     private final PIDController trajHeadingController = new PIDController(0, 0.0, 0.0);
 
     private final SavedLoggedNetworkNumber trajTransP =
-            SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Translation/kP", 0.0);
-    private final SavedLoggedNetworkNumber trajTransI =
-            SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Translation/kI", 0);
-    private final SavedLoggedNetworkNumber trajTransD =
-            SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Translation/kD", 0);
+            SavedLoggedNetworkNumber.get("Tuning/Choreo/Translation/kP", 0.0);
+    private final SavedLoggedNetworkNumber trajTransI = SavedLoggedNetworkNumber.get("Tuning/Choreo/Translation/kI", 0);
+    private final SavedLoggedNetworkNumber trajTransD = SavedLoggedNetworkNumber.get("Tuning/Choreo/Translation/kD", 0);
 
-    private final SavedLoggedNetworkNumber trajRotP = SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Rotation/kP", 0);
-    private final SavedLoggedNetworkNumber trajRotI = SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Rotation/kI", 0);
-    private final SavedLoggedNetworkNumber trajRotD = SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Rotation/kD", 0);
+    private final SavedLoggedNetworkNumber trajRotP = SavedLoggedNetworkNumber.get("Tuning/Choreo/Rotation/kP", 0);
+    private final SavedLoggedNetworkNumber trajRotI = SavedLoggedNetworkNumber.get("Tuning/Choreo/Rotation/kI", 0);
+    private final SavedLoggedNetworkNumber trajRotD = SavedLoggedNetworkNumber.get("Tuning/Choreo/Rotation/kD", 0);
 
     private SysIdRoutine driveRoutine = new SysIdRoutine(
             new SysIdRoutine.Config(null, null, Time.ofBaseUnits(3, Seconds)),
@@ -78,7 +76,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
         trajHeadingController.enableContinuousInput(-Math.PI, Math.PI);
 
-        ConfigManager.getInstance().onReady(() -> this.refreshTuning(true));
+        ConfigManager.getInstance().onReady(() -> this.refreshTuning());
 
         slewRateRotaional.onChange(rs -> this.slewRateLimiterRotaional = new SlewRateLimiter(rs));
         slewRateTranslational.onChange(rt -> {
@@ -234,7 +232,7 @@ public class SwerveSubsystem extends SubsystemBase {
     /**
      * Refresh the tuning values from AdvantageKit
      */
-    public void refreshTuning(boolean a) {
+    public void refreshTuning() {
         // if (a) CtreConfigs.init();
         // System.out.println("Refreshing tuning");
         // this.slewRateLimiterTranslationalX = new SlewRateLimiter(slewRateTranslational.get());
