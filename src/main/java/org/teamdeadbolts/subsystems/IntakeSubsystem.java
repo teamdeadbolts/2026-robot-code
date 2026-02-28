@@ -4,6 +4,7 @@ package org.teamdeadbolts.subsystems;
 import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
@@ -91,6 +92,7 @@ public class IntakeSubsystem extends SubsystemBase {
         armFeedforwardKs.onChange(armFeedforward::setKs);
         armFeedforwardKv.onChange(armFeedforward::setKv);
         armControllerTol.onChange(t -> armController.setTolerance(Units.degreesToRadians(t)));
+        armController.enableContinuousInput(0, Math.PI * 2);
 
         // reconfigure();
     }
@@ -121,8 +123,11 @@ public class IntakeSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        double currentAngle = Units.rotationsToRadians(absEncoder.getPosition().getValueAsDouble())
-                - Units.degreesToRadians(armOffsetDeg.get());
+        double currentAngle = MathUtil.inputModulus(
+                Units.rotationsToRadians(absEncoder.getPosition().getValueAsDouble())
+                        - Units.degreesToRadians(armOffsetDeg.get()),
+                0,
+                Math.PI * 2);
         Optional<Double> targetAngle = Optional.empty();
         switch (targetState) {
             case OFF:
@@ -145,9 +150,8 @@ public class IntakeSubsystem extends SubsystemBase {
             case SHOOT:
                 shootTargetAngle += Units.degreesToRadians(intakeShootArmSpeed.get()) * (1.0 / 50.0);
                 targetAngle = Optional.of(shootTargetAngle);
-                if (targetAngle.isPresent()
-                        && Math.abs(targetAngle.get() - intakeShootArmSpeed.get())
-                                <= Units.degreesToRadians(5)) { // Close enough to stowed
+                if (Math.abs(targetAngle.get() - intakeShootArmSpeed.get())
+                        <= Units.degreesToRadians(5)) { // Close enough to stowed
                     targetState = State.STOWED;
                     break;
                 }

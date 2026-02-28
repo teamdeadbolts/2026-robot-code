@@ -2,11 +2,14 @@
 package org.teamdeadbolts;
 
 import choreo.auto.AutoFactory;
+import choreo.auto.AutoRoutine;
+import choreo.auto.AutoTrajectory;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -82,6 +85,7 @@ public class RobotContainer {
                         () -> {
                             // CtreConfigs.init();
                             intakeSubsystem.reconfigure();
+                            swerveSubsystem.reconfigure();
                             // shooterSubsystem.reconfigure();
                         },
                         swerveSubsystem));
@@ -158,11 +162,22 @@ public class RobotContainer {
         autoChooser.addOption(
                 "Test",
                 new SequentialCommandGroup(
-                        autoFactory.resetOdometry("TestPath"), autoFactory.trajectoryCmd("TestPath")));
+                        autoFactory.resetOdometry("TestPath2"), autoFactory.trajectoryCmd("TestPath")));
+    }
+
+    private AutoRoutine testAuto() {
+        AutoRoutine routine = autoFactory.newRoutine("testRoutine");
+        AutoTrajectory testTraj = routine.trajectory("TestPath");
+
+        routine.active().onTrue(Commands.sequence(testTraj.resetOdometry(), testTraj.cmd()));
+
+        testTraj.atTime("Index").onTrue(new RunCommand(() -> indexerSubsystem.setState(IndexerSubsystem.State.SHOOT)));
+        testTraj.atTime("StopIndex").onTrue(new RunCommand(() -> indexerSubsystem.setState(IndexerSubsystem.State.OFF)));
+        return routine;
     }
 
     public Command getAutonomousCommand() {
         // return autoChooser.getSelected();
-        return new SequentialCommandGroup(autoFactory.resetOdometry("TestPath"), autoFactory.trajectoryCmd("TestPath"));
+        return testAuto().cmd();
     }
 }
