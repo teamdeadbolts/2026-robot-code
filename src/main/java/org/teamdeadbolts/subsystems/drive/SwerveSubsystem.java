@@ -76,6 +76,10 @@ public class SwerveSubsystem extends SubsystemBase {
 
         trajHeadingController.enableContinuousInput(-Math.PI, Math.PI);
 
+        trajHeadingController.setPID(trajRotP.get(), trajRotI.get(), trajRotD.get());
+        trajXController.setPID(trajTransP.get(), trajTransI.get(), trajTransD.get());
+        trajYController.setPID(trajTransP.get(), trajTransI.get(), trajTransD.get());
+
         ConfigManager.getInstance().onReady(() -> this.refreshTuning());
 
         slewRateRotaional.onChange(rs -> this.slewRateLimiterRotaional = new SlewRateLimiter(rs));
@@ -102,6 +106,16 @@ public class SwerveSubsystem extends SubsystemBase {
         trajRotP.onChange(trajHeadingController::setP);
         trajRotI.onChange(trajHeadingController::setI);
         trajRotD.onChange(trajHeadingController::setD);
+    }
+
+    public void reconfigure() {
+        trajHeadingController.setPID(trajRotP.get(), trajRotI.get(), trajRotD.get());
+        trajXController.setPID(trajTransP.get(), trajTransI.get(), trajTransD.get());
+        trajYController.setPID(trajTransP.get(), trajTransI.get(), trajTransD.get());
+
+        for (SwerveModule module : this.modules) {
+            module.configure();
+        }
     }
 
     /**
@@ -156,13 +170,28 @@ public class SwerveSubsystem extends SubsystemBase {
 
     public void followTrajectory(SwerveSample sample) {
         Pose2d currPose = RobotState.getInstance().getRobotPose().toPose2d();
-        ChassisSpeeds speeds = new ChassisSpeeds(
-                sample.vx + trajXController.calculate(currPose.getX(), sample.x),
-                sample.vy + trajYController.calculate(currPose.getY(), sample.y),
-                sample.omega
-                        + trajHeadingController.calculate(currPose.getRotation().getRadians(), sample.heading));
+
+        double xPidOut = trajXController.calculate(currPose.getX(), sample.x);
+        double yPidOut = trajYController.calculate(currPose.getY(), sample.y);
+        double headingPidOut =
+                trajHeadingController.calculate(currPose.getRotation().getRadians(), sample.heading);
+
+        ChassisSpeeds speeds =
+                new ChassisSpeeds(sample.vx
+                        + xPidOut, sample.vy + yPidOut, sample.omega + headingPidOut);
 
         this.drive(speeds, true, false, true);
+
+        Logger.recordOutput("Swerve/TrajFollow/xPidOut", xPidOut);
+        Logger.recordOutput("Swerve/TrajFollow/yPidOut", yPidOut);
+        Logger.recordOutput("Swerve/TrajFollow/headingPidOut", headingPidOut);
+
+        Logger.recordOutput("Swerve/TrajFollow/xError", currPose.getX() - sample.x);
+        Logger.recordOutput("Swerve/TrajFollow/yError", currPose.getY() - sample.y);
+        Logger.recordOutput(
+                "Swerve/TrajFollow/headingError", currPose.getRotation().getRadians() - sample.heading);
+        Pose2d samplePose = new Pose2d(sample.x, sample.y, Rotation2d.fromRadians(sample.heading));
+        Logger.recordOutput("Swerve/TrajFollow/SampleTranslation", samplePose);
     }
 
     /**

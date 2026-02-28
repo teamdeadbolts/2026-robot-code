@@ -1,0 +1,84 @@
+{
+ "name":"2026Robot",
+ "version":2,
+ "type":"Swerve",
+ "variables":{
+  "expressions":{},
+  "poses":{}
+ },
+ "config":{
+  "frontLeft":{
+   "x":{
+    "exp":"11.1325025 in",
+    "val":0.2827655635
+   },
+   "y":{
+    "exp":"11.1325025 in",
+    "val":0.2827655635
+   }
+  },
+  "backLeft":{
+   "x":{
+    "exp":"-11.1325025 in",
+    "val":-0.2827655635
+   },
+   "y":{
+    "exp":"11.1325025 in",
+    "val":0.2827655635
+   }
+  },
+  "mass":{
+   "exp":"100 lbs",
+   "val":45.359237
+  },
+  "inertia":{
+   "exp":"3 kg m ^ 2",
+   "val":3.0
+  },
+  "gearing":{
+   "exp":"6.03",
+   "val":6.03
+  },
+  "radius":{
+   "exp":"2 in",
+   "val":0.0508
+  },
+  "vmax":{
+   "exp":"6000 RPM",
+   "val":628.3185307179587
+  },
+  "tmax":{
+   "exp":"2.27 N * m",
+   "val":2.27
+  },
+  "cof":{
+   "exp":"2.255",
+   "val":2.255
+  },
+  "bumper":{
+   "front":{
+    "exp":"17 in",
+    "val":0.4318
+   },
+   "side":{
+    "exp":"17 in",
+    "val":0.4318
+   },
+   "back":{
+    "exp":"17 in",
+    "val":0.4318
+   }
+  },
+  "differentialTrackWidth":{
+   "exp":"22 in",
+   "val":0.5588
+  }
+ },
+ "generationFeatures":[],
+ "codegen":{
+  "root":"../../../../../..",
+  "genVars":true,
+  "genTrajData":true,
+  "useChoreoLib":true
+ }
+}
