@@ -21,7 +21,6 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import java.util.Comparator;
 import java.util.List;
@@ -47,7 +46,6 @@ public class ShooterSubsystem extends SubsystemBase implements Refreshable {
         ZERO,
         TEST,
         SYSTEMS_TEST;
-
     }
 
     @AutoLogOutput
@@ -309,8 +307,9 @@ public class ShooterSubsystem extends SubsystemBase implements Refreshable {
             case SYSTEMS_TEST:
                 systemTestCount++;
                 targetWheelSpeed = Optional.of(shooterWheelSpinupSpeed.get());
-                targetTurretPosition = Optional.of((((Math.sin(((double) systemTestCount /850)+1))/2)*520)-260);
-                targetHoodAngle = Optional.of((((Math.sin(((double) systemTestCount /150)+1))/2)*35)+10);
+                targetTurretPosition =
+                        Optional.of((((Math.sin(((double) systemTestCount / 850) + 1)) / 2) * 520) - 260);
+                targetHoodAngle = Optional.of((((Math.sin(((double) systemTestCount / 150) + 1)) / 2) * 35) + 10);
         }
 
         if (targetHoodAngle.isPresent()) {

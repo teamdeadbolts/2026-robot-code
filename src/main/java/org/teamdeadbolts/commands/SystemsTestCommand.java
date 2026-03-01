@@ -9,10 +9,9 @@ import org.teamdeadbolts.subsystems.IndexerSubsystem;
 import org.teamdeadbolts.subsystems.IntakeSubsystem;
 import org.teamdeadbolts.subsystems.drive.SwerveSubsystem;
 import org.teamdeadbolts.subsystems.shooter.ShooterSubsystem;
-
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
-public class SystemsTest extends Command {
+public class SystemsTestCommand extends Command {
     private final SwerveSubsystem swerveSubsystem;
     private final HopperSubsystem hopperSubsystem;
     private final IntakeSubsystem intakeSubsystem;
@@ -87,20 +86,18 @@ public class SystemsTest extends Command {
         DONE
     }
 
-    public SystemsTest(
+    public SystemsTestCommand(
             SwerveSubsystem swerveSubsystem,
             HopperSubsystem hopperSubsystem,
             IntakeSubsystem intakeSubsystem,
             IndexerSubsystem indexerSubsystem,
-            ShooterSubsystem shooterSubsystem
+            ShooterSubsystem shooterSubsystem) {
 
-    ) {
         this.swerveSubsystem = swerveSubsystem;
         this.hopperSubsystem = hopperSubsystem;
         this.intakeSubsystem = intakeSubsystem;
         this.indexerSubsystem = indexerSubsystem;
         this.shooterSubsystem = shooterSubsystem;
-
 
         addRequirements(swerveSubsystem, hopperSubsystem, intakeSubsystem, indexerSubsystem, shooterSubsystem);
     }
@@ -132,14 +129,14 @@ public class SystemsTest extends Command {
     public void end(boolean interrupted) {
         // Put robot in a neutral state
         try {
-            swerveSubsystem.drive(new ChassisSpeeds(0,0,0),false,false,false);
-        } catch (Exception ignored) {}
+            swerveSubsystem.drive(new ChassisSpeeds(0, 0, 0), false, false, false);
+        } catch (Exception ignored) {
+        }
 
         hopperSubsystem.setState(HopperSubsystem.State.HOLD);
         intakeSubsystem.setState(IntakeSubsystem.State.STOWED);
         indexerSubsystem.setState(IndexerSubsystem.State.OFF);
         shooterSubsystem.setState(ShooterSubsystem.State.OFF);
-
     }
 
     @Override
@@ -153,25 +150,25 @@ public class SystemsTest extends Command {
         switch (s) {
             // ---- SWERVE ----
             case SWERVE_FORWARD:
-                swerveSubsystem.drive(new ChassisSpeeds(0,3,0),false,false,false);
+                swerveSubsystem.drive(new ChassisSpeeds(0, 3, 0), false, false, false);
                 break;
             case SWERVE_BACK:
-                swerveSubsystem.drive(new ChassisSpeeds(0,-3,0),false,false,false);
+                swerveSubsystem.drive(new ChassisSpeeds(0, -3, 0), false, false, false);
                 break;
             case SWERVE_LEFT:
-                swerveSubsystem.drive(new ChassisSpeeds(3,0,0),false,false,false);
+                swerveSubsystem.drive(new ChassisSpeeds(3, 0, 0), false, false, false);
                 break;
             case SWERVE_RIGHT:
-                swerveSubsystem.drive(new ChassisSpeeds(-3,0,0),false,false,false);
+                swerveSubsystem.drive(new ChassisSpeeds(-3, 0, 0), false, false, false);
                 break;
             case SWERVE_SPIN:
-                swerveSubsystem.drive(new ChassisSpeeds(0,0,3),false,false,false);
+                swerveSubsystem.drive(new ChassisSpeeds(0, 0, 3), false, false, false);
                 break;
             case SWERVE_AROUND:
-                swerveSubsystem.drive(new ChassisSpeeds(3,3,3),false,false,false);
+                swerveSubsystem.drive(new ChassisSpeeds(3, 3, 3), false, false, false);
                 break;
             case SWERVE_STOP:
-                swerveSubsystem.drive(new ChassisSpeeds(0,0,0),false,false,false);
+                swerveSubsystem.drive(new ChassisSpeeds(0, 0, 0), false, false, false);
                 break;
 
             // ---- HOPPER + INTAKE ----
@@ -299,34 +296,53 @@ public class SystemsTest extends Command {
 
     private Step nextStep(Step s) {
         switch (s) {
-            case SWERVE_FORWARD: return Step.SWERVE_BACK;
-            case SWERVE_BACK: return Step.SWERVE_LEFT;
-            case SWERVE_LEFT: return Step.SWERVE_RIGHT;
-            case SWERVE_RIGHT: return Step.SWERVE_SPIN;
-            case SWERVE_SPIN: return Step.SWERVE_AROUND;
-            case SWERVE_AROUND: return Step.SWERVE_STOP;
+            case SWERVE_FORWARD:
+                return Step.SWERVE_BACK;
+            case SWERVE_BACK:
+                return Step.SWERVE_LEFT;
+            case SWERVE_LEFT:
+                return Step.SWERVE_RIGHT;
+            case SWERVE_RIGHT:
+                return Step.SWERVE_SPIN;
+            case SWERVE_SPIN:
+                return Step.SWERVE_AROUND;
+            case SWERVE_AROUND:
+                return Step.SWERVE_STOP;
 
-            case SWERVE_STOP: return Step.HOPPER_UP;
-            case HOPPER_UP: return Step.INTAKE_DOWN;
-            case INTAKE_DOWN: return Step.INTAKE_OUTTAKE;
-            case INTAKE_OUTTAKE: return Step.INTAKE_INTAKE;
-            case INTAKE_INTAKE: return Step.INTAKE_STOP;
+            case SWERVE_STOP:
+                return Step.HOPPER_UP;
+            case HOPPER_UP:
+                return Step.INTAKE_DOWN;
+            case INTAKE_DOWN:
+                return Step.INTAKE_OUTTAKE;
+            case INTAKE_OUTTAKE:
+                return Step.INTAKE_INTAKE;
+            case INTAKE_INTAKE:
+                return Step.INTAKE_STOP;
 
-            case INTAKE_STOP: return Step.INDEXER_JIGGLE;
-            case INDEXER_JIGGLE: return Step.INDEXER_FORWARD;
-            case INDEXER_FORWARD: return Step.INDEXER_STOP;
+            case INTAKE_STOP:
+                return Step.INDEXER_JIGGLE;
+            case INDEXER_JIGGLE:
+                return Step.INDEXER_FORWARD;
+            case INDEXER_FORWARD:
+                return Step.INDEXER_STOP;
 
-            case INDEXER_STOP: return Step.HOPPER_DOWN;
-            case HOPPER_DOWN: return Step.INTAKE_IN;
+            case INDEXER_STOP:
+                return Step.HOPPER_DOWN;
+            case HOPPER_DOWN:
+                return Step.INTAKE_IN;
 
-            case INTAKE_IN: return Step.TURRET_TRACK_TAG;
+            case INTAKE_IN:
+                return Step.TURRET_TRACK_TAG;
 
-            case TURRET_TRACK_TAG: return Step.SHOWOFF_SHOOTER;
-            case SHOWOFF_SHOOTER: return Step.DONE;
+            case TURRET_TRACK_TAG:
+                return Step.SHOWOFF_SHOOTER;
+            case SHOWOFF_SHOOTER:
+                return Step.DONE;
 
-            case DONE: return Step.DONE;
+            case DONE:
+                return Step.DONE;
         }
         return Step.DONE;
     }
-
 }

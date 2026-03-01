@@ -151,8 +151,6 @@ public class IntakeSubsystem extends SubsystemBase implements Refreshable {
                 wheelMotor.setVoltage(wheelSlowIntakeVoltage.get());
 
                 break;
-
-
         }
 
         if (targetAngle.isPresent()) {
