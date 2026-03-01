@@ -227,7 +227,7 @@ public class SystemsTestCommand extends Command {
         double t = stepTimer.get();
 
         switch (s) {
-            // Swerve: time-based unless you have “test complete” flags
+            // Swerve:
             case SWERVE_FORWARD:
             case SWERVE_BACK:
             case SWERVE_LEFT:
@@ -243,7 +243,7 @@ public class SystemsTestCommand extends Command {
             case SWERVE_STOP:
                 return t >= 0.25;
 
-            // Hopper / intake: time-based OR “at goal” if you have it
+            // Hopper / intake:
             case HOPPER_UP:
                 // TODO  hopperSubsystem.isAtTop() use that instead (or OR with time)
                 return t >= hopperMoveTime.get();
@@ -284,7 +284,7 @@ public class SystemsTestCommand extends Command {
             case TURRET_TRACK_TAG:
                 return t >= turretTrackTime.get();
 
-            // Showoff: finish when limit reached OR timeout safety
+            // Showoff:
             case SHOWOFF_SHOOTER:
                 return t >= shooterShowoffTime.get();
 
