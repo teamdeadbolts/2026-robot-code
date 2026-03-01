@@ -31,6 +31,9 @@ public class ShotCalculator {
         }
     }
 
+    private Translation2d lastAcceptedVirtTarget2d = null;
+    private ShotParametersAutoLogged lastAcceptedShot = null;
+
     private static final double G = 9.81;
 
     private static final SavedLoggedNetworkNumber calcIterations =
@@ -57,7 +60,8 @@ public class ShotCalculator {
         vthetaMap.put(timestamp, speeds.omegaRadiansPerSecond);
     }
 
-    public ShotParametersAutoLogged calculateShot(Pose3d robotPose, Translation3d target, double currentTime) {
+    public ShotParametersAutoLogged calculateShot(
+            Pose3d robotPose, Translation3d target, double currentTime, double tolerance) {
         Pose3d fieldRelTurret = robotPose.transformBy(ShooterConstants.SHOOTER_OFFSET);
         Translation2d turretPos2d = fieldRelTurret.getTranslation().toTranslation2d();
 
@@ -98,19 +102,46 @@ public class ShotCalculator {
 
         double turretAngle = calculateFieldRelativeTurrent(robotPose.toPose2d(), virtTarget2d);
 
-        ShotParametersAutoLogged shot = new ShotParametersAutoLogged();
+        ShotParametersAutoLogged rawShot = new ShotParametersAutoLogged();
         Logger.recordOutput("ShotCalc/VirtualTarget", new Pose2d(virtTarget2d, new Rotation2d()));
         Logger.recordOutput("ShotCalc/TurretVel", turretVel);
         Logger.recordOutput("ShotCalc/PivToVirtualTarget", distFromPivotToTarget);
         Logger.recordOutput("ShotCalc/HeightFromPivot", heightFromPivotToTarget);
         Logger.recordOutput("ShotCalc/HoodAngle", Units.radiansToDegrees(hoodAngle));
         Logger.recordOutput("ShotCalc/Velocity", ballVelocity);
-        shot.hoodAngle = Math.PI / 2 - hoodAngle;
-        shot.turretAngle = turretAngle;
-        shot.wheelSpeed = shooterMPSToRPM(ballVelocity);
-        shot.ballVelocity = ballVelocity;
+        rawShot.hoodAngle = Math.PI / 2 - hoodAngle;
+        rawShot.turretAngle = turretAngle;
+        rawShot.wheelSpeed = shooterMPSToRPM(ballVelocity);
+        rawShot.ballVelocity = ballVelocity;
 
-        return shot;
+        boolean acceptedNew = true;
+
+        if (tolerance > 0.0 && lastAcceptedVirtTarget2d != null && lastAcceptedShot != null) {
+            double aimShift = virtTarget2d.minus(lastAcceptedVirtTarget2d).getNorm();
+
+            if (aimShift <= tolerance) {
+                acceptedNew = false;
+
+                lastAcceptedShot.turretAngle = rawShot.turretAngle;
+            }
+        }
+
+        ShotParametersAutoLogged shotToUse;
+        Translation2d virtTargetToLog;
+
+        if (acceptedNew || lastAcceptedShot == null) {
+            lastAcceptedShot = rawShot;
+            lastAcceptedVirtTarget2d = virtTarget2d;
+            shotToUse = rawShot;
+            virtTargetToLog = virtTarget2d;
+        } else {
+            shotToUse = lastAcceptedShot;
+            virtTargetToLog = lastAcceptedVirtTarget2d;
+        }
+
+        Logger.recordOutput("ShotCalc/VirtualTargetUsed", new Pose2d(virtTargetToLog, new Rotation2d()));
+
+        return shotToUse;
     }
 
     public double calculateLatancyOffsetTurrentAngle(
