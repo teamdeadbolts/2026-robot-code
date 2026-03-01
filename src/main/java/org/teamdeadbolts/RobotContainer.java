@@ -4,15 +4,14 @@ package org.teamdeadbolts;
 import choreo.auto.AutoFactory;
 import choreo.auto.AutoRoutine;
 import choreo.auto.AutoTrajectory;
-import edu.wpi.first.math.geometry.Pose3d;
-import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.math.geometry.Transform3d;
+import edu.wpi.first.math.geometry.*;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import org.teamdeadbolts.commands.DriveCommand;
 import org.teamdeadbolts.subsystems.IndexerSubsystem;
 import org.teamdeadbolts.subsystems.IntakeSubsystem;
@@ -52,7 +51,7 @@ public class RobotContainer {
 
         this.autoFactory = new AutoFactory(
                 robotState.getRobotPose()::toPose2d,
-                (pose) -> robotState.setEstimatedPose(new Pose3d(pose)),
+                (pose) -> robotState.setEstimatedPose(new Pose3d(new Translation3d(pose.getTranslation()), new Rotation3d(pose.getRotation()))),
                 swerveSubsystem::followTrajectory,
                 true,
                 swerveSubsystem);
@@ -98,53 +97,59 @@ public class RobotContainer {
 
         primaryController.b().whileTrue(getAutonomousCommand());
 
-        primaryController
-                .povDown()
-                .whileTrue(new RunCommand(
-                        () -> {
-                            // shooterSubsystem.setState(ShooterSubsystem.State.TEST);
-                            intakeSubsystem.setState(IntakeSubsystem.State.SHOOT);
-                        },
-                        // shooterSubsystem,
-                        intakeSubsystem));
-        primaryController
-                .povUp()
-                .whileTrue(new RunCommand(
-                        () -> {
-                            shooterSubsystem.setState(ShooterSubsystem.State.ZERO);
-                        },
-                        shooterSubsystem));
+        primaryController.povUp().whileTrue(swerveSubsystem.runDriveDynamTest(SysIdRoutine.Direction.kForward));
+        primaryController.povDown().whileTrue(swerveSubsystem.runDriveDynamTest(SysIdRoutine.Direction.kReverse));
+        primaryController.povLeft().whileTrue(swerveSubsystem.runDriveQuasiTest(SysIdRoutine.Direction.kForward));
+        primaryController.povRight().whileTrue(swerveSubsystem.runDriveQuasiTest(SysIdRoutine.Direction.kReverse));
 
-        primaryController
-                .povLeft()
-                .whileTrue(new RunCommand(
-                        () -> {
-                            intakeSubsystem.setState(IntakeSubsystem.State.DEPLOYED);
-                        },
-                        intakeSubsystem));
-        primaryController
-                .povRight()
-                .whileTrue(new RunCommand(
-                        () -> {
-                            intakeSubsystem.setState(IntakeSubsystem.State.STOWED);
-                        },
-                        intakeSubsystem));
-        primaryController
-                .rightBumper()
-                .whileTrue(new RunCommand(
-                        () -> {
-                            intakeSubsystem.setState(IntakeSubsystem.State.INTAKE);
-                        },
-                        intakeSubsystem));
 
-        primaryController
-                .leftBumper()
-                .whileTrue(new RunCommand(
-                        () -> {
-                            shooterSubsystem.setState(ShooterSubsystem.State.SPINUP);
-                            indexerSubsystem.setState(IndexerSubsystem.State.SHOOT);
-                        },
-                        shooterSubsystem));
+//        primaryController
+//                .povDown()
+//                .whileTrue(new RunCommand(
+//                        () -> {
+//                            // shooterSubsystem.setState(ShooterSubsystem.State.TEST);
+//                            intakeSubsystem.setState(IntakeSubsystem.State.SHOOT);
+//                        },
+//                        // shooterSubsystem,
+//                        intakeSubsystem));
+//        primaryController
+//                .povUp()
+//                .whileTrue(new RunCommand(
+//                        () -> {
+//                            shooterSubsystem.setState(ShooterSubsystem.State.ZERO);
+//                        },
+//                        shooterSubsystem));
+//
+//        primaryController
+//                .povLeft()
+//                .whileTrue(new RunCommand(
+//                        () -> {
+//                            intakeSubsystem.setState(IntakeSubsystem.State.DEPLOYED);
+//                        },
+//                        intakeSubsystem));
+//        primaryController
+//                .povRight()
+//                .whileTrue(new RunCommand(
+//                        () -> {
+//                            intakeSubsystem.setState(IntakeSubsystem.State.STOWED);
+//                        },
+//                        intakeSubsystem));
+//        primaryController
+//                .rightBumper()
+//                .whileTrue(new RunCommand(
+//                        () -> {
+//                            intakeSubsystem.setState(IntakeSubsystem.State.INTAKE);
+//                        },
+//                        intakeSubsystem));
+//
+//        primaryController
+//                .leftBumper()
+//                .whileTrue(new RunCommand(
+//                        () -> {
+//                            shooterSubsystem.setState(ShooterSubsystem.State.SPINUP);
+//                            indexerSubsystem.setState(IndexerSubsystem.State.SHOOT);
+//                        },
+//                        shooterSubsystem));
 
         // primaryController.povLeft().whileTrue(swerveSubsystem.runDriveQuasiTest(Direction.kReverse));
     }
@@ -171,8 +176,8 @@ public class RobotContainer {
 
         routine.active().onTrue(Commands.sequence(testTraj.resetOdometry(), testTraj.cmd()));
 
-        testTraj.atTime("Index").onTrue(new RunCommand(() -> indexerSubsystem.setState(IndexerSubsystem.State.SHOOT)));
-        testTraj.atTime("StopIndex").onTrue(new RunCommand(() -> indexerSubsystem.setState(IndexerSubsystem.State.OFF)));
+        // testTraj.atTime("Index").onTrue(new RunCommand(() -> indexerSubsystem.setState(IndexerSubsystem.State.SHOOT)));
+        //testTraj.atTime("StopIndex").onTrue(new RunCommand(() -> indexerSubsystem.setState(IndexerSubsystem.State.OFF)));
         return routine;
     }
 

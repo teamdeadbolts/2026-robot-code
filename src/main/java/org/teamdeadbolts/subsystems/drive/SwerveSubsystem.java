@@ -62,7 +62,7 @@ public class SwerveSubsystem extends SubsystemBase {
     private final SavedLoggedNetworkNumber trajRotD = SavedLoggedNetworkNumber.get("Tuning/Choreo/Rotation/kD", 0);
 
     private SysIdRoutine driveRoutine = new SysIdRoutine(
-            new SysIdRoutine.Config(null, null, Time.ofBaseUnits(3, Seconds)),
+            new SysIdRoutine.Config(null, null, Time.ofBaseUnits(1.5, Seconds)),
             new SysIdRoutine.Mechanism(this::sysIdDriveVolts, this::sysIdDriveLog, this));
 
     public SwerveSubsystem() {
@@ -180,7 +180,7 @@ public class SwerveSubsystem extends SubsystemBase {
                 new ChassisSpeeds(sample.vx
                         + xPidOut, sample.vy + yPidOut, sample.omega + headingPidOut);
 
-        this.drive(speeds, true, false, true);
+        this.drive(speeds, true, false, false);
 
         Logger.recordOutput("Swerve/TrajFollow/xPidOut", xPidOut);
         Logger.recordOutput("Swerve/TrajFollow/yPidOut", yPidOut);
@@ -192,6 +192,9 @@ public class SwerveSubsystem extends SubsystemBase {
                 "Swerve/TrajFollow/headingError", currPose.getRotation().getRadians() - sample.heading);
         Pose2d samplePose = new Pose2d(sample.x, sample.y, Rotation2d.fromRadians(sample.heading));
         Logger.recordOutput("Swerve/TrajFollow/SampleTranslation", samplePose);
+        Logger.recordOutput("Swerve/TrajFollow/TargetRotation", sample.omega);
+        Logger.recordOutput("Swerve/TrajFollow/TargetVX", sample.vx);
+        Logger.recordOutput("Swerve/TrajFollow/TargetVY", sample.vy);
     }
 
     /**
