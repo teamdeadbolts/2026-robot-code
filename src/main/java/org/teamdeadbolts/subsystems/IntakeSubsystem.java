@@ -20,6 +20,7 @@ public class IntakeSubsystem extends SubsystemBase implements Refreshable {
     public enum State {
         STOWED,
         INTAKE,
+        OUTTAKE,
         DEPLOYED,
         SHOOT,
         OFF,
@@ -131,6 +132,10 @@ public class IntakeSubsystem extends SubsystemBase implements Refreshable {
                 targetAngle = Optional.of(Units.degreesToRadians(intakeDeployedAngle.get()));
                 wheelMotor.setVoltage(wheelIntakeVoltage.get());
                 break;
+            case OUTTAKE:
+                targetAngle = Optional.of(Units.degreesToRadians(intakeDeployedAngle.get()));
+                wheelMotor.setVoltage(-wheelIntakeVoltage.get());
+                break;
             case DEPLOYED:
                 targetAngle = Optional.of(Units.degreesToRadians(intakeDeployedAngle.get()));
                 wheelMotor.setVoltage(0);
@@ -146,6 +151,8 @@ public class IntakeSubsystem extends SubsystemBase implements Refreshable {
                 wheelMotor.setVoltage(wheelSlowIntakeVoltage.get());
 
                 break;
+
+
         }
 
         if (targetAngle.isPresent()) {

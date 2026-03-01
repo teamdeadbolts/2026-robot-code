@@ -21,6 +21,7 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import java.util.Comparator;
 import java.util.List;
@@ -44,7 +45,9 @@ public class ShooterSubsystem extends SubsystemBase implements Refreshable {
         SHOOT,
         PASS,
         ZERO,
-        TEST;
+        TEST,
+        SYSTEMS_TEST;
+
     }
 
     @AutoLogOutput
@@ -111,6 +114,8 @@ public class ShooterSubsystem extends SubsystemBase implements Refreshable {
     private Zone aprilTagTrackZone = new Zone();
 
     private ShotCalculator shotCalculator;
+
+    private int systemTestCount = 0;
 
     public ShooterSubsystem() {
         this.shotCalculator = new ShotCalculator();
@@ -186,6 +191,7 @@ public class ShooterSubsystem extends SubsystemBase implements Refreshable {
 
         switch (targetState) {
             case OFF:
+                systemTestCount = 0;
                 targetHoodAngle = Optional.of(Units.degreesToRadians(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
                 // targetWheelSpeed = Optional.
                 break;
@@ -300,6 +306,11 @@ public class ShooterSubsystem extends SubsystemBase implements Refreshable {
                     hoodMotor.setPosition(Units.degreesToRotations(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
                 }
                 break;
+            case SYSTEMS_TEST:
+                systemTestCount++;
+                targetWheelSpeed = Optional.of(shooterWheelSpinupSpeed.get());
+                targetTurretPosition = Optional.of((((Math.sin(((double) systemTestCount /850)+1))/2)*520)-260);
+                targetHoodAngle = Optional.of((((Math.sin(((double) systemTestCount /150)+1))/2)*35)+10);
         }
 
         if (targetHoodAngle.isPresent()) {
