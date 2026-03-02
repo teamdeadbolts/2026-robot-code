@@ -177,8 +177,7 @@ public class SwerveSubsystem extends SubsystemBase {
                 trajHeadingController.calculate(currPose.getRotation().getRadians(), sample.heading);
 
         ChassisSpeeds speeds =
-                new ChassisSpeeds(sample.vx
-                        + xPidOut, sample.vy + yPidOut, sample.omega + headingPidOut);
+                new ChassisSpeeds(sample.vx + xPidOut, sample.vy + yPidOut, sample.omega + headingPidOut);
 
         this.drive(speeds, true, false, false);
 

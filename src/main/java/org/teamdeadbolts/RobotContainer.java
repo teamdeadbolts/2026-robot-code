@@ -51,7 +51,8 @@ public class RobotContainer {
 
         this.autoFactory = new AutoFactory(
                 robotState.getRobotPose()::toPose2d,
-                (pose) -> robotState.setEstimatedPose(new Pose3d(new Translation3d(pose.getTranslation()), new Rotation3d(pose.getRotation()))),
+                (pose) -> robotState.setEstimatedPose(
+                        new Pose3d(new Translation3d(pose.getTranslation()), new Rotation3d(pose.getRotation()))),
                 swerveSubsystem::followTrajectory,
                 true,
                 swerveSubsystem);
@@ -74,7 +75,7 @@ public class RobotContainer {
         // hopperSubsystem.setDefaultCommand(
         //         new RunCommand(() -> hopperSubsystem.setState(HopperSubsystem.State.HOLD), hopperSubsystem));
         intakeSubsystem.setDefaultCommand(
-                new RunCommand(() -> intakeSubsystem.setState(IntakeSubsystem.State.STOWED), intakeSubsystem));
+                new RunCommand(() -> intakeSubsystem.setState(IntakeSubsystem.State.OFF), intakeSubsystem));
         indexerSubsystem.setDefaultCommand(
                 new RunCommand(() -> indexerSubsystem.setState(IndexerSubsystem.State.OFF), indexerSubsystem));
 
@@ -102,54 +103,56 @@ public class RobotContainer {
         primaryController.povLeft().whileTrue(swerveSubsystem.runDriveQuasiTest(SysIdRoutine.Direction.kForward));
         primaryController.povRight().whileTrue(swerveSubsystem.runDriveQuasiTest(SysIdRoutine.Direction.kReverse));
 
-
-//        primaryController
-//                .povDown()
-//                .whileTrue(new RunCommand(
-//                        () -> {
-//                            // shooterSubsystem.setState(ShooterSubsystem.State.TEST);
-//                            intakeSubsystem.setState(IntakeSubsystem.State.SHOOT);
-//                        },
-//                        // shooterSubsystem,
-//                        intakeSubsystem));
-//        primaryController
-//                .povUp()
-//                .whileTrue(new RunCommand(
-//                        () -> {
-//                            shooterSubsystem.setState(ShooterSubsystem.State.ZERO);
-//                        },
-//                        shooterSubsystem));
-//
-//        primaryController
-//                .povLeft()
-//                .whileTrue(new RunCommand(
-//                        () -> {
-//                            intakeSubsystem.setState(IntakeSubsystem.State.DEPLOYED);
-//                        },
-//                        intakeSubsystem));
-//        primaryController
-//                .povRight()
-//                .whileTrue(new RunCommand(
-//                        () -> {
-//                            intakeSubsystem.setState(IntakeSubsystem.State.STOWED);
-//                        },
-//                        intakeSubsystem));
-//        primaryController
-//                .rightBumper()
-//                .whileTrue(new RunCommand(
-//                        () -> {
-//                            intakeSubsystem.setState(IntakeSubsystem.State.INTAKE);
-//                        },
-//                        intakeSubsystem));
-//
-//        primaryController
-//                .leftBumper()
-//                .whileTrue(new RunCommand(
-//                        () -> {
-//                            shooterSubsystem.setState(ShooterSubsystem.State.SPINUP);
-//                            indexerSubsystem.setState(IndexerSubsystem.State.SHOOT);
-//                        },
-//                        shooterSubsystem));
+        //        primaryController
+        //                .povDown()
+        //                .whileTrue(new RunCommand(
+        //                        () -> {
+        //                            // shooterSubsystem.setState(ShooterSubsystem.State.TEST);
+        //                            intakeSubsystem.setState(IntakeSubsystem.State.SHOOT);
+        //                        },
+        //                        // shooterSubsystem,
+        //                        intakeSubsystem));
+        //        primaryController
+        //                .povUp()
+        //                .whileTrue(new RunCommand(
+        //                        () -> {
+        //                            shooterSubsystem.setState(ShooterSubsystem.State.ZERO);
+        //                        },
+        //                        shooterSubsystem));
+        //
+        //        primaryController
+        //                .povLeft()
+        //                .whileTrue(new RunCommand(
+        //                        () -> {
+        //                            intakeSubsystem.setState(IntakeSubsystem.State.DEPLOYED);
+        //                        },
+        //                        intakeSubsystem));
+        //        primaryController
+        //                .povRight()
+        //                .whileTrue(new RunCommand(
+        //                        () -> {
+        //                            intakeSubsystem.setState(IntakeSubsystem.State.STOWED);
+        //                        },
+        //                        intakeSubsystem));
+        primaryController
+                .rightBumper()
+                .whileTrue(new RunCommand(
+                        () -> {
+                            intakeSubsystem.setState(IntakeSubsystem.State.INTAKE);
+                        },
+                        intakeSubsystem));
+        //
+        primaryController
+                .leftBumper()
+                .whileTrue(new RunCommand(
+                        () -> {
+                            shooterSubsystem.setState(ShooterSubsystem.State.SPINUP);
+                            indexerSubsystem.setState(IndexerSubsystem.State.SHOOT);
+                            intakeSubsystem.setState(IntakeSubsystem.State.SHOOT);
+                        },
+                        shooterSubsystem,
+                        indexerSubsystem,
+                        intakeSubsystem));
 
         // primaryController.povLeft().whileTrue(swerveSubsystem.runDriveQuasiTest(Direction.kReverse));
     }
@@ -176,8 +179,10 @@ public class RobotContainer {
 
         routine.active().onTrue(Commands.sequence(testTraj.resetOdometry(), testTraj.cmd()));
 
-        // testTraj.atTime("Index").onTrue(new RunCommand(() -> indexerSubsystem.setState(IndexerSubsystem.State.SHOOT)));
-        //testTraj.atTime("StopIndex").onTrue(new RunCommand(() -> indexerSubsystem.setState(IndexerSubsystem.State.OFF)));
+        // testTraj.atTime("Index").onTrue(new RunCommand(() ->
+        // indexerSubsystem.setState(IndexerSubsystem.State.SHOOT)));
+        // testTraj.atTime("StopIndex").onTrue(new RunCommand(() ->
+        // indexerSubsystem.setState(IndexerSubsystem.State.OFF)));
         return routine;
     }
 

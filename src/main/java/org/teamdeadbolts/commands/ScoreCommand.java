@@ -2,6 +2,7 @@
 package org.teamdeadbolts.commands;
 
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Timer;
@@ -13,6 +14,7 @@ import org.teamdeadbolts.subsystems.HopperSubsystem;
 import org.teamdeadbolts.subsystems.IndexerSubsystem;
 import org.teamdeadbolts.subsystems.IntakeSubsystem;
 import org.teamdeadbolts.subsystems.shooter.ShooterSubsystem;
+import org.teamdeadbolts.utils.MathUtils;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
 public class ScoreCommand extends Command {
@@ -26,7 +28,6 @@ public class ScoreCommand extends Command {
         RIGHT;
     };
 
-    private PassingTarget passingTarget;
     private boolean isPassing;
 
     private RobotState robotState = RobotState.getInstance();
@@ -46,28 +47,13 @@ public class ScoreCommand extends Command {
             ShooterSubsystem shooterSubsystem,
             IndexerSubsystem indexerSubsystem,
             HopperSubsystem hopperSubsystem,
-            IntakeSubsystem intakeSubsystem) {
-        this.shooterSubsystem = shooterSubsystem;
-        this.indexerSubsystem = indexerSubsystem;
-        this.hopperSubsystem = hopperSubsystem;
-        this.intakeSubsystem = intakeSubsystem;
-        this.isPassing = false;
-
-        addRequirements(shooterSubsystem, indexerSubsystem, hopperSubsystem, intakeSubsystem);
-    }
-
-    public ScoreCommand(
-            ShooterSubsystem shooterSubsystem,
-            IndexerSubsystem indexerSubsystem,
-            HopperSubsystem hopperSubsystem,
             IntakeSubsystem intakeSubsystem,
-            PassingTarget passingTarget) {
+            boolean isPassing) {
         this.shooterSubsystem = shooterSubsystem;
         this.indexerSubsystem = indexerSubsystem;
         this.hopperSubsystem = hopperSubsystem;
         this.intakeSubsystem = intakeSubsystem;
-        this.passingTarget = passingTarget;
-        this.isPassing = true;
+        this.isPassing = isPassing;
 
         addRequirements(shooterSubsystem, indexerSubsystem, hopperSubsystem, intakeSubsystem);
     }
@@ -78,11 +64,7 @@ public class ScoreCommand extends Command {
         lastBallTimer.reset();
         lastBallTimer.start();
         if (isPassing) {
-            if (passingTarget == PassingTarget.LEFT) {
-                shooterSubsystem.setState(ShooterSubsystem.State.PASS_LEFT);
-            } else {
-                shooterSubsystem.setState(ShooterSubsystem.State.PASS_RIGHT);
-            }
+            shooterSubsystem.setState(ShooterSubsystem.State.PASS);
 
             indexerSubsystem.setState(IndexerSubsystem.State.SHOOT);
             intakeSubsystem.setState(IntakeSubsystem.State.INTAKE);
@@ -97,7 +79,10 @@ public class ScoreCommand extends Command {
     @Override
     public void execute() {
         Translation2d robotTrans = robotState.getRobotPose().toPose2d().getTranslation();
-        if (Math.abs(shooterSubsystem.getRPMError()) > maxRPMError.get()) {
+        if (Math.abs(shooterSubsystem.getRPMError()) > maxRPMError.get()
+                || (isPassing
+                        && MathUtils.inRange(
+                                robotTrans.getY(), Units.inchesToMeters(135.594), Units.inchesToMeters(182.594)))) {
             indexerSubsystem.setState(IndexerSubsystem.State.OFF);
         } else {
             indexerSubsystem.setState(IndexerSubsystem.State.SHOOT);
@@ -134,7 +119,7 @@ public class ScoreCommand extends Command {
                                 indexerSubsystem,
                                 hopperSubsystem,
                                 intakeSubsystem,
-                                PassingTarget.LEFT)); // This should work...
+                                true)); // This should work...
             }
         }
     }

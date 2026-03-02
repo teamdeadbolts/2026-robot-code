@@ -38,8 +38,7 @@ public class ShooterSubsystem extends SubsystemBase {
         APRILTAG_TRACK,
         SPINUP,
         SHOOT,
-        PASS_LEFT,
-        PASS_RIGHT,
+        PASS,
         ZERO,
         TEST;
     }
@@ -231,25 +230,36 @@ public class ShooterSubsystem extends SubsystemBase {
                 }
 
                 break;
-            case PASS_LEFT:
-            case PASS_RIGHT:
-                Pose3d passTargetPose;
+            case PASS:
+                Pose3d passTargetPose = null;
 
                 if (alliance == Alliance.Red) {
-                    passTargetPose = targetState == State.PASS_LEFT
-                            ? ShooterConstants.PASS_LEFT_POSE_RED
-                            : ShooterConstants.PASS_RIGHT_POSE_RED;
+                    if (robotPose.getY() <= Units.inchesToMeters(135.594)) {
+                        passTargetPose = ShooterConstants.PASS_BOTTOM_POSE_RED;
+                    } else if (robotPose.getY() >= Units.inchesToMeters(182.594)) {
+                        passTargetPose = ShooterConstants.PASS_TOP_POSE_RED;
+                    } else {
+                        targetWheelSpeed = Optional.of(shooterWheelSpinupSpeed.get());
+                        break;
+                    }
+
                 } else {
-                    passTargetPose = targetState == State.PASS_LEFT
-                            ? ShooterConstants.PASS_LEFT_POSE_BLUE
-                            : ShooterConstants.PASS_RIGHT_POSE_BLUE;
+                    if (robotPose.getY() <= Units.inchesToMeters(135.594)) {
+                        passTargetPose = ShooterConstants.PASS_BOTTOM_POSE_BLUE;
+                    } else if (robotPose.getY() >= Units.inchesToMeters(182.594)) {
+                        passTargetPose = ShooterConstants.PASS_TOP_POSE_BLUE;
+                    } else {
+                        targetWheelSpeed = Optional.of(shooterWheelSpinupSpeed.get());
+                        break;
+                    }
                 }
 
-                // ShotParameters aimingParams =
-                //         calculateAimingParameters(targetPose, robotPose, robotSpeeds, true);
-                // targetHoodAngle = Optional.of(aimingParams.hoodAngle);
-                // targetTurretPosition = Optional.of(aimingParams.turrentAngle);
-                // targetWheelSpeed = Optional.of(aimingParams.wheelSpeed);
+                ShotParametersAutoLogged passShot = shotCalculator.calculateShot(
+                        robotPose, passTargetPose.getTranslation(), System.currentTimeMillis());
+                targetHoodAngle = Optional.of(passShot.hoodAngle);
+                targetTurretPosition = Optional.of(passShot.turretAngle);
+                targetWheelSpeed = Optional.of(passShot.wheelSpeed);
+                Logger.processInputs("ShooterSubsystem/Shot", passShot);
                 break;
             case SHOOT:
                 Pose3d shootTargetPose =
