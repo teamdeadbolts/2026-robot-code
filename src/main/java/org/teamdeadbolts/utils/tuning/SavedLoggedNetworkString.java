@@ -4,9 +4,7 @@ package org.teamdeadbolts.utils.tuning;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.function.Consumer;
 import org.littletonrobotics.junction.networktables.LoggedNetworkString;
-import org.teamdeadbolts.utils.tuning.ConfigManager.Tuneable;
 
 public class SavedLoggedNetworkString extends LoggedNetworkString implements Tuneable<String> {
     private String key; // This is annoying
@@ -17,7 +15,7 @@ public class SavedLoggedNetworkString extends LoggedNetworkString implements Tun
 
     private String immediateValue;
     private boolean hasImmediateValue = false;
-    private List<Consumer<String>> actions = new ArrayList<>();
+    private List<Refreshable> refreshables = new ArrayList<>();
 
     /**
      * Get an instance of a SavedLoggedNetworkString
@@ -26,14 +24,22 @@ public class SavedLoggedNetworkString extends LoggedNetworkString implements Tun
      * @param defautValue The default value
      * @return An instance of SavedLoggedNetworkString
      */
-    public static synchronized SavedLoggedNetworkString get(String key, String defautValue) {
-        return INSTANCES.computeIfAbsent(key, k -> new SavedLoggedNetworkString(k, defautValue));
+    public static synchronized SavedLoggedNetworkString get(
+            String key, String defautValue, Refreshable... refreshables) {
+        return INSTANCES.computeIfAbsent(key, k -> new SavedLoggedNetworkString(k, defautValue, refreshables));
     }
 
-    private SavedLoggedNetworkString(String key, String value) {
+    private SavedLoggedNetworkString(String key, String value, Refreshable... refreshables) {
         super(key, value);
         this.key = key;
+        this.immediateValue = value;
+        this.hasImmediateValue = true;
+
         configManager.registerTunable(this);
+
+        for (Refreshable r : refreshables) {
+            this.refreshables.add(r);
+        }
     }
 
     @Override
@@ -57,17 +63,12 @@ public class SavedLoggedNetworkString extends LoggedNetworkString implements Tun
     }
 
     @Override
-    public void onChange(Consumer<String> action) {
-        actions.add(action);
-    }
-
-    @Override
     public void set(String value) {
         super.set(value);
         configManager.set(this.key, value);
         immediateValue = value;
         hasImmediateValue = true;
-        actions.forEach(a -> a.accept(value));
+        refreshables.forEach(Refreshable::refresh);
     }
 
     @Override

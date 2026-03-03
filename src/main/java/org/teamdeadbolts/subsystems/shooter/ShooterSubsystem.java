@@ -30,9 +30,10 @@ import org.teamdeadbolts.constants.ShooterConstants;
 import org.teamdeadbolts.constants.VisionConstants;
 import org.teamdeadbolts.utils.Zone;
 import org.teamdeadbolts.utils.tuning.ConfigManager;
+import org.teamdeadbolts.utils.tuning.Refreshable;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
-public class ShooterSubsystem extends SubsystemBase {
+public class ShooterSubsystem extends SubsystemBase implements Refreshable {
     public enum State {
         OFF,
         APRILTAG_TRACK,
@@ -57,11 +58,11 @@ public class ShooterSubsystem extends SubsystemBase {
     private SimpleMotorFeedforward wheelFF = new SimpleMotorFeedforward(0, 0, 0);
 
     private final SavedLoggedNetworkNumber hoodControllerP =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/HoodController/kP", 0.1);
+            SavedLoggedNetworkNumber.get("Tuning/Shooter/HoodController/kP", 0.1, this);
     private final SavedLoggedNetworkNumber hoodControllerI =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/HoodController/kI", 0.0);
+            SavedLoggedNetworkNumber.get("Tuning/Shooter/HoodController/kI", 0.0, this);
     private final SavedLoggedNetworkNumber hoodControllerD =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/HoodController/kD", 0.0);
+            SavedLoggedNetworkNumber.get("Tuning/Shooter/HoodController/kD", 0.0, this);
 
     private final SavedLoggedNetworkNumber hoodZeroVoltage =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/HoodZeroVoltage", 0.0);
@@ -71,18 +72,18 @@ public class ShooterSubsystem extends SubsystemBase {
             SavedLoggedNetworkNumber.get("Tuning/Shooter/HoodZeroVelTol", 0.0);
 
     private final SavedLoggedNetworkNumber turretControllerP =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/TurretController/kP", 0.1);
+            SavedLoggedNetworkNumber.get("Tuning/Shooter/TurretController/kP", 0.1, this);
     private final SavedLoggedNetworkNumber turretControllerI =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/TurretController/kI", 0.0);
+            SavedLoggedNetworkNumber.get("Tuning/Shooter/TurretController/kI", 0.0, this);
     private final SavedLoggedNetworkNumber turretControllerD =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/TurretController/kD", 0.0);
+            SavedLoggedNetworkNumber.get("Tuning/Shooter/TurretController/kD", 0.0, this);
 
     private final SavedLoggedNetworkNumber wheelFFS =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/WheelController/kS", 0.1);
+            SavedLoggedNetworkNumber.get("Tuning/Shooter/WheelController/kS", 0.1, this);
     private final SavedLoggedNetworkNumber wheelFFV =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/WheelController/kV", 1);
+            SavedLoggedNetworkNumber.get("Tuning/Shooter/WheelController/kV", 1, this);
     private final SavedLoggedNetworkNumber wheelFFA =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/WheelController/kA", 0.0);
+            SavedLoggedNetworkNumber.get("Tuning/Shooter/WheelController/kA", 0.0, this);
 
     private final SavedLoggedNetworkNumber bangTol = SavedLoggedNetworkNumber.get("Tuning/Shooter/BangBangTol", 100);
 
@@ -110,15 +111,13 @@ public class ShooterSubsystem extends SubsystemBase {
     public ShooterSubsystem() {
         this.shotCalculator = new ShotCalculator();
 
-        ConfigManager.getInstance().onReady(this::reconfigure);
+        ConfigManager.getInstance().onReady(this::refresh);
         resetTurrentPosition();
         hoodMotor.setPosition(Units.degreesToRotations(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
-        wheelFFS.onChange(wheelFF::setKs);
-        wheelFFV.onChange(wheelFF::setKv);
-        wheelFFA.onChange(wheelFF::setKa);
     }
 
-    public void reconfigure() {
+    @Override
+    public void refresh() {
         hoodController.setPID(hoodControllerP.get(), hoodControllerI.get(), hoodControllerD.get());
         turretController.setPID(turretControllerP.get(), turretControllerI.get(), turretControllerD.get());
         wheelFF.setKs(wheelFFS.get());

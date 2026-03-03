@@ -84,8 +84,8 @@ public class RobotContainer {
                 .whileTrue(new RunCommand(
                         () -> {
                             // CtreConfigs.init();
-                            intakeSubsystem.reconfigure();
-                            swerveSubsystem.reconfigure();
+                            // intakeSubsystem.reconfigure();
+                            // swerveSubsystem.reconfigure();
                             // shooterSubsystem.reconfigure();
                         },
                         swerveSubsystem));

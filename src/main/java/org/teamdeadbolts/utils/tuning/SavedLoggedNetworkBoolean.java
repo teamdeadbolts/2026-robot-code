@@ -4,9 +4,7 @@ package org.teamdeadbolts.utils.tuning;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.function.Consumer;
 import org.littletonrobotics.junction.networktables.LoggedNetworkBoolean;
-import org.teamdeadbolts.utils.tuning.ConfigManager.Tuneable;
 
 public class SavedLoggedNetworkBoolean extends LoggedNetworkBoolean implements Tuneable<Boolean> {
     private String key; // This is annoying
@@ -15,7 +13,7 @@ public class SavedLoggedNetworkBoolean extends LoggedNetworkBoolean implements T
 
     private boolean immediateValue;
     private boolean hasImmediateValue = false;
-    private List<Consumer<Boolean>> actions = new ArrayList<>();
+    private List<Refreshable> refreshables = new ArrayList<>();
 
     private static final HashMap<String, SavedLoggedNetworkBoolean> INSTANCES = new HashMap<>();
 
@@ -26,14 +24,20 @@ public class SavedLoggedNetworkBoolean extends LoggedNetworkBoolean implements T
      * @param defautValue The default value
      * @return An instance of SavedLoggedNetworkBoolean
      */
-    public static synchronized SavedLoggedNetworkBoolean get(String key, boolean defautValue) {
-        return INSTANCES.computeIfAbsent(key, k -> new SavedLoggedNetworkBoolean(k, defautValue));
+    public static synchronized SavedLoggedNetworkBoolean get(
+            String key, boolean defautValue, Refreshable... refreshables) {
+        return INSTANCES.computeIfAbsent(key, k -> new SavedLoggedNetworkBoolean(k, defautValue, refreshables));
     }
 
-    private SavedLoggedNetworkBoolean(String key, boolean value) {
+    private SavedLoggedNetworkBoolean(String key, boolean value, Refreshable... refreshables) {
         super(key, value);
         this.key = key;
+        this.immediateValue = value;
+        this.hasImmediateValue = true;
         configManager.registerTunable(this);
+        for (Refreshable r : refreshables) {
+            this.refreshables.add(r);
+        }
     }
 
     @Override
@@ -56,15 +60,12 @@ public class SavedLoggedNetworkBoolean extends LoggedNetworkBoolean implements T
     }
 
     @Override
-    public void onChange(Consumer<Boolean> action) {
-        actions.add(action);
-    }
-
-    @Override
     public void set(boolean value) {
         super.set(value);
+        this.immediateValue = value;
+        this.hasImmediateValue = true;
         configManager.set(this.key, value);
-        actions.forEach(a -> a.accept(value));
+        refreshables.forEach(Refreshable::refresh);
     }
 
     @Override

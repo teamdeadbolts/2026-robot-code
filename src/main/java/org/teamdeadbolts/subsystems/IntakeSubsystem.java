@@ -13,10 +13,10 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import java.util.Optional;
 import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.constants.IntakeConstants;
-import org.teamdeadbolts.utils.tuning.ConfigManager;
+import org.teamdeadbolts.utils.tuning.Refreshable;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
-public class IntakeSubsystem extends SubsystemBase {
+public class IntakeSubsystem extends SubsystemBase implements Refreshable {
     public enum State {
         STOWED,
         INTAKE,
@@ -45,16 +45,16 @@ public class IntakeSubsystem extends SubsystemBase {
             SavedLoggedNetworkNumber.get("Tuning/Intake/IntakeShootArmSpeed", 5.0); // Degrees per second
 
     private final SavedLoggedNetworkNumber armControllerP =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmController/kP", 0.1);
+            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmController/kP", 0.1, this);
     private final SavedLoggedNetworkNumber armControllerI =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmController/kI", 0.0);
+            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmController/kI", 0.0, this);
     private final SavedLoggedNetworkNumber armControllerD =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmController/kD", 0.0);
+            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmController/kD", 0.0, this);
 
     private final SavedLoggedNetworkNumber armControllerMaxVel =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmController/MaxVel", 0.0); // Degrees per second
-    private final SavedLoggedNetworkNumber armControllerMaxAccel =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmController/MaxAccel", 0.0); // Degrees per second squared
+            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmController/MaxVel", 0.0, this); // Degrees per second
+    private final SavedLoggedNetworkNumber armControllerMaxAccel = SavedLoggedNetworkNumber.get(
+            "Tuning/Intake/ArmController/MaxAccel", 0.0, this); // Degrees per second squared
 
     private final SavedLoggedNetworkNumber armControllerTol =
             SavedLoggedNetworkNumber.get("Tuning/Intake/ArmController/TolDeg", 10);
@@ -63,11 +63,11 @@ public class IntakeSubsystem extends SubsystemBase {
             SavedLoggedNetworkNumber.get("Tuning/Intake/ArmController/VelTolDeg", 10);
 
     private final SavedLoggedNetworkNumber armFeedforwardKs =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmFeedforward/kS", 0.0);
+            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmFeedforward/kS", 0.0, this);
     private final SavedLoggedNetworkNumber armFeedforwardKg =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmFeedforward/kG", 0.0);
+            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmFeedforward/kG", 0.0, this);
     private final SavedLoggedNetworkNumber armFeedforwardKv =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmFeedforward/kV", 0.0);
+            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmFeedforward/kV", 0.0, this);
 
     private final SavedLoggedNetworkNumber wheelIntakeVoltage =
             SavedLoggedNetworkNumber.get("Tuning/Intake/WheelIntakeVoltage", 6.0);
@@ -80,24 +80,12 @@ public class IntakeSubsystem extends SubsystemBase {
     private double shootTargetAngle = 0;
 
     public IntakeSubsystem() {
-        ConfigManager.getInstance().onReady(this::reconfigure);
-        armControllerP.onChange(armController::setP);
-        armControllerI.onChange(armController::setI);
-        armControllerD.onChange(armController::setD);
-        armControllerMaxVel.onChange(v -> armController.setConstraints(
-                new TrapezoidProfile.Constraints(v, Units.degreesToRadians(armControllerMaxAccel.get()))));
-        armControllerMaxAccel.onChange(a -> armController.setConstraints(
-                new TrapezoidProfile.Constraints(armControllerMaxVel.get(), Units.degreesToRadians(a))));
-        armFeedforwardKg.onChange(armFeedforward::setKg);
-        armFeedforwardKs.onChange(armFeedforward::setKs);
-        armFeedforwardKv.onChange(armFeedforward::setKv);
-        armControllerTol.onChange(t -> armController.setTolerance(Units.degreesToRadians(t)));
-        armController.enableContinuousInput(0, Math.PI * 2);
 
-        // reconfigure();
+        armController.enableContinuousInput(0, Math.PI * 2);
     }
 
-    public void reconfigure() {
+    @Override
+    public void refresh() {
         armController.setPID(armControllerP.get(), armControllerI.get(), armControllerD.get());
         armController.setConstraints(new TrapezoidProfile.Constraints(
                 Units.degreesToRadians(armControllerMaxVel.get()),

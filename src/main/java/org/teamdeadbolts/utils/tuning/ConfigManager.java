@@ -13,7 +13,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.function.Consumer;
 
 /** Store config data on the rio */
 public class ConfigManager {
@@ -273,11 +272,5 @@ public class ConfigManager {
         public String toString() {
             return String.format("RobotConfig{version=%s,config=%s}", version, values.toString());
         }
-    }
-
-    public interface Tuneable<T> {
-        public void initFromConfig();
-
-        public void onChange(Consumer<T> action);
     }
 }

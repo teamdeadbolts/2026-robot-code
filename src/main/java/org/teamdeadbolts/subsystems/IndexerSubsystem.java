@@ -8,9 +8,10 @@ import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.constants.IndexerConstants;
 import org.teamdeadbolts.utils.tuning.ConfigManager;
+import org.teamdeadbolts.utils.tuning.Refreshable;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
-public class IndexerSubsystem extends SubsystemBase {
+public class IndexerSubsystem extends SubsystemBase implements Refreshable {
     public enum State {
         OFF,
         JIGGLE,
@@ -39,10 +40,11 @@ public class IndexerSubsystem extends SubsystemBase {
             SavedLoggedNetworkNumber.get("Tuning/Indexer/IndexerJiggleFrequency", 1.0);
 
     public IndexerSubsystem() {
-        ConfigManager.getInstance().onReady(this::reconfigure);
+        ConfigManager.getInstance().onReady(this::refresh);
     }
 
-    public void reconfigure() {
+    @Override
+    public void refresh() {
         IndexerConstants.init();
         // floorMotor.getConfigurator().apply(IndexerConstants.INDEXER_FLOOR_MOTOR_CONFIG);
         kickerMotor.getConfigurator().apply(IndexerConstants.INDEXER_KICKER_MOTOR_CONFIG);

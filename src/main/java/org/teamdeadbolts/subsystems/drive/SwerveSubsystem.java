@@ -32,9 +32,10 @@ import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.RobotState;
 import org.teamdeadbolts.constants.SwerveConstants;
 import org.teamdeadbolts.utils.tuning.ConfigManager;
+import org.teamdeadbolts.utils.tuning.Refreshable;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
-public class SwerveSubsystem extends SubsystemBase {
+public class SwerveSubsystem extends SubsystemBase implements Refreshable {
     private final AHRS gyro = new AHRS(NavXComType.kMXP_SPI);
     private SwerveModule[] modules;
     private SlewRateLimiter slewRateLimiterTranslationalX;
@@ -75,47 +76,17 @@ public class SwerveSubsystem extends SubsystemBase {
         };
 
         trajHeadingController.enableContinuousInput(-Math.PI, Math.PI);
-
         trajHeadingController.setPID(trajRotP.get(), trajRotI.get(), trajRotD.get());
         trajXController.setPID(trajTransP.get(), trajTransI.get(), trajTransD.get());
         trajYController.setPID(trajTransP.get(), trajTransI.get(), trajTransD.get());
-
-        ConfigManager.getInstance().onReady(() -> this.refreshTuning());
-
-        slewRateRotaional.onChange(rs -> this.slewRateLimiterRotaional = new SlewRateLimiter(rs));
-        slewRateTranslational.onChange(rt -> {
-            this.slewRateLimiterTranslationalX = new SlewRateLimiter(rt);
-            this.slewRateLimiterTranslationalY = new SlewRateLimiter(rt);
-        });
-
-        trajTransP.onChange((p) -> {
-            trajXController.setP(p);
-            trajYController.setP(p);
-        });
-
-        trajTransI.onChange((i) -> {
-            trajXController.setI(i);
-            trajYController.setI(i);
-        });
-
-        trajTransD.onChange((d) -> {
-            trajXController.setD(d);
-            trajYController.setD(d);
-        });
-
-        trajRotP.onChange(trajHeadingController::setP);
-        trajRotI.onChange(trajHeadingController::setI);
-        trajRotD.onChange(trajHeadingController::setD);
+        ConfigManager.getInstance().onReady(this::refresh);
     }
 
-    public void reconfigure() {
+    @Override
+    public void refresh() {
         trajHeadingController.setPID(trajRotP.get(), trajRotI.get(), trajRotD.get());
         trajXController.setPID(trajTransP.get(), trajTransI.get(), trajTransD.get());
         trajYController.setPID(trajTransP.get(), trajTransI.get(), trajTransD.get());
-
-        for (SwerveModule module : this.modules) {
-            module.configure();
-        }
     }
 
     /**
