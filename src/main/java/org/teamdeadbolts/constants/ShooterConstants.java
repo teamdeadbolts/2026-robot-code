@@ -15,9 +15,11 @@ import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 public class ShooterConstants {
     public static final int SHOOTER_TURRET_MOTOR_CAN_ID = 20;
     public static final int SHOOTER_HOOD_MOTOR_CAN_ID = 21;
-    public static final int SHOOTER_WHEEL_MOTOR_CAN_ID = 22;
+    public static final int SHOOTER_WHEEL_MOTOR_LEFT_CAN_ID = 22;
+    public static final int SHOOTER_WHEEL_MOTOR_RIGHT_CAN_ID = 23;
 
-    public static final double SHOOTER_HOOD_MIN_ANGLE_DEGREES = 15.0;
+
+    public static final double SHOOTER_HOOD_MIN_ANGLE_DEGREES = 10.0;
     public static final double SHOOTER_HOOD_MAX_ANGLE_DEGREES = 45.0;
 
     public static final double TURRENT_MIN_POSITION_DEGREES = -270.0;

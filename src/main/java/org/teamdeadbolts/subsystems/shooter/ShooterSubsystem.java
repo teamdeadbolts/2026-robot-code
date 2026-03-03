@@ -2,7 +2,10 @@
 package org.teamdeadbolts.subsystems.shooter;
 
 import com.ctre.phoenix6.CANBus;
+import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.MotorAlignmentValue;
+
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
@@ -51,7 +54,8 @@ public class ShooterSubsystem extends SubsystemBase implements Refreshable {
     private final CANBus canivore = new CANBus("*");
     private TalonFX turretMotor = new TalonFX(ShooterConstants.SHOOTER_TURRET_MOTOR_CAN_ID, canivore);
     private TalonFX hoodMotor = new TalonFX(ShooterConstants.SHOOTER_HOOD_MOTOR_CAN_ID, rio);
-    private TalonFX wheelMotor = new TalonFX(ShooterConstants.SHOOTER_WHEEL_MOTOR_CAN_ID, rio);
+    private TalonFX leftWheelMotor = new TalonFX(ShooterConstants.SHOOTER_WHEEL_MOTOR_LEFT_CAN_ID, rio);
+    private TalonFX rightWheelMotor = new TalonFX(ShooterConstants.SHOOTER_WHEEL_MOTOR_RIGHT_CAN_ID, rio);
 
     private PIDController hoodController = new PIDController(0.0, 0.0, 0.0);
     private PIDController turretController = new PIDController(0.0, 0.0, 0.0);
@@ -114,6 +118,7 @@ public class ShooterSubsystem extends SubsystemBase implements Refreshable {
         ConfigManager.getInstance().onReady(this::refresh);
         resetTurrentPosition();
         hoodMotor.setPosition(Units.degreesToRotations(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
+        rightWheelMotor.setControl(new Follower(ShooterConstants.SHOOTER_WHEEL_MOTOR_LEFT_CAN_ID, MotorAlignmentValue.Opposed));
     }
 
     @Override
@@ -127,7 +132,8 @@ public class ShooterSubsystem extends SubsystemBase implements Refreshable {
         ShooterConstants.init();
         hoodMotor.getConfigurator().apply(ShooterConstants.SHOOTER_HOOD_MOTOR_CONFIG);
         turretMotor.getConfigurator().apply(ShooterConstants.SHOOTER_TURRET_MOTOR_CONFIG);
-        wheelMotor.getConfigurator().apply(ShooterConstants.SHOOTER_WHEEL_MOTOR_CONFIG);
+        leftWheelMotor.getConfigurator().apply(ShooterConstants.SHOOTER_WHEEL_MOTOR_CONFIG);
+        rightWheelMotor.getConfigurator().apply(ShooterConstants.SHOOTER_WHEEL_MOTOR_CONFIG);
     }
 
     public void setState(State newState) {
@@ -169,7 +175,7 @@ public class ShooterSubsystem extends SubsystemBase implements Refreshable {
                 Units.rotationsToRadians(turretMotor.getPosition().getValueAsDouble());
         Optional<Double> targetTurretPosition = Optional.empty();
 
-        currentWheelSpeed = Units.rotationsToRadians(wheelMotor.getVelocity().getValueAsDouble());
+        currentWheelSpeed = Units.rotationsToRadians(leftWheelMotor.getVelocity().getValueAsDouble());
         targetWheelSpeed = Optional.empty();
 
         Pose3d robotPose = RobotState.getInstance().getRobotPose();
@@ -317,11 +323,11 @@ public class ShooterSubsystem extends SubsystemBase implements Refreshable {
             } else {
                 wheelOutput = wheelFF.calculate(targetWheelSpeed.get());
             }
-            wheelMotor.setVoltage(wheelOutput);
+            leftWheelMotor.setVoltage(wheelOutput);
             Logger.recordOutput("ShooterSubsystem/WheelOutput", wheelOutput);
             Logger.recordOutput("ShooterSubsystem/TargetWheelSpeed", targetWheelSpeed.get());
         } else {
-            wheelMotor.setVoltage(0);
+            leftWheelMotor.setVoltage(0);
         }
 
         if (targetTurretPosition.isPresent()) {
