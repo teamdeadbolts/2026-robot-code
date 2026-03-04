@@ -65,6 +65,9 @@ public class SwerveConstants {
     public static final Zone RED_CLOSE_ZONE = new Zone();
     public static final Zone BLUE_CLOSE_ZONE = new Zone();
 
+    public static final Zone RED_TOWER_ZONE = new Zone();
+    public static final Zone BLUE_TOWER_ZONE = new Zone();
+
     public static final TalonFXConfiguration TURNING_MOTOR_CONFIG = new TalonFXConfiguration();
     public static final TalonFXConfiguration DRIVE_MOTOR_CONFIG = new TalonFXConfiguration();
     public static final CANcoderConfiguration CANCODER_CONFIG = new CANcoderConfiguration();

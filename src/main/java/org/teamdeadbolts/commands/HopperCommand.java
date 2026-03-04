@@ -5,60 +5,95 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
-import java.util.Optional;
-import java.util.function.Supplier;
+import org.teamdeadbolts.RobotState;
+import org.teamdeadbolts.constants.SwerveConstants;
 import org.teamdeadbolts.subsystems.HopperSubsystem;
 
 public class HopperCommand extends Command {
     private final HopperSubsystem hopperSubsystem;
 
-    private final Supplier<Pose2d> poseSupplier;
+    // What the driver last requested (latched)
+    private DriverRequest latchedRequest = DriverRequest.NONE;
 
-    private final Supplier<Optional<HopperSubsystem.State>> requestedStateSupplier;
+    // Choose fast vs slow
+    private final boolean goFast;
 
-    private boolean lastForcedDown = false;
+    // Optional: If true, pressing UP while in a down-zone will clear the request instead of "queueing" it.
 
-    public HopperCommand(
-            HopperSubsystem hopperSubsystem,
-            Supplier<Pose2d> poseSupplier,
-            Supplier<Optional<HopperSubsystem.State>> requestedStateSupplier) {
-
+    public HopperCommand(HopperSubsystem hopperSubsystem, boolean goFast) {
         this.hopperSubsystem = hopperSubsystem;
-        this.poseSupplier = poseSupplier;
-        this.requestedStateSupplier = requestedStateSupplier;
-
+        this.goFast = goFast;
         addRequirements(hopperSubsystem);
+    }
+
+    private enum DriverRequest {
+        NONE,
+        GO_UP,
+        GO_DOWN
+    }
+
+    public void requestUp() {
+        latchedRequest = DriverRequest.GO_UP;
+    }
+
+    public void requestDown() {
+        latchedRequest = DriverRequest.GO_DOWN;
+    }
+
+    public void clearRequest() {
+        latchedRequest = DriverRequest.NONE;
     }
 
     @Override
     public void initialize() {
         hopperSubsystem.setState(HopperSubsystem.State.HOLD);
+        latchedRequest = DriverRequest.NONE;
     }
 
     @Override
     public void execute() {
-        // Don’t do field-based logic when we don't have a real field context (optional)
         boolean enabled = DriverStation.isEnabled();
-        Pose2d pose = poseSupplier.get();
+        Pose2d robotPose = RobotState.getInstance().getRobotPose().toPose2d();
 
-        boolean forceDown = enabled && isInAutoDownZone(pose.getTranslation());
+        boolean inZone = enabled && isInAutoDownZone(robotPose.getTranslation());
 
-        if (forceDown) {
-            // Pick FAST_DOWN vs SLOW_DOWN as you want; FAST_DOWN shown.
-            setIfChanged(HopperSubsystem.State.FAST_DOWN);
-            lastForcedDown = true;
+        // Priority 1: Zone override always wins
+        if (inZone) {
+            latchedRequest = DriverRequest.NONE;
+
+            if (hopperSubsystem.isLowerLimitReached()) {
+                setIfChanged(HopperSubsystem.State.HOLD);
+            } else {
+                setIfChanged(HopperSubsystem.State.FAST_DOWN);
+            }
             return;
         }
 
-        lastForcedDown = false;
+        // Priority 2: run latched driver request until limit reached
+        switch (latchedRequest) {
+            case GO_UP:
+                if (hopperSubsystem.isUpperLimitReached()) {
+                    latchedRequest = DriverRequest.NONE;
+                    setIfChanged(HopperSubsystem.State.HOLD);
+                } else {
+                    setIfChanged(goFast ? HopperSubsystem.State.FAST_UP : HopperSubsystem.State.SLOW_UP);
+                }
+                return;
 
-        // Otherwise, honor requested state if present, else HOLD.
-        Optional<HopperSubsystem.State> requested = requestedStateSupplier.get();
-        HopperSubsystem.State desired = requested.orElse(HopperSubsystem.State.HOLD);
+            case GO_DOWN:
+                if (hopperSubsystem.isLowerLimitReached()) {
+                    latchedRequest = DriverRequest.NONE;
+                    setIfChanged(HopperSubsystem.State.HOLD);
+                } else {
+                    setIfChanged(goFast ? HopperSubsystem.State.FAST_DOWN : HopperSubsystem.State.SLOW_DOWN);
+                }
+                return;
 
-        // Safety: if someone accidentally requests HOLD? that's fine. If they request FAST_DOWN/UP,
-        // your subsystem already protects itself with limit switches and returns to HOLD.
-        setIfChanged(desired);
+            case NONE:
+            default:
+                // Priority 3: default hold
+                setIfChanged(HopperSubsystem.State.HOLD);
+        }
     }
 
     private void setIfChanged(HopperSubsystem.State desired) {
@@ -69,34 +104,15 @@ public class HopperCommand extends Command {
 
     @Override
     public boolean isFinished() {
-        return false; // default commands should never finish
+        return false; // default command
     }
 
-    /**
-     * Define your "auto-down" regions here.
-     *
-     * This example uses rectangles (axis-aligned) in FIELD METERS.
-     * You can add as many zones as you want.
-     */
     private boolean isInAutoDownZone(Translation2d robotPosMeters) {
-        double x = robotPosMeters.getX();
-        double y = robotPosMeters.getY();
-
-        // Example zones (EDIT THESE):
-        // Zone A: rectangle from (xMin,yMin) to (xMax,yMax)
-        if (inRect(x, y, /*xMin*/ 1.0, /*xMax*/ 2.0, /*yMin*/ 4.5, /*yMax*/ 6.0)) {
-            return true;
-        }
-
-        // Zone B:
-        if (inRect(x, y, /*xMin*/ 12.0, /*xMax*/ 13.5, /*yMin*/ 1.0, /*yMax*/ 2.5)) {
-            return true;
-        }
-
-        return false;
-    }
-
-    private boolean inRect(double x, double y, double xMin, double xMax, double yMin, double yMax) {
-        return x >= xMin && x <= xMax && y >= yMin && y <= yMax;
+        return SwerveConstants.BLUE_BOTTOM_TRENCH_ZONE.contains(robotPosMeters)
+                || SwerveConstants.RED_BOTTOM_TRENCH_ZONE.contains(robotPosMeters)
+                || SwerveConstants.BLUE_TOP_TRENCH_ZONE.contains(robotPosMeters)
+                || SwerveConstants.RED_TOP_TRENCH_ZONE.contains(robotPosMeters)
+                || SwerveConstants.BLUE_TOWER_ZONE.contains(robotPosMeters)
+                || SwerveConstants.RED_TOWER_ZONE.contains(robotPosMeters);
     }
 }
