@@ -46,6 +46,8 @@ public class ShotCalculator {
             SavedLoggedNetworkNumber.get("Tuning/Shooter/ShootLatancyMs", 100);
     private static final SavedLoggedNetworkNumber timeToKeepVel =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/TimeToKeepVelMs", 1000);
+    private static final SavedLoggedNetworkNumber airResistanceMultiplier =
+            SavedLoggedNetworkNumber.get("Tuning/Shooter/airResistanceMultiplier", 0.01);
 
     private final ExtrapolatingDoubleMap vxMap = new ExtrapolatingDoubleMap(timeToKeepVel.get());
     private final ExtrapolatingDoubleMap vyMap = new ExtrapolatingDoubleMap(timeToKeepVel.get());
@@ -61,7 +63,10 @@ public class ShotCalculator {
     }
 
     public ShotParametersAutoLogged calculateShot(
-            Pose3d robotPose, Translation3d target, double currentTime, double tolerance) {
+            Pose3d robotPose,
+            Translation3d target,
+            double currentTime,
+            double tolerance) { // Tolerance units are meters
         Pose3d fieldRelTurret = robotPose.transformBy(ShooterConstants.SHOOTER_OFFSET);
         Translation2d turretPos2d = fieldRelTurret.getTranslation().toTranslation2d();
 
@@ -141,6 +146,9 @@ public class ShotCalculator {
 
         Logger.recordOutput("ShotCalc/VirtualTargetUsed", new Pose2d(virtTargetToLog, new Rotation2d()));
 
+        shotToUse.ballVelocity *= 1 + (airResistanceMultiplier.get() * distFromPivotToTarget);
+        shotToUse.wheelSpeed = shooterMPSToRPM(shotToUse.ballVelocity);
+
         return shotToUse;
     }
 
@@ -211,6 +219,9 @@ public class ShotCalculator {
         double cos = Math.cos(theta);
 
         double denom = 2 * Math.pow(cos, 2) * (dx * Math.tan(theta) - dy);
+        if (denom <= 0) {
+            return 0;
+        }
         return Math.sqrt((G * Math.pow(dx, 2)) / denom);
     }
 }

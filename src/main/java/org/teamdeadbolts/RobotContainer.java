@@ -13,6 +13,7 @@ import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import org.teamdeadbolts.commands.DriveCommand;
+import org.teamdeadbolts.subsystems.HopperSubsystem;
 import org.teamdeadbolts.subsystems.IndexerSubsystem;
 import org.teamdeadbolts.subsystems.IntakeSubsystem;
 import org.teamdeadbolts.subsystems.drive.SwerveSubsystem;
@@ -28,6 +29,7 @@ public class RobotContainer {
     private IndexerSubsystem indexerSubsystem = new IndexerSubsystem();
     private IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
     private ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
+    private HopperSubsystem hopperSubsystem = new HopperSubsystem();
 
     @SuppressWarnings("unused")
     private VisionSubsystem visionSubsystem = new VisionSubsystem(
@@ -72,20 +74,18 @@ public class RobotContainer {
 
         shooterSubsystem.setDefaultCommand(
                 new RunCommand(() -> shooterSubsystem.setState(ShooterSubsystem.State.OFF), shooterSubsystem));
-        // hopperSubsystem.setDefaultCommand(
-        //         new RunCommand(() -> hopperSubsystem.setState(HopperSubsystem.State.HOLD), hopperSubsystem));
         intakeSubsystem.setDefaultCommand(
                 new RunCommand(() -> intakeSubsystem.setState(IntakeSubsystem.State.OFF), intakeSubsystem));
         indexerSubsystem.setDefaultCommand(
                 new RunCommand(() -> indexerSubsystem.setState(IndexerSubsystem.State.OFF), indexerSubsystem));
+        hopperSubsystem.setDefaultCommand(
+                new RunCommand(() -> hopperSubsystem.setState(HopperSubsystem.State.HOLD), hopperSubsystem));
 
         primaryController
                 .a()
                 .whileTrue(new RunCommand(
                         () -> {
                             // CtreConfigs.init();
-                            // intakeSubsystem.reconfigure();
-                            // swerveSubsystem.reconfigure();
                             // shooterSubsystem.reconfigure();
                         },
                         swerveSubsystem));
@@ -170,7 +170,7 @@ public class RobotContainer {
         autoChooser.addOption(
                 "Test",
                 new SequentialCommandGroup(
-                        autoFactory.resetOdometry("TestPath2"), autoFactory.trajectoryCmd("TestPath")));
+                        autoFactory.resetOdometry("TestPath"), autoFactory.trajectoryCmd("TestPath")));
     }
 
     private AutoRoutine testAuto() {

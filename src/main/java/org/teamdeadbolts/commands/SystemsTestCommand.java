@@ -245,7 +245,7 @@ public class SystemsTestCommand extends Command {
 
             // Hopper / intake:
             case HOPPER_UP:
-                // TODO  hopperSubsystem.isAtTop() use that instead (or OR with time)
+                // TODO  hopperSubsystem.isAtTop() use that instead (or with time)
                 return t >= hopperMoveTime.get();
 
             case INTAKE_DOWN:

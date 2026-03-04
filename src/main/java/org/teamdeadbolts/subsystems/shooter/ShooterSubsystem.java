@@ -5,7 +5,6 @@ import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.MotorAlignmentValue;
-
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
@@ -121,7 +120,8 @@ public class ShooterSubsystem extends SubsystemBase implements Refreshable {
         ConfigManager.getInstance().onReady(this::refresh);
         resetTurrentPosition();
         hoodMotor.setPosition(Units.degreesToRotations(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
-        rightWheelMotor.setControl(new Follower(ShooterConstants.SHOOTER_WHEEL_MOTOR_LEFT_CAN_ID, MotorAlignmentValue.Opposed));
+        rightWheelMotor.setControl(
+                new Follower(ShooterConstants.SHOOTER_WHEEL_MOTOR_LEFT_CAN_ID, MotorAlignmentValue.Opposed));
     }
 
     @Override
@@ -178,7 +178,8 @@ public class ShooterSubsystem extends SubsystemBase implements Refreshable {
                 Units.rotationsToRadians(turretMotor.getPosition().getValueAsDouble());
         Optional<Double> targetTurretPosition = Optional.empty();
 
-        currentWheelSpeed = Units.rotationsToRadians(leftWheelMotor.getVelocity().getValueAsDouble());
+        currentWheelSpeed =
+                Units.rotationsToRadians(leftWheelMotor.getVelocity().getValueAsDouble());
         targetWheelSpeed = Optional.empty();
 
         Pose3d robotPose = RobotState.getInstance().getRobotPose();
@@ -264,7 +265,7 @@ public class ShooterSubsystem extends SubsystemBase implements Refreshable {
                 }
 
                 ShotParametersAutoLogged passShot = shotCalculator.calculateShot(
-                        robotPose, passTargetPose.getTranslation(), System.currentTimeMillis());
+                        robotPose, passTargetPose.getTranslation(), System.currentTimeMillis(), 0.0);
                 targetHoodAngle = Optional.of(passShot.hoodAngle);
                 targetTurretPosition = Optional.of(passShot.turretAngle);
                 targetWheelSpeed = Optional.of(passShot.wheelSpeed);
@@ -285,8 +286,10 @@ public class ShooterSubsystem extends SubsystemBase implements Refreshable {
                 break;
             case TEST:
                 ShotParametersAutoLogged shot = shotCalculator.calculateShot(
-                        robotPose, new Translation3d(testTargetX.get(), testTargetY.get(), 0), (double)
-                                (System.currentTimeMillis()));
+                        robotPose,
+                        new Translation3d(testTargetX.get(), testTargetY.get(), 0),
+                        (double) (System.currentTimeMillis()),
+                        0);
                 Logger.processInputs("ShooterSubsystem/Shot", shot);
                 Logger.recordOutput(
                         "ShooterSubsystem/TestTargetPose",
