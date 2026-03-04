@@ -2,6 +2,7 @@
 package org.teamdeadbolts.commands;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import org.teamdeadbolts.RobotState;
 import org.teamdeadbolts.constants.SwerveConstants;
@@ -10,12 +11,10 @@ import org.teamdeadbolts.subsystems.shooter.ShooterSubsystem;
 
 public class DefaultShooterCommand extends Command {
     private ShooterSubsystem shooterSubsystem;
-    private IndexerSubsystem indexerSubsystem;
     private RobotState robotState = RobotState.getInstance();
 
-    public DefaultShooterCommand(ShooterSubsystem shooterSubsystem, IndexerSubsystem indexerSubsystem) {
+    public DefaultShooterCommand(ShooterSubsystem shooterSubsystem) {
         this.shooterSubsystem = shooterSubsystem;
-        this.indexerSubsystem = indexerSubsystem;
 
         addRequirements(shooterSubsystem);
     }
@@ -29,16 +28,11 @@ public class DefaultShooterCommand extends Command {
                 || SwerveConstants.RED_TOP_BUMP_ZONE.contains(robotPose.getTranslation())
                 || SwerveConstants.BLUE_TOP_BUMP_ZONE.contains(robotPose.getTranslation())) {
             shooterSubsystem.setState(ShooterSubsystem.State.OFF);
+            return;
         }
 
-        if (inSpinUpArea() && indexerSubsystem.hasBall()) {
-            shooterSubsystem.setState(ShooterSubsystem.State.SPINUP);
-        } else {
-            shooterSubsystem.setState(ShooterSubsystem.State.OFF);
-        }
+        shooterSubsystem.setState(ShooterSubsystem.State.APRILTAG_TRACK);
     }
 
-    private boolean inSpinUpArea() {
-        return false; // TODO: Implement
-    }
+  
 }
