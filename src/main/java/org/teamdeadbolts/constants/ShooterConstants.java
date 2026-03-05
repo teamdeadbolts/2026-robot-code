@@ -55,11 +55,11 @@ public class ShooterConstants {
     public static final CANcoderConfiguration SHOOTER_ABS_ENCODER_CONFIG = new CANcoderConfiguration();
 
     private static final SavedLoggedNetworkNumber shooterTurretMotorCurrentLimit =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/ShooterTurretMotorCurrentLimit", 20);
+            SavedLoggedNetworkNumber.get("Tuning/Shooter/ShooterTurretMotorCurrentLimit", 40);
     private static final SavedLoggedNetworkNumber shooterHoodMotorCurrentLimit =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/ShooterHoodMotorCurrentLimit", 20);
+            SavedLoggedNetworkNumber.get("Tuning/Shooter/ShooterHoodMotorCurrentLimit", 40);
     private static final SavedLoggedNetworkNumber shooterWheelMotorCurrentLimit =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/ShooterWheelMotorCurrentLimit", 20);
+            SavedLoggedNetworkNumber.get("Tuning/Shooter/ShooterWheelMotorCurrentLimit", 80);
 
     static {
         ConfigManager.getInstance().onReady(ShooterConstants::init);
