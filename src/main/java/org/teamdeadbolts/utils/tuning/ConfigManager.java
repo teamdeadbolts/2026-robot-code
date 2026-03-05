@@ -75,7 +75,10 @@ public class ConfigManager {
 
         // Init tunables 1st
         System.out.println(tuneables.size() + " Tuneable values");
-        tuneables.forEach(Tuneable::initFromConfig);
+        //        tuneables.forEach(Tuneable::initFromConfig);
+        for (int i = 0; i < tuneables.size(); i++) {
+            tuneables.get(i).initFromConfig();
+        }
 
         // Run ready listeners
 

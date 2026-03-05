@@ -7,8 +7,8 @@ import org.teamdeadbolts.utils.tuning.ConfigManager;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
 public class HopperConstants {
-    public static final int HOPPER_MOTOR_LEFT_CAN_ID = -1;
-    public static final int HOPPER_MOTOR_RIGHT_CAN_ID = -1;
+    public static final int HOPPER_MOTOR_LEFT_CAN_ID = 60;
+    public static final int HOPPER_MOTOR_RIGHT_CAN_ID = 61;
     public static final int HOPPER_LEFT_UPPER_LIMIT_SWITCH_CHANNEL = -1;
     public static final int HOPPER_LEFT_LOWER_LIMIT_SWITCH_CHANNEL = -1;
     public static final int HOPPER_RIGHT_UPPER_LIMIT_SWITCH_CHANNEL = -1;

@@ -7,7 +7,6 @@ import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.constants.ClimberConstants;
-import org.teamdeadbolts.utils.tuning.ConfigManager;
 import org.teamdeadbolts.utils.tuning.Refreshable;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
@@ -22,13 +21,13 @@ public class ClimberSubsystem extends SubsystemBase implements Refreshable {
     private final TalonFX climberMotor = new TalonFX(ClimberConstants.CLIMBER_MOTOR_CAN_ID, canBus);
 
     private final SavedLoggedNetworkNumber climberControllerKp =
-            SavedLoggedNetworkNumber.get("Tuning/Climber/ClimberController/Kp", 0.0, this);
+            SavedLoggedNetworkNumber.get("Tuning/Climber/ClimberController/kP", 0.0);
 
     private final SavedLoggedNetworkNumber climberControllerKi =
-            SavedLoggedNetworkNumber.get("Tuning/Climber/ClimberController/Ki", 0.0, this);
+            SavedLoggedNetworkNumber.get("Tuning/Climber/ClimberController/kI", 0.0);
 
     private final SavedLoggedNetworkNumber climberControllerKd =
-            SavedLoggedNetworkNumber.get("Tuning/Climber/ClimberController/Kd", 0.0, this);
+            SavedLoggedNetworkNumber.get("Tuning/Climber/ClimberController/kD", 0.0);
 
     private final SavedLoggedNetworkNumber climberStowedPosition =
             SavedLoggedNetworkNumber.get("Tuning/Climber/ClimberStowedPosition", 0.0);
@@ -44,7 +43,10 @@ public class ClimberSubsystem extends SubsystemBase implements Refreshable {
     private State state = State.STOWED;
 
     public ClimberSubsystem() {
-        ConfigManager.getInstance().onReady(this::refresh);
+        //        ConfigManager.getInstance().onReady(this::refresh);
+        climberControllerKp.addRefreshable(this);
+        climberControllerKi.addRefreshable(this);
+        climberControllerKd.addRefreshable(this);
     }
 
     @Override

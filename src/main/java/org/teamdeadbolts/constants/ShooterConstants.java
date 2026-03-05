@@ -19,7 +19,7 @@ public class ShooterConstants {
     public static final int SHOOTER_WHEEL_MOTOR_RIGHT_CAN_ID = 23;
 
     public static final double SHOOTER_HOOD_MIN_ANGLE_DEGREES = 10.0;
-    public static final double SHOOTER_HOOD_MAX_ANGLE_DEGREES = 45.0;
+    public static final double SHOOTER_HOOD_MAX_ANGLE_DEGREES = 40.0; // TODO fix!!
 
     public static final double TURRENT_MIN_POSITION_DEGREES = -270.0;
     public static final double TURRENT_MAX_POSITION_DEGREES = 270.0;
@@ -41,12 +41,13 @@ public class ShooterConstants {
 
     public static final Transform3d SHOOTER_OFFSET = new Transform3d(
             Units.inchesToMeters(-27.5 / 2 + 6.125),
-            Units.inchesToMeters(27.5 / 2 - 6.125),
+            Units.inchesToMeters(-27.5 / 2 + 6.125),
             Units.inchesToMeters(13.5),
-            new Rotation3d());
+            new Rotation3d(0.0, 0.0, -Math.PI / 2));
 
     public static final double TURRENT_GEAR_RATIO = (145.0 / 18.0) * 3;
-    public static final double HOOD_GEAR_RATIO = (40.0 / 12.0) * (25.0 / 13.0) * (168.0 / 10.0);
+    public static final double HOOD_GEAR_RATIO = (40.0 / 12.0) * (18.0 / 14.0) * (163.0 / 10.0);
+    public static final double WHEEL_GEAR_RATIO = 18.0 / 17.0;
 
     public static final TalonFXConfiguration SHOOTER_TURRET_MOTOR_CONFIG = new TalonFXConfiguration();
     public static final TalonFXConfiguration SHOOTER_HOOD_MOTOR_CONFIG = new TalonFXConfiguration();
@@ -59,8 +60,6 @@ public class ShooterConstants {
             SavedLoggedNetworkNumber.get("Tuning/Shooter/ShooterHoodMotorCurrentLimit", 20);
     private static final SavedLoggedNetworkNumber shooterWheelMotorCurrentLimit =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/ShooterWheelMotorCurrentLimit", 20);
-
-    public static final double HEIGHT_ABOVE = 1;
 
     static {
         ConfigManager.getInstance().onReady(ShooterConstants::init);
@@ -79,7 +78,7 @@ public class ShooterConstants {
         SHOOTER_HOOD_MOTOR_CONFIG.Feedback.SensorToMechanismRatio = HOOD_GEAR_RATIO;
         SHOOTER_HOOD_MOTOR_CONFIG.MotorOutput.NeutralMode = NeutralModeValue.Coast;
         SHOOTER_HOOD_MOTOR_CONFIG.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
-        // SHOOTER_HOOD_MOTOR_CONFIG.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
+        //        SHOOTER_HOOD_MOTOR_CONFIG.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
 
         // SHOOTER_HOOD_MOTOR_CONFIG.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
         // SHOOTER_HOOD_MOTOR_CONFIG.SoftwareLimitSwitch.ForwardSoftLimitThreshold =
@@ -90,6 +89,7 @@ public class ShooterConstants {
 
         shooterWheelMotorCurrentLimit.initFromConfig();
         SHOOTER_WHEEL_MOTOR_CONFIG.CurrentLimits.SupplyCurrentLimitEnable = true;
+        SHOOTER_WHEEL_MOTOR_CONFIG.Feedback.SensorToMechanismRatio = WHEEL_GEAR_RATIO;
         SHOOTER_WHEEL_MOTOR_CONFIG.CurrentLimits.SupplyCurrentLimit = shooterWheelMotorCurrentLimit.get();
         SHOOTER_WHEEL_MOTOR_CONFIG.MotorOutput.NeutralMode = NeutralModeValue.Coast;
     }

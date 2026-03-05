@@ -46,16 +46,16 @@ public class IntakeSubsystem extends SubsystemBase implements Refreshable {
             SavedLoggedNetworkNumber.get("Tuning/Intake/IntakeShootArmSpeed", 5.0); // Degrees per second
 
     private final SavedLoggedNetworkNumber armControllerP =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmController/kP", 0.1, this);
+            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmController/kP", 0.1);
     private final SavedLoggedNetworkNumber armControllerI =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmController/kI", 0.0, this);
+            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmController/kI", 0.0);
     private final SavedLoggedNetworkNumber armControllerD =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmController/kD", 0.0, this);
+            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmController/kD", 0.0);
 
     private final SavedLoggedNetworkNumber armControllerMaxVel =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmController/MaxVel", 0.0, this); // Degrees per second
-    private final SavedLoggedNetworkNumber armControllerMaxAccel = SavedLoggedNetworkNumber.get(
-            "Tuning/Intake/ArmController/MaxAccel", 0.0, this); // Degrees per second squared
+            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmController/MaxVel", 0.0); // Degrees per second
+    private final SavedLoggedNetworkNumber armControllerMaxAccel =
+            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmController/MaxAccel", 0.0); // Degrees per second squared
 
     private final SavedLoggedNetworkNumber armControllerTol =
             SavedLoggedNetworkNumber.get("Tuning/Intake/ArmController/TolDeg", 10);
@@ -64,11 +64,11 @@ public class IntakeSubsystem extends SubsystemBase implements Refreshable {
             SavedLoggedNetworkNumber.get("Tuning/Intake/ArmController/VelTolDeg", 10);
 
     private final SavedLoggedNetworkNumber armFeedforwardKs =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmFeedforward/kS", 0.0, this);
+            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmFeedforward/kS", 0.0);
     private final SavedLoggedNetworkNumber armFeedforwardKg =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmFeedforward/kG", 0.0, this);
+            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmFeedforward/kG", 0.0);
     private final SavedLoggedNetworkNumber armFeedforwardKv =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmFeedforward/kV", 0.0, this);
+            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmFeedforward/kV", 0.0);
 
     private final SavedLoggedNetworkNumber wheelIntakeVoltage =
             SavedLoggedNetworkNumber.get("Tuning/Intake/WheelIntakeVoltage", 6.0);
@@ -76,13 +76,29 @@ public class IntakeSubsystem extends SubsystemBase implements Refreshable {
     private final SavedLoggedNetworkNumber wheelSlowIntakeVoltage =
             SavedLoggedNetworkNumber.get("Tuning/Intake/WheelSlowIntakeVoltage", 1.0);
 
+    private final SavedLoggedNetworkNumber jiggleFrequency =
+            SavedLoggedNetworkNumber.get("Tuning/Intake/JiggleFrequency", 0.25);
+    private final SavedLoggedNetworkNumber intakeJiggleVolts =
+            SavedLoggedNetworkNumber.get("Tuning/Intake/IntakeJiggleVolts", 4.0);
+
+    private final SavedLoggedNetworkNumber shootJiggleTolerance =
+            SavedLoggedNetworkNumber.get("Tuning/Intake/ShootJiggleTolerance", 5);
+
     private final SavedLoggedNetworkNumber armOffsetDeg = SavedLoggedNetworkNumber.get("Tuning/Intake/ArmOffsetDeg", 0);
 
     private double shootTargetAngle = 0;
 
     public IntakeSubsystem() {
-
         armController.enableContinuousInput(0, Math.PI * 2);
+        armControllerP.addRefreshable(this);
+        armControllerI.addRefreshable(this);
+        armControllerD.addRefreshable(this);
+        armControllerMaxVel.addRefreshable(this);
+        armControllerMaxAccel.addRefreshable(this);
+        armFeedforwardKg.addRefreshable(this);
+        armFeedforwardKv.addRefreshable(this);
+        wheelIntakeVoltage.addRefreshable(this);
+        //        refresh();
     }
 
     @Override
@@ -141,13 +157,17 @@ public class IntakeSubsystem extends SubsystemBase implements Refreshable {
                 wheelMotor.setVoltage(0);
                 break;
             case SHOOT:
-                shootTargetAngle += Units.degreesToRadians(intakeShootArmSpeed.get()) * (1.0 / 50.0);
-                targetAngle = Optional.of(shootTargetAngle);
-                if (Math.abs(targetAngle.get() - intakeShootArmSpeed.get())
-                        <= Units.degreesToRadians(5)) { // Close enough to stowed
-                    targetState = State.STOWED;
-                    break;
+                double jiggleVolts =
+                        Math.sin(2 * Math.PI * jiggleFrequency.get() * (System.currentTimeMillis() / 1000.0))
+                                * intakeJiggleVolts.get();
+                if (Math.abs(currentAngle - intakeDeployedAngle.get())
+                                <= Units.degreesToRadians(shootJiggleTolerance.get())
+                        && jiggleVolts > 0) {
+                    armMotor.setVoltage(jiggleVolts);
+                } else {
+                    armMotor.setVoltage(0);
                 }
+                Logger.recordOutput("IntakeSubsystem/JiggleVolts", jiggleVolts);
                 wheelMotor.setVoltage(wheelSlowIntakeVoltage.get());
 
                 break;
@@ -162,7 +182,7 @@ public class IntakeSubsystem extends SubsystemBase implements Refreshable {
                     && Math.abs(targetAngle.get() - currentAngle) < Units.degreesToRadians(armControllerTol.get())
                     && absEncoder.getVelocity().getValueAsDouble() < Units.degreesToRotations(armCutoffVelTol.get())) {
                 armMotor.setVoltage(0);
-            } else {
+            } else if (targetState != State.SHOOT) {
                 armMotor.setVoltage(feedforward + pidOut);
             }
 
@@ -182,5 +202,9 @@ public class IntakeSubsystem extends SubsystemBase implements Refreshable {
 
         Logger.recordOutput("IntakeSubsystem/CurrentAngle", Units.radiansToDegrees(currentAngle));
         Logger.recordOutput("IntakeSubsystem/TargetState", targetState);
+        Logger.recordOutput(
+                "IntakeSubsystem/OutputVolts", armMotor.getMotorVoltage().getValueAsDouble());
+        Logger.recordOutput(
+                "IntakeSubsystem/OutputCurrent", armMotor.getStatorCurrent().getValueAsDouble());
     }
 }

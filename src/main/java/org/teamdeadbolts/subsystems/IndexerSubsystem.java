@@ -7,7 +7,6 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.constants.IndexerConstants;
-import org.teamdeadbolts.utils.tuning.ConfigManager;
 import org.teamdeadbolts.utils.tuning.Refreshable;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
@@ -40,7 +39,7 @@ public class IndexerSubsystem extends SubsystemBase implements Refreshable {
             SavedLoggedNetworkNumber.get("Tuning/Indexer/IndexerJiggleFrequency", 1.0);
 
     public IndexerSubsystem() {
-        ConfigManager.getInstance().onReady(this::refresh);
+        //        ConfigManager.getInstance().onReady(this::refresh);
     }
 
     @Override

@@ -14,6 +14,7 @@ public class SavedLoggedNetworkBoolean extends LoggedNetworkBoolean implements T
     private boolean immediateValue;
     private boolean hasImmediateValue = false;
     private List<Refreshable> refreshables = new ArrayList<>();
+    private boolean initialized = false;
 
     private static final HashMap<String, SavedLoggedNetworkBoolean> INSTANCES = new HashMap<>();
 
@@ -24,24 +25,26 @@ public class SavedLoggedNetworkBoolean extends LoggedNetworkBoolean implements T
      * @param defautValue The default value
      * @return An instance of SavedLoggedNetworkBoolean
      */
-    public static synchronized SavedLoggedNetworkBoolean get(
-            String key, boolean defautValue, Refreshable... refreshables) {
-        return INSTANCES.computeIfAbsent(key, k -> new SavedLoggedNetworkBoolean(k, defautValue, refreshables));
+    public static synchronized SavedLoggedNetworkBoolean get(String key, boolean defautValue) {
+        return INSTANCES.computeIfAbsent(key, k -> new SavedLoggedNetworkBoolean(k, defautValue));
     }
 
-    private SavedLoggedNetworkBoolean(String key, boolean value, Refreshable... refreshables) {
+    private SavedLoggedNetworkBoolean(String key, boolean value) {
         super(key, value);
         this.key = key;
         this.immediateValue = value;
         this.hasImmediateValue = true;
         configManager.registerTunable(this);
-        for (Refreshable r : refreshables) {
-            this.refreshables.add(r);
-        }
+    }
+
+    public void add(Refreshable refreshable) {
+        refreshables.add(refreshable);
     }
 
     @Override
     public void initFromConfig() {
+        if (initialized) return;
+        initialized = true;
         if (!configManager.contains(key)) {
             System.out.printf("Creating new config value %s\n", key);
             configManager.set(key, get());
@@ -57,6 +60,7 @@ public class SavedLoggedNetworkBoolean extends LoggedNetworkBoolean implements T
                 System.out.printf("Warning: %s is of the wrong type\n", key);
             }
         }
+        //        refreshables.forEach(Refreshable::refresh);
     }
 
     @Override
@@ -65,11 +69,13 @@ public class SavedLoggedNetworkBoolean extends LoggedNetworkBoolean implements T
         this.immediateValue = value;
         this.hasImmediateValue = true;
         configManager.set(this.key, value);
-        refreshables.forEach(Refreshable::refresh);
     }
 
     @Override
     public boolean get() {
+        if (!initialized) {
+            initFromConfig();
+        }
         if (hasImmediateValue) {
             return immediateValue;
         }
@@ -86,6 +92,7 @@ public class SavedLoggedNetworkBoolean extends LoggedNetworkBoolean implements T
             immediateValue = c;
             hasImmediateValue = false;
             configManager.set(key, c);
+            refreshables.forEach(Refreshable::refresh);
         }
     }
 }

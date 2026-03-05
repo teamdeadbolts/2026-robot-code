@@ -9,7 +9,6 @@ import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.teamdeadbolts.constants.HopperConstants;
-import org.teamdeadbolts.utils.tuning.ConfigManager;
 import org.teamdeadbolts.utils.tuning.Refreshable;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
@@ -46,7 +45,7 @@ public class HopperSubsystem extends SubsystemBase implements Refreshable {
             SavedLoggedNetworkNumber.get("Tuning/Hopper/HopperMotorHoldVolts", 0.0);
 
     public HopperSubsystem() {
-        ConfigManager.getInstance().onReady(this::refresh);
+        //        ConfigManager.getInstance().onReady(this::refresh);
         hopperMotorRight.setControl(
                 new Follower(HopperConstants.HOPPER_MOTOR_LEFT_CAN_ID, MotorAlignmentValue.Opposed));
     }

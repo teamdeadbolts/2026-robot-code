@@ -15,7 +15,6 @@ import edu.wpi.first.math.util.Units;
 import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.constants.SwerveConstants;
 import org.teamdeadbolts.utils.MathUtils;
-import org.teamdeadbolts.utils.tuning.ConfigManager;
 import org.teamdeadbolts.utils.tuning.Refreshable;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
@@ -30,23 +29,23 @@ public class SwerveModule implements Refreshable {
     private CANBus canBus = new CANBus("*");
 
     /** Tuning values */
-    private final SavedLoggedNetworkNumber dFFkS = SavedLoggedNetworkNumber.get("Tuning/Swerve/Drive/kS", 0.0, this);
+    private final SavedLoggedNetworkNumber dFFkS = SavedLoggedNetworkNumber.get("Tuning/Swerve/Drive/kS", 0.0);
 
-    private final SavedLoggedNetworkNumber dFFkV = SavedLoggedNetworkNumber.get("Tuning/Swerve/Drive/kV", 0.0, this);
-    private final SavedLoggedNetworkNumber dFFkA = SavedLoggedNetworkNumber.get("Tuning/Swerve/Drive/kA", 0.0, this);
+    private final SavedLoggedNetworkNumber dFFkV = SavedLoggedNetworkNumber.get("Tuning/Swerve/Drive/kV", 0.0);
+    private final SavedLoggedNetworkNumber dFFkA = SavedLoggedNetworkNumber.get("Tuning/Swerve/Drive/kA", 0.0);
     private final SimpleMotorFeedforward driveFF = new SimpleMotorFeedforward(dFFkS.get(), dFFkS.get(), dFFkA.get());
 
-    private final SavedLoggedNetworkNumber tFFkS = SavedLoggedNetworkNumber.get("Tuning/Swerve/Turn/kS", 0.0, this);
-    private final SavedLoggedNetworkNumber tFFkV = SavedLoggedNetworkNumber.get("Tuning/Swerve/Turn/kV", 0.0, this);
+    private final SavedLoggedNetworkNumber tFFkS = SavedLoggedNetworkNumber.get("Tuning/Swerve/Turn/kS", 0.0);
+    private final SavedLoggedNetworkNumber tFFkV = SavedLoggedNetworkNumber.get("Tuning/Swerve/Turn/kV", 0.0);
     private final SimpleMotorFeedforward turnFF = new SimpleMotorFeedforward(tFFkS.get(), tFFkV.get());
 
-    private final SavedLoggedNetworkNumber dP = SavedLoggedNetworkNumber.get("Tuning/Swerve/Drive/kP", 0.0, this);
-    private final SavedLoggedNetworkNumber dI = SavedLoggedNetworkNumber.get("Tuning/Swerve/Drive/kI", 0.0, this);
-    private final SavedLoggedNetworkNumber dD = SavedLoggedNetworkNumber.get("Tuning/Swerve/Drive/kD", 0.0, this);
+    private final SavedLoggedNetworkNumber dP = SavedLoggedNetworkNumber.get("Tuning/Swerve/Drive/kP", 0.0);
+    private final SavedLoggedNetworkNumber dI = SavedLoggedNetworkNumber.get("Tuning/Swerve/Drive/kI", 0.0);
+    private final SavedLoggedNetworkNumber dD = SavedLoggedNetworkNumber.get("Tuning/Swerve/Drive/kD", 0.0);
 
-    private final SavedLoggedNetworkNumber tP = SavedLoggedNetworkNumber.get("Tuning/Swerve/Turn/kP", 0.0, this);
-    private final SavedLoggedNetworkNumber tI = SavedLoggedNetworkNumber.get("Tuning/Swerve/Turn/kI", 0.0, this);
-    private final SavedLoggedNetworkNumber tD = SavedLoggedNetworkNumber.get("Tuning/Swerve/Turn/kD", 0.0, this);
+    private final SavedLoggedNetworkNumber tP = SavedLoggedNetworkNumber.get("Tuning/Swerve/Turn/kP", 0.0);
+    private final SavedLoggedNetworkNumber tI = SavedLoggedNetworkNumber.get("Tuning/Swerve/Turn/kI", 0.0);
+    private final SavedLoggedNetworkNumber tD = SavedLoggedNetworkNumber.get("Tuning/Swerve/Turn/kD", 0.0);
     private final SavedLoggedNetworkNumber tMaxVel =
             SavedLoggedNetworkNumber.get("Tuning/Swerve/Turn/MaxVelocity", 0.0);
     private final SavedLoggedNetworkNumber tMaxAccel =
@@ -75,13 +74,31 @@ public class SwerveModule implements Refreshable {
         this.turningMotor = new TalonFX(config.turningMotorId(), canBus);
         this.resetToAbs();
         this.driveMotor.setPosition(0.0);
-        ConfigManager.getInstance().onReady(this::refresh);
+        dP.addRefreshable(this);
+        dI.addRefreshable(this);
+        dD.addRefreshable(this);
+        tP.addRefreshable(this);
+        tI.addRefreshable(this);
+        tD.addRefreshable(this);
+        tMaxVel.addRefreshable(this);
+        tMaxAccel.addRefreshable(this);
+        dFFkS.addRefreshable(this);
+        dFFkV.addRefreshable(this);
+        dFFkA.addRefreshable(this);
+        tFFkS.addRefreshable(this);
+        tFFkV.addRefreshable(this);
+        //        refresh();
+        //        ConfigManager.getInstance().onReady(this::refresh);
     }
 
     @Override
     /** Update motor and PID configurations from NetworkTables */
     public void refresh() {
         // CtreConfigs.init();
+        if (this.driveMotor == null) return;
+
+        System.out.printf("Refreshing %s\n", dP.get());
+
         this.driveMotor.getConfigurator().apply(SwerveConstants.DRIVE_MOTOR_CONFIG);
         this.turningMotor.getConfigurator().apply(SwerveConstants.TURNING_MOTOR_CONFIG);
         this.encoder.getConfigurator().apply(SwerveConstants.CANCODER_CONFIG);
@@ -229,7 +246,7 @@ public class SwerveModule implements Refreshable {
      * A config for a module
      *
      * @param offset The rotational offset from zero for the module
-     * @param driveMoterId The CAN id of the drive motor
+     * @param driveMotorId The CAN id of the drive motor
      * @param turningMotorId The CAN id of the turning motor
      * @param encoderId The CAN id of the encoder
      */
