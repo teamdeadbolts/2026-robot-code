@@ -31,7 +31,6 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.RobotState;
 import org.teamdeadbolts.constants.SwerveConstants;
-import org.teamdeadbolts.utils.tuning.ConfigManager;
 import org.teamdeadbolts.utils.tuning.Refreshable;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
@@ -79,7 +78,7 @@ public class SwerveSubsystem extends SubsystemBase implements Refreshable {
         trajHeadingController.setPID(trajRotP.get(), trajRotI.get(), trajRotD.get());
         trajXController.setPID(trajTransP.get(), trajTransI.get(), trajTransD.get());
         trajYController.setPID(trajTransP.get(), trajTransI.get(), trajTransD.get());
-        ConfigManager.getInstance().onReady(this::refresh);
+        //        ConfigManager.getInstance().onReady(this::refresh);
     }
 
     @Override

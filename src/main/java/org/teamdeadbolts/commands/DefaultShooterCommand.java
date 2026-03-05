@@ -2,11 +2,9 @@
 package org.teamdeadbolts.commands;
 
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import org.teamdeadbolts.RobotState;
 import org.teamdeadbolts.constants.SwerveConstants;
-import org.teamdeadbolts.subsystems.IndexerSubsystem;
 import org.teamdeadbolts.subsystems.shooter.ShooterSubsystem;
 
 public class DefaultShooterCommand extends Command {
@@ -33,6 +31,4 @@ public class DefaultShooterCommand extends Command {
 
         shooterSubsystem.setState(ShooterSubsystem.State.APRILTAG_TRACK);
     }
-
-  
 }

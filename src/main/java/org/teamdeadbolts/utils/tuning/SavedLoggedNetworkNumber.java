@@ -15,6 +15,7 @@ public class SavedLoggedNetworkNumber extends LoggedNetworkNumber implements Tun
     private double immediateValue;
     private boolean hasImmediateValue = false;
     private List<Refreshable> refreshables = new ArrayList<>();
+    private boolean initialized = false;
 
     private static final HashMap<String, SavedLoggedNetworkNumber> INSTANCES = new HashMap<>();
 
@@ -22,15 +23,14 @@ public class SavedLoggedNetworkNumber extends LoggedNetworkNumber implements Tun
      * Get an instance of a SavedLoggedNetworkNumber
      *
      * @param key The key of the value
-     * @param defautValue The default value
+     * @param defaultValue The default value
      * @return An instance of SavedLoggedNetworkNumber
      */
-    public static synchronized SavedLoggedNetworkNumber get(
-            String key, double defautValue, Refreshable... refreshables) {
-        return INSTANCES.computeIfAbsent(key, k -> new SavedLoggedNetworkNumber(k, defautValue));
+    public static synchronized SavedLoggedNetworkNumber get(String key, double defaultValue) {
+        return INSTANCES.computeIfAbsent(key, k -> new SavedLoggedNetworkNumber(k, defaultValue));
     }
 
-    private SavedLoggedNetworkNumber(String key, double value, Refreshable... refreshables) {
+    private SavedLoggedNetworkNumber(String key, double value) {
         super(key, value);
         this.key = key;
         this.immediateValue = value;
@@ -38,13 +38,17 @@ public class SavedLoggedNetworkNumber extends LoggedNetworkNumber implements Tun
 
         configManager.registerTunable(this);
 
-        for (Refreshable r : refreshables) {
-            this.refreshables.add(r);
-        }
+        //        this.refreshables.addAll(Arrays.asList(refreshables));
+    }
+
+    public void addRefreshable(Refreshable refreshable) {
+        refreshables.add(refreshable);
     }
 
     @Override
     public void initFromConfig() {
+        if (initialized) return;
+        initialized = true;
         if (!configManager.contains(key)) {
             System.out.printf("Creating new config value %s\n", key);
             configManager.set(key, get());
@@ -61,6 +65,7 @@ public class SavedLoggedNetworkNumber extends LoggedNetworkNumber implements Tun
                 System.out.printf("Warning: %s is of the wrong type\n", key);
             }
         }
+        refreshables.forEach(Refreshable::refresh);
     }
 
     @Override
@@ -69,12 +74,13 @@ public class SavedLoggedNetworkNumber extends LoggedNetworkNumber implements Tun
         configManager.set(this.key, value);
         this.immediateValue = value;
         this.hasImmediateValue = true;
-
-        refreshables.forEach(Refreshable::refresh);
     }
 
     @Override
     public double get() {
+        if (!initialized) {
+            initFromConfig();
+        }
         if (hasImmediateValue) {
             return immediateValue;
         }
@@ -91,6 +97,7 @@ public class SavedLoggedNetworkNumber extends LoggedNetworkNumber implements Tun
             immediateValue = c;
             hasImmediateValue = false;
             configManager.set(key, c);
+            refreshables.forEach(Refreshable::refresh);
         }
     }
 }

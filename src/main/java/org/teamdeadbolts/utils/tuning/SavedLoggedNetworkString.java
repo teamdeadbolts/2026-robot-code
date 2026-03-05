@@ -16,6 +16,7 @@ public class SavedLoggedNetworkString extends LoggedNetworkString implements Tun
     private String immediateValue;
     private boolean hasImmediateValue = false;
     private List<Refreshable> refreshables = new ArrayList<>();
+    private boolean initialized = false;
 
     /**
      * Get an instance of a SavedLoggedNetworkString
@@ -24,26 +25,27 @@ public class SavedLoggedNetworkString extends LoggedNetworkString implements Tun
      * @param defautValue The default value
      * @return An instance of SavedLoggedNetworkString
      */
-    public static synchronized SavedLoggedNetworkString get(
-            String key, String defautValue, Refreshable... refreshables) {
-        return INSTANCES.computeIfAbsent(key, k -> new SavedLoggedNetworkString(k, defautValue, refreshables));
+    public static synchronized SavedLoggedNetworkString get(String key, String defautValue) {
+        return INSTANCES.computeIfAbsent(key, k -> new SavedLoggedNetworkString(k, defautValue));
     }
 
-    private SavedLoggedNetworkString(String key, String value, Refreshable... refreshables) {
+    private SavedLoggedNetworkString(String key, String value) {
         super(key, value);
         this.key = key;
         this.immediateValue = value;
         this.hasImmediateValue = true;
 
         configManager.registerTunable(this);
+    }
 
-        for (Refreshable r : refreshables) {
-            this.refreshables.add(r);
-        }
+    public void add(Refreshable refreshable) {
+        refreshables.add(refreshable);
     }
 
     @Override
     public void initFromConfig() {
+        if (initialized) return;
+        initialized = true;
         if (!configManager.contains(key)) {
             System.out.printf("Creating new config alue %s\n", key);
             configManager.set(key, get());
@@ -60,6 +62,7 @@ public class SavedLoggedNetworkString extends LoggedNetworkString implements Tun
                 System.out.printf("Warning: %s is of the wrong type\n", key);
             }
         }
+        //        refreshables.forEach(Refreshable::refresh);
     }
 
     @Override
@@ -68,11 +71,13 @@ public class SavedLoggedNetworkString extends LoggedNetworkString implements Tun
         configManager.set(this.key, value);
         immediateValue = value;
         hasImmediateValue = true;
-        refreshables.forEach(Refreshable::refresh);
     }
 
     @Override
     public String get() {
+        if (!initialized) {
+            initFromConfig();
+        }
         if (hasImmediateValue) return immediateValue;
         return super.get();
     }
@@ -87,6 +92,7 @@ public class SavedLoggedNetworkString extends LoggedNetworkString implements Tun
             immediateValue = c;
             hasImmediateValue = false;
             configManager.set(key, c);
+            refreshables.forEach(Refreshable::refresh);
         }
     }
 }

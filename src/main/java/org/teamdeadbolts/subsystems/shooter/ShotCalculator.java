@@ -31,6 +31,9 @@ public class ShotCalculator {
         }
     }
 
+    private Translation2d lastAcceptedVirtTarget2d = null;
+    private ShotParametersAutoLogged lastAcceptedShot = null;
+
     private static final double G = 9.81;
 
     private static final SavedLoggedNetworkNumber calcIterations =
@@ -43,6 +46,8 @@ public class ShotCalculator {
             SavedLoggedNetworkNumber.get("Tuning/Shooter/ShootLatancyMs", 100);
     private static final SavedLoggedNetworkNumber timeToKeepVel =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/TimeToKeepVelMs", 1000);
+    private static final SavedLoggedNetworkNumber airResistanceMultiplier =
+            SavedLoggedNetworkNumber.get("Tuning/Shooter/airResistanceMultiplier", 0.01);
 
     private final ExtrapolatingDoubleMap vxMap = new ExtrapolatingDoubleMap(timeToKeepVel.get());
     private final ExtrapolatingDoubleMap vyMap = new ExtrapolatingDoubleMap(timeToKeepVel.get());
@@ -57,7 +62,11 @@ public class ShotCalculator {
         vthetaMap.put(timestamp, speeds.omegaRadiansPerSecond);
     }
 
-    public ShotParametersAutoLogged calculateShot(Pose3d robotPose, Translation3d target, double currentTime) {
+    public ShotParametersAutoLogged calculateShot(
+            Pose3d robotPose,
+            Translation3d target,
+            double currentTime,
+            double tolerance) { // Tolerance units are meters
         Pose3d fieldRelTurret = robotPose.transformBy(ShooterConstants.SHOOTER_OFFSET);
         Translation2d turretPos2d = fieldRelTurret.getTranslation().toTranslation2d();
 
@@ -98,19 +107,49 @@ public class ShotCalculator {
 
         double turretAngle = calculateFieldRelativeTurrent(robotPose.toPose2d(), virtTarget2d);
 
-        ShotParametersAutoLogged shot = new ShotParametersAutoLogged();
+        ShotParametersAutoLogged rawShot = new ShotParametersAutoLogged();
         Logger.recordOutput("ShotCalc/VirtualTarget", new Pose2d(virtTarget2d, new Rotation2d()));
         Logger.recordOutput("ShotCalc/TurretVel", turretVel);
         Logger.recordOutput("ShotCalc/PivToVirtualTarget", distFromPivotToTarget);
         Logger.recordOutput("ShotCalc/HeightFromPivot", heightFromPivotToTarget);
         Logger.recordOutput("ShotCalc/HoodAngle", Units.radiansToDegrees(hoodAngle));
         Logger.recordOutput("ShotCalc/Velocity", ballVelocity);
-        shot.hoodAngle = Math.PI / 2 - hoodAngle;
-        shot.turretAngle = turretAngle;
-        shot.wheelSpeed = shooterMPSToRPM(ballVelocity);
-        shot.ballVelocity = ballVelocity;
+        rawShot.hoodAngle = Math.PI / 2 - hoodAngle;
+        rawShot.turretAngle = turretAngle;
+        rawShot.wheelSpeed = shooterMPSToRPM(ballVelocity);
+        rawShot.ballVelocity = ballVelocity;
 
-        return shot;
+        boolean acceptedNew = true;
+
+        if (tolerance > 0.0 && lastAcceptedVirtTarget2d != null && lastAcceptedShot != null) {
+            double aimShift = virtTarget2d.minus(lastAcceptedVirtTarget2d).getNorm();
+
+            if (aimShift <= tolerance) {
+                acceptedNew = false;
+
+                lastAcceptedShot.turretAngle = rawShot.turretAngle;
+            }
+        }
+
+        ShotParametersAutoLogged shotToUse;
+        Translation2d virtTargetToLog;
+
+        if (acceptedNew || lastAcceptedShot == null) {
+            lastAcceptedShot = rawShot;
+            lastAcceptedVirtTarget2d = virtTarget2d;
+            shotToUse = rawShot;
+            virtTargetToLog = virtTarget2d;
+        } else {
+            shotToUse = lastAcceptedShot;
+            virtTargetToLog = lastAcceptedVirtTarget2d;
+        }
+
+        Logger.recordOutput("ShotCalc/VirtualTargetUsed", new Pose2d(virtTargetToLog, new Rotation2d()));
+
+        shotToUse.ballVelocity *= 1 + (airResistanceMultiplier.get() * distFromPivotToTarget);
+        shotToUse.wheelSpeed = shooterMPSToRPM(shotToUse.ballVelocity);
+
+        return shotToUse;
     }
 
     public double calculateLatancyOffsetTurrentAngle(
@@ -180,6 +219,9 @@ public class ShotCalculator {
         double cos = Math.cos(theta);
 
         double denom = 2 * Math.pow(cos, 2) * (dx * Math.tan(theta) - dy);
+        if (denom <= 0) {
+            return 0;
+        }
         return Math.sqrt((G * Math.pow(dx, 2)) / denom);
     }
 }
