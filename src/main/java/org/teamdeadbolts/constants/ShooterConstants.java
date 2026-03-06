@@ -21,8 +21,8 @@ public class ShooterConstants {
     public static final double SHOOTER_HOOD_MIN_ANGLE_DEGREES = 10.0;
     public static final double SHOOTER_HOOD_MAX_ANGLE_DEGREES = 40.0; // TODO fix!!
 
-    public static final double TURRENT_MIN_POSITION_DEGREES = -270.0;
-    public static final double TURRENT_MAX_POSITION_DEGREES = 270.0;
+    public static final double TURRENT_MIN_POSITION_DEGREES = -360.0;
+    public static final double TURRENT_MAX_POSITION_DEGREES = 360.0;
 
     public static final double WHEEL_MAX_OMEGA_RAD_PER_SEC = 600.0 * 2.0 * Math.PI / 60.0; // 600 RPM
 

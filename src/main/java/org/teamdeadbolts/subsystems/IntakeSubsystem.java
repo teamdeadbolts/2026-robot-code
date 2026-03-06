@@ -37,6 +37,7 @@ public class IntakeSubsystem extends SubsystemBase implements Refreshable {
     private ProfiledPIDController armController =
             new ProfiledPIDController(0.0, 0.0, 0.0, new TrapezoidProfile.Constraints(0.0, 0.0));
     private ArmFeedforward armFeedforward = new ArmFeedforward(0.0, 0.0, 0.0);
+    private ArmFeedforward armShootFeedforward = new ArmFeedforward(0.0, 0.0, 0.0);
 
     private final SavedLoggedNetworkNumber intakeDeployedAngle =
             SavedLoggedNetworkNumber.get("Tuning/Intake/IntakeDeployedAngle", 90.0);
@@ -64,25 +65,24 @@ public class IntakeSubsystem extends SubsystemBase implements Refreshable {
             SavedLoggedNetworkNumber.get("Tuning/Intake/ArmController/VelTolDeg", 10);
 
     private final SavedLoggedNetworkNumber armFeedforwardKs =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmFeedforward/kS", 0.0);
+            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmEmptyFeedforward/kS", 0.0);
     private final SavedLoggedNetworkNumber armFeedforwardKg =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmFeedforward/kG", 0.0);
+            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmEmptyFeedforward/kG", 0.0);
     private final SavedLoggedNetworkNumber armFeedforwardKv =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmFeedforward/kV", 0.0);
+            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmEmptyFeedforward/kV", 0.0);
+
+    private final SavedLoggedNetworkNumber armShootFeedforwardKs =
+            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmShootFeedforward/kS", 0.0);
+    private final SavedLoggedNetworkNumber armShootFeedforwardKg =
+            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmShootFeedforward/kG", 0.0);
+    private final SavedLoggedNetworkNumber armShootFeedforwardKv =
+            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmShootFeedforward/kV", 0.0);
 
     private final SavedLoggedNetworkNumber wheelIntakeVoltage =
             SavedLoggedNetworkNumber.get("Tuning/Intake/WheelIntakeVoltage", 6.0);
 
     private final SavedLoggedNetworkNumber wheelSlowIntakeVoltage =
             SavedLoggedNetworkNumber.get("Tuning/Intake/WheelSlowIntakeVoltage", 1.0);
-
-    private final SavedLoggedNetworkNumber jiggleFrequency =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/JiggleFrequency", 0.25);
-    private final SavedLoggedNetworkNumber intakeJiggleVolts =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/IntakeJiggleVolts", 4.0);
-
-    private final SavedLoggedNetworkNumber shootJiggleTolerance =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/ShootJiggleTolerance", 5);
 
     private final SavedLoggedNetworkNumber armOffsetDeg = SavedLoggedNetworkNumber.get("Tuning/Intake/ArmOffsetDeg", 0);
 
@@ -97,6 +97,9 @@ public class IntakeSubsystem extends SubsystemBase implements Refreshable {
         armControllerMaxAccel.addRefreshable(this);
         armFeedforwardKg.addRefreshable(this);
         armFeedforwardKv.addRefreshable(this);
+        armShootFeedforwardKg.addRefreshable(this);
+        armShootFeedforwardKs.addRefreshable(this);
+        armShootFeedforwardKv.addRefreshable(this);
         wheelIntakeVoltage.addRefreshable(this);
         //        refresh();
     }
@@ -112,6 +115,9 @@ public class IntakeSubsystem extends SubsystemBase implements Refreshable {
         armFeedforward.setKg(armFeedforwardKg.get());
         armFeedforward.setKs(armFeedforwardKs.get());
         armFeedforward.setKv(armFeedforwardKv.get());
+        armShootFeedforward.setKs(armShootFeedforwardKs.get());
+        armShootFeedforward.setKg(armShootFeedforwardKg.get());
+        armShootFeedforward.setKv(armShootFeedforwardKv.get());
         IntakeConstants.init();
         armMotor.getConfigurator().apply(IntakeConstants.INTAKE_ARM_MOTOR_CONFIG);
         wheelMotor.getConfigurator().apply(IntakeConstants.INTAKE_WHEEL_MOTOR_CONFIG);
@@ -157,32 +163,21 @@ public class IntakeSubsystem extends SubsystemBase implements Refreshable {
                 wheelMotor.setVoltage(0);
                 break;
             case SHOOT:
-                double jiggleVolts =
-                        Math.sin(2 * Math.PI * jiggleFrequency.get() * (System.currentTimeMillis() / 1000.0))
-                                * intakeJiggleVolts.get();
-                if (Math.abs(currentAngle - intakeDeployedAngle.get())
-                                <= Units.degreesToRadians(shootJiggleTolerance.get())
-                        && jiggleVolts > 0) {
-                    armMotor.setVoltage(jiggleVolts);
-                } else {
-                    armMotor.setVoltage(0);
-                }
-                Logger.recordOutput("IntakeSubsystem/JiggleVolts", jiggleVolts);
-                wheelMotor.setVoltage(wheelSlowIntakeVoltage.get());
-
                 break;
         }
 
         if (targetAngle.isPresent()) {
             TrapezoidProfile.State setpoint = armController.getSetpoint();
-            double feedforward = armFeedforward.calculate(setpoint.position, setpoint.velocity);
+            double feedforward = targetState == State.SHOOT
+                    ? armShootFeedforward.calculate(setpoint.position, setpoint.velocity)
+                    : armFeedforward.calculate(setpoint.position, setpoint.velocity);
             double pidOut = armController.calculate(currentAngle, targetAngle.get());
 
             if ((targetState == State.DEPLOYED || targetState == State.STOWED)
                     && Math.abs(targetAngle.get() - currentAngle) < Units.degreesToRadians(armControllerTol.get())
                     && absEncoder.getVelocity().getValueAsDouble() < Units.degreesToRotations(armCutoffVelTol.get())) {
                 armMotor.setVoltage(0);
-            } else if (targetState != State.SHOOT) {
+            } else {
                 armMotor.setVoltage(feedforward + pidOut);
             }
 

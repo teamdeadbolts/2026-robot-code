@@ -106,7 +106,7 @@ public class RobotContainer {
 
         primaryController
                 .povDown() // Up
-                .whileTrue(new ShootCommand(indexerSubsystem, shooterSubsystem));
+                .whileTrue(new ShootCommand(indexerSubsystem, shooterSubsystem, intakeSubsystem));
         primaryController
                 .povUp() // Down (retarded)
                 .whileTrue(new RunCommand(
@@ -143,11 +143,12 @@ public class RobotContainer {
                         () -> {
                             shooterSubsystem.setState(ShooterSubsystem.State.SPINUP);
                             indexerSubsystem.setState(IndexerSubsystem.State.SHOOT);
-                            intakeSubsystem.setState(IntakeSubsystem.State.SHOOT);
+                            // intakeSubsystem.setState(IntakeSubsystem.State.SHOOT);
                         },
                         shooterSubsystem,
-                        indexerSubsystem,
-                        intakeSubsystem));
+                        indexerSubsystem
+                        // intakeSubsystem
+                        ));
 
         // primaryController.povLeft().whileTrue(swerveSubsystem.runDriveQuasiTest(Direction.kReverse));
     }

@@ -6,7 +6,7 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import org.teamdeadbolts.RobotState;
-import org.teamdeadbolts.constants.SwerveConstants;
+import org.teamdeadbolts.constants.ZoneConstants;
 import org.teamdeadbolts.subsystems.HopperSubsystem;
 
 public class HopperCommand extends Command {
@@ -108,11 +108,11 @@ public class HopperCommand extends Command {
     }
 
     private boolean isInAutoDownZone(Translation2d robotPosMeters) {
-        return SwerveConstants.BLUE_BOTTOM_TRENCH_ZONE.contains(robotPosMeters)
-                || SwerveConstants.RED_BOTTOM_TRENCH_ZONE.contains(robotPosMeters)
-                || SwerveConstants.BLUE_TOP_TRENCH_ZONE.contains(robotPosMeters)
-                || SwerveConstants.RED_TOP_TRENCH_ZONE.contains(robotPosMeters)
-                || SwerveConstants.BLUE_TOWER_ZONE.contains(robotPosMeters)
-                || SwerveConstants.RED_TOWER_ZONE.contains(robotPosMeters);
+        return ZoneConstants.BLUE_BOTTOM_TRENCH_ZONE.contains(robotPosMeters)
+                || ZoneConstants.RED_BOTTOM_TRENCH_ZONE.contains(robotPosMeters)
+                || ZoneConstants.BLUE_TOP_TRENCH_ZONE.contains(robotPosMeters)
+                || ZoneConstants.RED_TOP_TRENCH_ZONE.contains(robotPosMeters)
+                || ZoneConstants.BLUE_TOWER_ZONE.contains(robotPosMeters)
+                || ZoneConstants.RED_TOWER_ZONE.contains(robotPosMeters);
     }
 }

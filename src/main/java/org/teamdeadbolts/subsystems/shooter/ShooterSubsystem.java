@@ -6,6 +6,7 @@ import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -57,6 +58,7 @@ public class ShooterSubsystem extends SubsystemBase implements Refreshable {
     private TalonFX rightWheelMotor = new TalonFX(ShooterConstants.SHOOTER_WHEEL_MOTOR_RIGHT_CAN_ID, rio);
 
     private PIDController hoodController = new PIDController(0.0, 0.0, 0.0);
+    private ArmFeedforward hoodFF = new ArmFeedforward(0.0, 0.0, 0);
     private PIDController turretController = new PIDController(0.0, 0.0, 0.0);
     private SimpleMotorFeedforward wheelFF = new SimpleMotorFeedforward(0, 0, 0);
 
@@ -66,6 +68,14 @@ public class ShooterSubsystem extends SubsystemBase implements Refreshable {
             SavedLoggedNetworkNumber.get("Tuning/Shooter/HoodController/kI", 0.0);
     private final SavedLoggedNetworkNumber hoodControllerD =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/HoodController/kD", 0.0);
+    private final SavedLoggedNetworkNumber hoodControllerTol =
+            SavedLoggedNetworkNumber.get("Tuning/Shooter/HoodController/ToleranceDeg", 0.0);
+
+    private final SavedLoggedNetworkNumber hoodFeedforwardKs =
+            SavedLoggedNetworkNumber.get("Tuning/Shooter/HoodFeedforward/Ks", 0);
+
+    private final SavedLoggedNetworkNumber hoodFeedforwardKg =
+            SavedLoggedNetworkNumber.get("Tuning/Shooter/HoodFeedforward/Kg", 0);
 
     private final SavedLoggedNetworkNumber hoodZeroVoltage =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/HoodZeroVoltage", 0.0);
@@ -123,6 +133,9 @@ public class ShooterSubsystem extends SubsystemBase implements Refreshable {
         hoodControllerP.addRefreshable(this);
         hoodControllerI.addRefreshable(this);
         hoodControllerD.addRefreshable(this);
+        hoodControllerTol.addRefreshable(this);
+        hoodFeedforwardKg.addRefreshable(this);
+        hoodFeedforwardKs.addRefreshable(this);
         turretControllerP.addRefreshable(this);
         turretControllerI.addRefreshable(this);
         turretControllerD.addRefreshable(this);
@@ -135,10 +148,13 @@ public class ShooterSubsystem extends SubsystemBase implements Refreshable {
     public void refresh() {
         System.out.println("ShooterSubsystem refresh");
         hoodController.setPID(hoodControllerP.get(), hoodControllerI.get(), hoodControllerD.get());
+        hoodController.setTolerance(hoodControllerTol.get());
         turretController.setPID(turretControllerP.get(), turretControllerI.get(), turretControllerD.get());
         wheelFF.setKs(wheelFFS.get());
         wheelFF.setKv(wheelFFV.get());
         wheelFF.setKa(wheelFFA.get());
+        hoodFF.setKs(hoodFeedforwardKs.get());
+        hoodFF.setKg(hoodFeedforwardKg.get());
 
         ShooterConstants.init();
         hoodMotor.getConfigurator().apply(ShooterConstants.SHOOTER_HOOD_MOTOR_CONFIG);
@@ -327,10 +343,12 @@ public class ShooterSubsystem extends SubsystemBase implements Refreshable {
                     targetHoodAngle.get(),
                     Units.degreesToRadians(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES),
                     Units.degreesToRadians(ShooterConstants.SHOOTER_HOOD_MAX_ANGLE_DEGREES));
-            double hoodOutput = hoodController.calculate(currentHoodAngle, targetHoodAngleClamped);
-            hoodMotor.setVoltage(hoodOutput);
+            double pidOutput = hoodController.calculate(currentHoodAngle, targetHoodAngleClamped);
+            double hoodOutput = pidOutput + hoodFF.calculate(targetHoodAngle.get(), currentHoodAngle);
+            if (!hoodController.atSetpoint()) hoodMotor.setVoltage(hoodOutput);
             Logger.recordOutput("ShooterSubsystem/TargetHoodAngle", Units.radiansToDegrees(targetHoodAngle.get()));
             Logger.recordOutput("ShooterSubsystem/HoodOutput", hoodOutput);
+            Logger.recordOutput("ShooterSubsystem/PidOutput", pidOutput);
         } else {
             if (targetState != State.ZERO) hoodMotor.setVoltage(0);
         }

@@ -9,7 +9,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import java.util.function.DoubleSupplier;
 import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.RobotState;
-import org.teamdeadbolts.constants.SwerveConstants;
+import org.teamdeadbolts.constants.ZoneConstants;
 import org.teamdeadbolts.subsystems.drive.SwerveSubsystem;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
@@ -67,10 +67,10 @@ public class DriveCommand extends Command {
         double sidewaysMps = sidewaysPercent * maxRobotSpeed.get();
         double rotationMps = rotationPercent * Units.degreesToRadians(maxRobotAnglarSpeed.get());
 
-        if (SwerveConstants.RED_TOP_BUMP_ZONE.contains(robotTrans)
-                || SwerveConstants.RED_BOTTOM_BUMP_ZONE.contains(robotTrans)
-                || SwerveConstants.BLUE_TOP_BUMP_ZONE.contains(robotTrans)
-                || SwerveConstants.BLUE_BOTTOM_BUMP_ZONE.contains(robotTrans)) {
+        if (ZoneConstants.RED_TOP_BUMP_ZONE.contains(robotTrans)
+                || ZoneConstants.RED_BOTTOM_BUMP_ZONE.contains(robotTrans)
+                || ZoneConstants.BLUE_TOP_BUMP_ZONE.contains(robotTrans)
+                || ZoneConstants.BLUE_BOTTOM_BUMP_ZONE.contains(robotTrans)) {
             forwardMps = forwardMps * bumbSpeed.get();
             sidewaysMps = sidewaysMps * bumbSpeed.get();
         }

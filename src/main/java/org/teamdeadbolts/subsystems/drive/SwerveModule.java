@@ -99,6 +99,7 @@ public class SwerveModule implements Refreshable {
 
         System.out.printf("Refreshing %s\n", dP.get());
 
+        SwerveConstants.init();
         this.driveMotor.getConfigurator().apply(SwerveConstants.DRIVE_MOTOR_CONFIG);
         this.turningMotor.getConfigurator().apply(SwerveConstants.TURNING_MOTOR_CONFIG);
         this.encoder.getConfigurator().apply(SwerveConstants.CANCODER_CONFIG);
@@ -213,8 +214,7 @@ public class SwerveModule implements Refreshable {
         double turnVoltage = turnPidOut + turnFFOut;
         turningMotor.setVoltage(turnVoltage);
 
-        double driveMeasurement = MathUtils.RPSToMPS(
-                this.driveMotor.getVelocity().getValueAsDouble(), SwerveConstants.WHEEL_CIRCUMFERENCE);
+        double driveMeasurement = getState().speedMetersPerSecond;
 
         double drivePidOut = dPIDController.calculate(driveMeasurement, this.targetSpeedMps);
         double driveFFOut = driveFF.calculate(this.targetSpeedMps);

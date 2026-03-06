@@ -4,7 +4,7 @@ package org.teamdeadbolts.commands;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import org.teamdeadbolts.RobotState;
-import org.teamdeadbolts.constants.SwerveConstants;
+import org.teamdeadbolts.constants.ZoneConstants;
 import org.teamdeadbolts.subsystems.shooter.ShooterSubsystem;
 
 public class DefaultShooterCommand extends Command {
@@ -21,10 +21,10 @@ public class DefaultShooterCommand extends Command {
     public void execute() {
         Pose2d robotPose = robotState.getRobotPose().toPose2d();
         // If we are in any of the trench zones put down the hood
-        if (SwerveConstants.RED_BOTTOM_TRENCH_ZONE.contains(robotPose.getTranslation())
-                || SwerveConstants.BLUE_BOTTOM_TRENCH_ZONE.contains(robotPose.getTranslation())
-                || SwerveConstants.RED_TOP_BUMP_ZONE.contains(robotPose.getTranslation())
-                || SwerveConstants.BLUE_TOP_BUMP_ZONE.contains(robotPose.getTranslation())) {
+        if (ZoneConstants.RED_BOTTOM_TRENCH_ZONE.contains(robotPose.getTranslation())
+                || ZoneConstants.BLUE_BOTTOM_TRENCH_ZONE.contains(robotPose.getTranslation())
+                || ZoneConstants.RED_TOP_BUMP_ZONE.contains(robotPose.getTranslation())
+                || ZoneConstants.BLUE_TOP_BUMP_ZONE.contains(robotPose.getTranslation())) {
             shooterSubsystem.setState(ShooterSubsystem.State.OFF);
             return;
         }

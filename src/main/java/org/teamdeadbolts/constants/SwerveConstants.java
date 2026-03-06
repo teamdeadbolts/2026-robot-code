@@ -11,7 +11,6 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.util.Units;
 import org.teamdeadbolts.subsystems.drive.SwerveModule.SwerveModuleConfig;
-import org.teamdeadbolts.utils.Zone;
 import org.teamdeadbolts.utils.tuning.ConfigManager;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
@@ -47,26 +46,6 @@ public class SwerveConstants {
             new Translation2d(CHASSIS_SIZE / 2.0, -CHASSIS_SIZE / 2.0), // Front Right (A)
             new Translation2d(-CHASSIS_SIZE / 2.0, CHASSIS_SIZE / 2.0), // Back Left (B)
             new Translation2d(-CHASSIS_SIZE / 2.0, -CHASSIS_SIZE / 2.0)); // Back Right (A)
-
-    // TODO: Find these
-    public static final Zone BLUE_TOP_BUMP_ZONE = new Zone();
-    public static final Zone BLUE_BOTTOM_BUMP_ZONE = new Zone();
-    public static final Zone BLUE_BOTTOM_TRENCH_ZONE = new Zone();
-    public static final Zone BLUE_TOP_TRENCH_ZONE = new Zone();
-
-    public static final Zone RED_TOP_BUMP_ZONE = new Zone();
-    public static final Zone RED_BOTTOM_BUMP_ZONE = new Zone();
-    public static final Zone RED_BOTTOM_TRENCH_ZONE = new Zone();
-    public static final Zone RED_TOP_TRENCH_ZONE = new Zone();
-
-    public static final Zone RED_SCORE_ZONE = new Zone();
-    public static final Zone BLUE_SCORE_ZONE = new Zone();
-
-    public static final Zone RED_CLOSE_ZONE = new Zone();
-    public static final Zone BLUE_CLOSE_ZONE = new Zone();
-
-    public static final Zone RED_TOWER_ZONE = new Zone();
-    public static final Zone BLUE_TOWER_ZONE = new Zone();
 
     public static final TalonFXConfiguration TURNING_MOTOR_CONFIG = new TalonFXConfiguration();
     public static final TalonFXConfiguration DRIVE_MOTOR_CONFIG = new TalonFXConfiguration();
