@@ -58,11 +58,15 @@ public class VisionSubsystem extends SubsystemBase {
             Logger.processInputs("Vision/Camera " + i, ctxs[i]);
         }
 
+        tracer.addEpoch("Process Inputs");
+
         for (int index = 0; index < ctxs.length; index++) {
             // Retrieve tag poses from layout for debugging
             for (int tId : ctxs[index].tagIds) {
                 VisionConstants.FIELD_LAYOUT.getTagPose(tId).ifPresent(tagPoses::add);
             }
+
+            tracer.addEpoch("Camera" + index + " TagPoses");
 
             // Filter and process camera observations
             for (PoseObservation observation : ctxs[index].observations) {
@@ -84,6 +88,8 @@ public class VisionSubsystem extends SubsystemBase {
                     }
                 }
             }
+
+            tracer.addEpoch("Camera" + index + " Add Observations");
 
             // Logging telemetry
             if (loopCount++ > 4) {
