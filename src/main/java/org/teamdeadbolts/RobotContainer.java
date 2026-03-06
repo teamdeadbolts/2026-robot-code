@@ -137,18 +137,7 @@ public class RobotContainer {
                         },
                         intakeSubsystem));
         //
-        primaryController
-                .leftBumper()
-                .whileTrue(new RunCommand(
-                        () -> {
-                            shooterSubsystem.setState(ShooterSubsystem.State.SPINUP);
-                            indexerSubsystem.setState(IndexerSubsystem.State.SHOOT);
-                            // intakeSubsystem.setState(IntakeSubsystem.State.SHOOT);
-                        },
-                        shooterSubsystem,
-                        indexerSubsystem
-                        // intakeSubsystem
-                        ));
+        primaryController.leftBumper().whileTrue(new ShootCommand(indexerSubsystem, shooterSubsystem, intakeSubsystem));
 
         // primaryController.povLeft().whileTrue(swerveSubsystem.runDriveQuasiTest(Direction.kReverse));
     }

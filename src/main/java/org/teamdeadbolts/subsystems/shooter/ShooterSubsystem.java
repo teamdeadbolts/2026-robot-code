@@ -20,21 +20,20 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.RobotState;
 import org.teamdeadbolts.constants.ShooterConstants;
 import org.teamdeadbolts.constants.VisionConstants;
+import org.teamdeadbolts.utils.StatefulSubsystem;
 import org.teamdeadbolts.utils.Zone;
 import org.teamdeadbolts.utils.tuning.Refreshable;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
-public class ShooterSubsystem extends SubsystemBase implements Refreshable {
+public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> implements Refreshable {
     public enum State {
         OFF,
         APRILTAG_TRACK,
@@ -45,9 +44,6 @@ public class ShooterSubsystem extends SubsystemBase implements Refreshable {
         TEST,
         SYSTEMS_TEST;
     }
-
-    @AutoLogOutput
-    private State targetState = State.OFF;
 
     private final CANBus rio = new CANBus("rio");
     private final CANBus canivore = new CANBus("*");
@@ -120,6 +116,7 @@ public class ShooterSubsystem extends SubsystemBase implements Refreshable {
 
     public ShooterSubsystem() {
         this.shotCalculator = new ShotCalculator();
+        this.targetState = State.OFF;
 
         //        ConfigManager.getInstance().onReady(this::refresh);
         //        refresh();
@@ -157,14 +154,6 @@ public class ShooterSubsystem extends SubsystemBase implements Refreshable {
                 new Follower(ShooterConstants.SHOOTER_WHEEL_MOTOR_LEFT_CAN_ID, MotorAlignmentValue.Opposed));
     }
 
-    public void setState(State newState) {
-        targetState = newState;
-    }
-
-    public State getState() {
-        return targetState;
-    }
-
     public double getRPMError() {
         if (targetWheelSpeed.isEmpty()) return 0;
         return (targetWheelSpeed.get() - Units.radiansPerSecondToRotationsPerMinute(currentWheelSpeed));
@@ -182,6 +171,12 @@ public class ShooterSubsystem extends SubsystemBase implements Refreshable {
     public Transform3d getTurretOffset() {
         return new Transform3d(
                 ShooterConstants.SHOOTER_OFFSET.getTranslation(), new Rotation3d(0, 0, getTurretRotation()));
+    }
+
+    @Override
+    protected void onStateChange(State from, State to) {
+        hoodController.reset();
+        turretController.reset();
     }
 
     @Override
@@ -387,6 +382,13 @@ public class ShooterSubsystem extends SubsystemBase implements Refreshable {
         Logger.recordOutput("ShooterSubsystem/TurretPose", getFieldRelativeTurretPose());
         Logger.recordOutput(
                 "ShooterSubsystem/HoodAmps", hoodMotor.getStatorCurrent().getValueAsDouble());
+
+        Logger.recordOutput(
+                "ShooterSubsystem/LeftMotorVolts",
+                leftWheelMotor.getMotorVoltage().getValueAsDouble());
+        Logger.recordOutput(
+                "ShooterSubsystem/RightMotorVolts",
+                rightWheelMotor.getMotorVoltage().getValueAsDouble());
     }
 
     private double calculateTurretSetpoint(double currentAngle, double targetAngle) {

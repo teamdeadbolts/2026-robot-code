@@ -14,6 +14,8 @@ public class HopperConstants {
     public static final int HOPPER_RIGHT_UPPER_LIMIT_SWITCH_CHANNEL = -1;
     public static final int HOPPER_RIGHT_LOWER_LIMIT_SWITCH_CHANNEL = -1;
 
+    public static final double HOPPER_ROTATIONS_TO_METERS = 1; // TODO: measure
+
     public static final TalonFXConfiguration HOPPER_MOTOR_CONFIG = new TalonFXConfiguration();
 
     static {

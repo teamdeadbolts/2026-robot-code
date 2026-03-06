@@ -3,14 +3,12 @@ package org.teamdeadbolts.subsystems;
 
 import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.hardware.TalonFX;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import org.littletonrobotics.junction.AutoLogOutput;
-import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.constants.IndexerConstants;
+import org.teamdeadbolts.utils.StatefulSubsystem;
 import org.teamdeadbolts.utils.tuning.Refreshable;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
-public class IndexerSubsystem extends SubsystemBase implements Refreshable {
+public class IndexerSubsystem extends StatefulSubsystem<IndexerSubsystem.State> implements Refreshable {
     public enum State {
         OFF,
         JIGGLE,
@@ -22,9 +20,6 @@ public class IndexerSubsystem extends SubsystemBase implements Refreshable {
     private TalonFX floorMotor = new TalonFX(IndexerConstants.INDEXER_FLOOR_MOTOR_CAN_ID, canBus);
     private TalonFX kickerMotor = new TalonFX(IndexerConstants.INDEXER_KICKER_MOTOR_CAN_ID, canBus);
     // private DigitalInput ballSensor = new DigitalInput(IndexerConstants.INDEXER_BALL_SENSOR_CHANNEL);
-
-    @AutoLogOutput
-    private State targetState = State.OFF;
 
     private final SavedLoggedNetworkNumber floorMotorIntakeVolts =
             SavedLoggedNetworkNumber.get("Tuning/Indexer/IndexerFloorMotorIntakeVolts", 6.0);
@@ -39,28 +34,18 @@ public class IndexerSubsystem extends SubsystemBase implements Refreshable {
             SavedLoggedNetworkNumber.get("Tuning/Indexer/IndexerJiggleFrequency", 1.0);
 
     public IndexerSubsystem() {
-        //        ConfigManager.getInstance().onReady(this::refresh);
+        this.targetState = State.OFF;
     }
 
     @Override
     public void refresh() {
         IndexerConstants.init();
-        // floorMotor.getConfigurator().apply(IndexerConstants.INDEXER_FLOOR_MOTOR_CONFIG);
+        floorMotor.getConfigurator().apply(IndexerConstants.INDEXER_FLOOR_MOTOR_CONFIG);
         kickerMotor.getConfigurator().apply(IndexerConstants.INDEXER_KICKER_MOTOR_CONFIG);
     }
 
-    public void setState(State newState) {
-        targetState = newState;
-    }
-
-    public State getState() {
-        return targetState;
-    }
-
-    public boolean hasBall() {
-        return false;
-        // return !ballSensor.get();
-    }
+    @Override
+    protected void onStateChange(State to, State from) {}
 
     @Override
     public void periodic() {
@@ -85,7 +70,5 @@ public class IndexerSubsystem extends SubsystemBase implements Refreshable {
                 kickerMotor.setVoltage(kickerMotorShootVolts.get());
                 break;
         }
-
-        Logger.recordOutput("IndexerSubsystem/HasBall", hasBall());
     }
 }

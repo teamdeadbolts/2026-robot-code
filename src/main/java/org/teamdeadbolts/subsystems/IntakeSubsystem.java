@@ -9,14 +9,14 @@ import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import java.util.Optional;
 import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.constants.IntakeConstants;
+import org.teamdeadbolts.utils.StatefulSubsystem;
 import org.teamdeadbolts.utils.tuning.Refreshable;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
-public class IntakeSubsystem extends SubsystemBase implements Refreshable {
+public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> implements Refreshable {
     public enum State {
         STOWED,
         INTAKE,
@@ -25,9 +25,6 @@ public class IntakeSubsystem extends SubsystemBase implements Refreshable {
         SHOOT,
         OFF,
     }
-
-    // @AutoLogOutput
-    private State targetState = State.OFF;
 
     private CANBus canBus = new CANBus("*");
     private TalonFX armMotor = new TalonFX(IntakeConstants.INTAKE_ARM_MOTOR_CAN_ID, canBus);
@@ -88,8 +85,13 @@ public class IntakeSubsystem extends SubsystemBase implements Refreshable {
 
     private double shootTargetAngle = 0;
 
+    private double currentAngle = 0;
+
     public IntakeSubsystem() {
+        this.targetState = State.OFF;
+
         armController.enableContinuousInput(0, Math.PI * 2);
+
         armControllerP.addRefreshable(this);
         armControllerI.addRefreshable(this);
         armControllerD.addRefreshable(this);
@@ -124,17 +126,15 @@ public class IntakeSubsystem extends SubsystemBase implements Refreshable {
         absEncoder.getConfigurator().apply(IntakeConstants.INTAKE_ABS_ENCODER_CONFIG);
     }
 
-    public void setState(State newState) {
-        targetState = newState;
-    }
-
-    public State getState() {
-        return targetState;
+    @Override
+    protected void onStateChange(State to, State from) {
+        armController.reset(new TrapezoidProfile.State(
+                currentAngle, Units.rotationsToRadians(absEncoder.getVelocity().getValueAsDouble())));
     }
 
     @Override
     public void periodic() {
-        double currentAngle = MathUtil.inputModulus(
+        currentAngle = MathUtil.inputModulus(
                 Units.rotationsToRadians(absEncoder.getPosition().getValueAsDouble())
                         - Units.degreesToRadians(armOffsetDeg.get()),
                 0,

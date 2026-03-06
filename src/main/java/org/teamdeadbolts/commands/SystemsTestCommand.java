@@ -173,7 +173,7 @@ public class SystemsTestCommand extends Command {
 
             // ---- HOPPER + INTAKE ----
             case HOPPER_UP:
-                hopperSubsystem.setState(HopperSubsystem.State.FAST_UP);
+                hopperSubsystem.setState(HopperSubsystem.State.UP);
                 break;
             case INTAKE_DOWN:
                 intakeSubsystem.setState(IntakeSubsystem.State.DEPLOYED);
@@ -201,7 +201,7 @@ public class SystemsTestCommand extends Command {
 
             // ---- STOW ----
             case HOPPER_DOWN:
-                hopperSubsystem.setState(HopperSubsystem.State.FAST_DOWN);
+                hopperSubsystem.setState(HopperSubsystem.State.DOWN);
                 break;
             case INTAKE_IN:
                 intakeSubsystem.setState(IntakeSubsystem.State.STOWED);
