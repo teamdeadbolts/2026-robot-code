@@ -26,7 +26,8 @@ public class ShooterConstants {
 
     public static final double WHEEL_MAX_OMEGA_RAD_PER_SEC = 600.0 * 2.0 * Math.PI / 60.0; // 600 RPM
 
-    public static final double EXIT_SPEED_EFFICIENCY = 0.95; // How well does the energy get transfered from the wheels to the ball
+    public static final double EXIT_SPEED_EFFICIENCY =
+            0.95; // How well does the energy get transfered from the wheels to the ball
 
     public static final double SHOOTER_BIG_WHEEL_RADIUS_METERS = Units.inchesToMeters(1.5);
     public static final double SHOOTER_SMALL_WHEEL_RADIUS_METERS = Units.inchesToMeters(1.0);
@@ -46,9 +47,9 @@ public class ShooterConstants {
             new Rotation3d(0.0, 0.0, -Math.PI / 2));
 
     public static final double TURRENT_GEAR_RATIO = (145.0 / 18.0) * 3; // The gear ratio of the turret
-    public static final double HOOD_GEAR_RATIO = (40.0 / 12.0) * (18.0 / 14.0) * (163.0 / 10.0); // The gear ratio of the hood
+    public static final double HOOD_GEAR_RATIO =
+            (40.0 / 12.0) * (18.0 / 14.0) * (163.0 / 10.0); // The gear ratio of the hood
     public static final double WHEEL_GEAR_RATIO = 18.0 / 17.0; // The gear ratio of the wheels
-
 
     public static final TalonFXConfiguration SHOOTER_TURRET_MOTOR_CONFIG = new TalonFXConfiguration();
     public static final TalonFXConfiguration SHOOTER_HOOD_MOTOR_CONFIG = new TalonFXConfiguration();

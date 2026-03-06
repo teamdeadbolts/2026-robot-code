@@ -12,7 +12,7 @@ import org.teamdeadbolts.subsystems.shooter.ShooterSubsystem;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
 /**
- * Activate the shooter to start shooter, automaticly decides 
+ * Activate the shooter to start shooter, automaticly decides
  * weather to pass or score based off robot location
  */
 public class ShootCommand extends Command {

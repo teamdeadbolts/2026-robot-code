@@ -6,7 +6,7 @@ import org.teamdeadbolts.utils.Zone;
 
 /**
  * Different field relative zones used for automation
-*/
+ */
 public class ZoneConstants {
     // Zone for the top blue bump
     public static final Zone BLUE_TOP_BUMP_ZONE = new Zone(
