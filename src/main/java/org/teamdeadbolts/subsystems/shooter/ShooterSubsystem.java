@@ -6,7 +6,6 @@ import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -58,7 +57,6 @@ public class ShooterSubsystem extends SubsystemBase implements Refreshable {
     private TalonFX rightWheelMotor = new TalonFX(ShooterConstants.SHOOTER_WHEEL_MOTOR_RIGHT_CAN_ID, rio);
 
     private PIDController hoodController = new PIDController(0.0, 0.0, 0.0);
-    private ArmFeedforward hoodFF = new ArmFeedforward(0.0, 0.0, 0);
     private PIDController turretController = new PIDController(0.0, 0.0, 0.0);
     private SimpleMotorFeedforward wheelFF = new SimpleMotorFeedforward(0, 0, 0);
 
@@ -73,9 +71,6 @@ public class ShooterSubsystem extends SubsystemBase implements Refreshable {
 
     private final SavedLoggedNetworkNumber hoodFeedforwardKs =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/HoodFeedforward/Ks", 0);
-
-    private final SavedLoggedNetworkNumber hoodFeedforwardKg =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/HoodFeedforward/Kg", 0);
 
     private final SavedLoggedNetworkNumber hoodZeroVoltage =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/HoodZeroVoltage", 0.0);
@@ -129,12 +124,11 @@ public class ShooterSubsystem extends SubsystemBase implements Refreshable {
         //        ConfigManager.getInstance().onReady(this::refresh);
         //        refresh();
         resetTurretPosition();
-        hoodMotor.setPosition(Units.degreesToRotations(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
+        hoodMotor.setPosition(Units.degreesToRotations(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES - 1));
         hoodControllerP.addRefreshable(this);
         hoodControllerI.addRefreshable(this);
         hoodControllerD.addRefreshable(this);
         hoodControllerTol.addRefreshable(this);
-        hoodFeedforwardKg.addRefreshable(this);
         hoodFeedforwardKs.addRefreshable(this);
         turretControllerP.addRefreshable(this);
         turretControllerI.addRefreshable(this);
@@ -148,13 +142,11 @@ public class ShooterSubsystem extends SubsystemBase implements Refreshable {
     public void refresh() {
         System.out.println("ShooterSubsystem refresh");
         hoodController.setPID(hoodControllerP.get(), hoodControllerI.get(), hoodControllerD.get());
-        hoodController.setTolerance(hoodControllerTol.get());
+        hoodController.setTolerance(Units.degreesToRadians(hoodControllerTol.get()));
         turretController.setPID(turretControllerP.get(), turretControllerI.get(), turretControllerD.get());
         wheelFF.setKs(wheelFFS.get());
         wheelFF.setKv(wheelFFV.get());
         wheelFF.setKa(wheelFFA.get());
-        hoodFF.setKs(hoodFeedforwardKs.get());
-        hoodFF.setKg(hoodFeedforwardKg.get());
 
         ShooterConstants.init();
         hoodMotor.getConfigurator().apply(ShooterConstants.SHOOTER_HOOD_MOTOR_CONFIG);
@@ -344,7 +336,7 @@ public class ShooterSubsystem extends SubsystemBase implements Refreshable {
                     Units.degreesToRadians(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES),
                     Units.degreesToRadians(ShooterConstants.SHOOTER_HOOD_MAX_ANGLE_DEGREES));
             double pidOutput = hoodController.calculate(currentHoodAngle, targetHoodAngleClamped);
-            double hoodOutput = pidOutput + hoodFF.calculate(targetHoodAngle.get(), currentHoodAngle);
+            double hoodOutput = pidOutput;
             if (!hoodController.atSetpoint()) hoodMotor.setVoltage(hoodOutput);
             Logger.recordOutput("ShooterSubsystem/TargetHoodAngle", Units.radiansToDegrees(targetHoodAngle.get()));
             Logger.recordOutput("ShooterSubsystem/HoodOutput", hoodOutput);

@@ -171,7 +171,7 @@ public class IntakeSubsystem extends SubsystemBase implements Refreshable {
             TrapezoidProfile.State setpoint = armController.getSetpoint();
             double feedforward = targetState == State.SHOOT
                     ? armShootFeedforward.calculate(setpoint.position, setpoint.velocity)
-                    : armFeedforward.calculate(setpoint.position, setpoint.velocity);
+                    : armFeedforward.calculate(Math.PI / 4.0, 0);
             double pidOut = armController.calculate(currentAngle, targetAngle.get());
 
             if ((targetState == State.DEPLOYED || targetState == State.STOWED)
