@@ -43,8 +43,8 @@ public class IntakeSubsystem extends SubsystemBase implements Refreshable {
             SavedLoggedNetworkNumber.get("Tuning/Intake/IntakeDeployedAngle", 90.0);
     private final SavedLoggedNetworkNumber intakeStowedAngle =
             SavedLoggedNetworkNumber.get("Tuning/Intake/IntakeStowedAngle", 0.0);
-    private final SavedLoggedNetworkNumber intakeShootArmSpeed =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/IntakeShootArmSpeed", 5.0); // Degrees per second
+    private final SavedLoggedNetworkNumber intakeShootArmAngle =
+            SavedLoggedNetworkNumber.get("Tuning/Intake/IntakeShootArmAngle", 45.0); // Degrees per second
 
     private final SavedLoggedNetworkNumber armControllerP =
             SavedLoggedNetworkNumber.get("Tuning/Intake/ArmController/kP", 0.1);
@@ -163,6 +163,7 @@ public class IntakeSubsystem extends SubsystemBase implements Refreshable {
                 wheelMotor.setVoltage(0);
                 break;
             case SHOOT:
+                targetAngle = Optional.of(Units.degreesToRadians(intakeShootArmAngle.get()));
                 break;
         }
 

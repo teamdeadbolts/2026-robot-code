@@ -126,7 +126,7 @@ public class RobotContainer {
                 .povRight()
                 .whileTrue(new RunCommand(
                         () -> {
-                            intakeSubsystem.setState(IntakeSubsystem.State.STOWED);
+                            intakeSubsystem.setState(IntakeSubsystem.State.SHOOT);
                         },
                         intakeSubsystem));
         primaryController

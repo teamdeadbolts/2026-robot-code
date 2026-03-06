@@ -1,8 +1,12 @@
 /* The Deadbolts (C) 2026 */
 package org.teamdeadbolts.utils;
 
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import java.util.ArrayList;
+
+import org.littletonrobotics.junction.Logger;
 
 public class Zone {
     private ArrayList<Translation2d> vertices;
@@ -10,6 +14,8 @@ public class Zone {
     private double maxX = Double.MIN_VALUE;
     private double minY = Double.MAX_VALUE;
     private double maxY = Double.MIN_VALUE;
+
+    private int t = 0;
 
     /**
      * Create a new zone
@@ -58,6 +64,12 @@ public class Zone {
         return vertices;
     }
 
+    public void visulize() {
+        int i = t++ % vertices.size();
+        Pose2d pose = new Pose2d(vertices.get(i), new Rotation2d());
+        Logger.recordOutput("Debug/ZonePose", pose);
+    }
+
     private void calculateMinMax() {
         for (Translation2d vertex : vertices) {
             if (vertex.getX() < minX) {
@@ -74,4 +86,5 @@ public class Zone {
             }
         }
     }
+
 }
