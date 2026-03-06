@@ -14,9 +14,15 @@ import org.teamdeadbolts.subsystems.drive.SwerveModule.SwerveModuleConfig;
 import org.teamdeadbolts.utils.tuning.ConfigManager;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
+/**
+ * Constants related to the swerve drive
+ */
 public class SwerveConstants {
+    // The circumference of the drive wheels
     public static final double WHEEL_CIRCUMFERENCE = Units.inchesToMeters(2 * 2.25 * Math.PI);
+    // The length of one side of the (square) chassis
     public static final double CHASSIS_SIZE = Units.inchesToMeters(27.5);
+    // The turning abs encoder sensor direction
     public static final SensorDirectionValue SENSOR_DIRECTION = SensorDirectionValue.CounterClockwise_Positive;
     /* Turning constants */
     public static final InvertedValue TURN_INVERTED_MODE = InvertedValue.CounterClockwise_Positive;

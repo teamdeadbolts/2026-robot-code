@@ -14,7 +14,6 @@ import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
@@ -34,13 +33,18 @@ import org.teamdeadbolts.constants.SwerveConstants;
 import org.teamdeadbolts.utils.tuning.Refreshable;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
+/**
+ * Manages the swerve drive drivetrain, including kinematics, odometry updates,
+ * trajectory following, and system identification.
+ */
 public class SwerveSubsystem extends SubsystemBase implements Refreshable {
     private final AHRS gyro = new AHRS(NavXComType.kMXP_SPI);
-    private SwerveModule[] modules;
+    private final SwerveModule[] modules;
     private SlewRateLimiter slewRateLimiterTranslationalX;
     private SlewRateLimiter slewRateLimiterTranslationalY;
     private SlewRateLimiter slewRateLimiterRotaional;
 
+    /* --- Tuning Parameters --- */
     private final SavedLoggedNetworkNumber maxModuleSpeed =
             SavedLoggedNetworkNumber.get("Tuning/Swerve/MaxModuleSpeed", 1.0);
     private final SavedLoggedNetworkNumber slewRateTranslational =
@@ -61,7 +65,7 @@ public class SwerveSubsystem extends SubsystemBase implements Refreshable {
     private final SavedLoggedNetworkNumber trajRotI = SavedLoggedNetworkNumber.get("Tuning/Choreo/Rotation/kI", 0);
     private final SavedLoggedNetworkNumber trajRotD = SavedLoggedNetworkNumber.get("Tuning/Choreo/Rotation/kD", 0);
 
-    private SysIdRoutine driveRoutine = new SysIdRoutine(
+    private final SysIdRoutine driveRoutine = new SysIdRoutine(
             new SysIdRoutine.Config(null, null, Time.ofBaseUnits(1.5, Seconds)),
             new SysIdRoutine.Mechanism(this::sysIdDriveVolts, this::sysIdDriveLog, this));
 
@@ -75,10 +79,7 @@ public class SwerveSubsystem extends SubsystemBase implements Refreshable {
         };
 
         trajHeadingController.enableContinuousInput(-Math.PI, Math.PI);
-        trajHeadingController.setPID(trajRotP.get(), trajRotI.get(), trajRotD.get());
-        trajXController.setPID(trajTransP.get(), trajTransI.get(), trajTransD.get());
-        trajYController.setPID(trajTransP.get(), trajTransI.get(), trajTransD.get());
-        //        ConfigManager.getInstance().onReady(this::refresh);
+        refresh();
     }
 
     @Override
@@ -86,19 +87,20 @@ public class SwerveSubsystem extends SubsystemBase implements Refreshable {
         trajHeadingController.setPID(trajRotP.get(), trajRotI.get(), trajRotD.get());
         trajXController.setPID(trajTransP.get(), trajTransI.get(), trajTransD.get());
         trajYController.setPID(trajTransP.get(), trajTransI.get(), trajTransD.get());
+
+        this.slewRateLimiterTranslationalX = new SlewRateLimiter(slewRateTranslational.get());
+        this.slewRateLimiterTranslationalY = new SlewRateLimiter(slewRateTranslational.get());
+        this.slewRateLimiterRotaional = new SlewRateLimiter(slewRateRotaional.get());
     }
 
     /**
-     * Make the robot drive
-     * @param translation A {@link Translation2d} representing the x and y motion in <strong>m/s</strong>
-     * @param rotation The target rotation speed for the motion in <strong>rads/sec</strong>
-     * @param fieldRelative Weather or not to drive the robot relative to the field or itself
-     * @param useOdometryRotation Weather or not to use the gyro rotation or the full odometry rotation
+     * Commands the drivetrain to move with specific chassis speeds.
+     * * @param speeds The target {@link ChassisSpeeds}.
+     * @param fieldRelative True to drive relative to the field, false for robot-relative.
+     * @param slewRates True to apply slew rate limiting for smoother motion.
+     * @param useOdometryRotation True to use odometry rotation, false to use raw gyro.
      */
     public void drive(ChassisSpeeds speeds, boolean fieldRelative, boolean slewRates, boolean useOdometryRotation) {
-        // Logger.recordOutput("Swerve/CommandedVelocitiesTrans", translation);
-        // Logger.recordOutput("Swerve/CommandedVelocitiesRot", Units.radiansToDegrees(rotation));
-
         SwerveModuleState[] states = SwerveConstants.SWERVE_KINEMATICS.toSwerveModuleStates(calculateChassisSpeeds(
                 speeds,
                 slewRates,
@@ -116,7 +118,7 @@ public class SwerveSubsystem extends SubsystemBase implements Refreshable {
     private ChassisSpeeds calculateChassisSpeeds(
             ChassisSpeeds speeds, boolean slewRates, boolean fieldRelative, Rotation2d robotRotation) {
         if (slewRates) {
-            speeds = fieldRelative
+            return fieldRelative
                     ? ChassisSpeeds.fromFieldRelativeSpeeds(
                             slewRateLimiterTranslationalX.calculate(speeds.vxMetersPerSecond),
                             slewRateLimiterTranslationalY.calculate(speeds.vyMetersPerSecond),
@@ -126,18 +128,17 @@ public class SwerveSubsystem extends SubsystemBase implements Refreshable {
                             slewRateLimiterTranslationalX.calculate(speeds.vxMetersPerSecond),
                             slewRateLimiterTranslationalY.calculate(speeds.vyMetersPerSecond),
                             slewRateLimiterRotaional.calculate(speeds.omegaRadiansPerSecond));
-        } else {
-            speeds = fieldRelative
-                    ? ChassisSpeeds.fromFieldRelativeSpeeds(
-                            speeds.vxMetersPerSecond,
-                            speeds.vyMetersPerSecond,
-                            speeds.omegaRadiansPerSecond,
-                            robotRotation)
-                    : speeds;
         }
-        return speeds;
+        return fieldRelative
+                ? ChassisSpeeds.fromFieldRelativeSpeeds(
+                        speeds.vxMetersPerSecond, speeds.vyMetersPerSecond, speeds.omegaRadiansPerSecond, robotRotation)
+                : speeds;
     }
 
+    /**
+     * Follows a trajectory sample provided by Choreo.
+     * @param sample The current trajectory point to reach.
+     */
     public void followTrajectory(SwerveSample sample) {
         Pose2d currPose = RobotState.getInstance().getRobotPose().toPose2d();
 
@@ -151,40 +152,23 @@ public class SwerveSubsystem extends SubsystemBase implements Refreshable {
 
         this.drive(speeds, true, false, false);
 
+        // Telemetry
         Logger.recordOutput("Swerve/TrajFollow/xPidOut", xPidOut);
         Logger.recordOutput("Swerve/TrajFollow/yPidOut", yPidOut);
         Logger.recordOutput("Swerve/TrajFollow/headingPidOut", headingPidOut);
-
-        Logger.recordOutput("Swerve/TrajFollow/xError", currPose.getX() - sample.x);
-        Logger.recordOutput("Swerve/TrajFollow/yError", currPose.getY() - sample.y);
-        Logger.recordOutput(
-                "Swerve/TrajFollow/headingError", currPose.getRotation().getRadians() - sample.heading);
-        Pose2d samplePose = new Pose2d(sample.x, sample.y, Rotation2d.fromRadians(sample.heading));
-        Logger.recordOutput("Swerve/TrajFollow/SampleTranslation", samplePose);
-        Logger.recordOutput("Swerve/TrajFollow/TargetRotation", sample.omega);
-        Logger.recordOutput("Swerve/TrajFollow/TargetVX", sample.vx);
-        Logger.recordOutput("Swerve/TrajFollow/TargetVY", sample.vy);
     }
 
-    /**
-     * Resets the gyro
-     */
+    /** Resets the gyro yaw. */
     public void resetGyro() {
         gyro.reset();
     }
 
-    /**
-     * Get the rotation of the robot
-     * @return The rotation
-     */
+    /** @return The current gyro rotation. */
     public Rotation2d getGyroRotation() {
         return Rotation2d.fromDegrees(gyro.getYaw());
     }
 
-    /**
-     * Get the states of all of the modules
-     * @return 4 {@link SwerveModuleState}s (front left, front right, back left, back right)
-     */
+    /** @return The array of module states. */
     public SwerveModuleState[] getModuleStates() {
         SwerveModuleState[] states = new SwerveModuleState[4];
         for (SwerveModule m : this.modules) {
@@ -193,6 +177,7 @@ public class SwerveSubsystem extends SubsystemBase implements Refreshable {
         return states;
     }
 
+    /** @return The array of module positions. */
     public SwerveModulePosition[] getModulePositions() {
         SwerveModulePosition[] positions = new SwerveModulePosition[4];
         for (SwerveModule m : modules) {
@@ -218,31 +203,14 @@ public class SwerveSubsystem extends SubsystemBase implements Refreshable {
         return SwerveConstants.SWERVE_KINEMATICS.toChassisSpeeds(getModuleStates());
     }
 
+    /** @return Chassis speeds in the field-relative frame. */
     public ChassisSpeeds getFieldRelativeChassisSpeeds() {
         ChassisSpeeds robotRelative = this.getRobotRelativeChassisSpeeds();
+        double rot = getGyroRotation().getRadians();
         return new ChassisSpeeds(
-                robotRelative.vxMetersPerSecond * Math.cos(getGyroRotation().getRadians())
-                        - robotRelative.vyMetersPerSecond
-                                * Math.sin(getGyroRotation().getRadians()),
-                robotRelative.vyMetersPerSecond * Math.cos(getGyroRotation().getRadians())
-                        + robotRelative.vxMetersPerSecond
-                                * Math.sin(getGyroRotation().getRadians()),
+                robotRelative.vxMetersPerSecond * Math.cos(rot) - robotRelative.vyMetersPerSecond * Math.sin(rot),
+                robotRelative.vyMetersPerSecond * Math.cos(rot) + robotRelative.vxMetersPerSecond * Math.sin(rot),
                 robotRelative.omegaRadiansPerSecond);
-    }
-
-    /**
-     * Refresh the tuning values from AdvantageKit
-     */
-    public void refreshTuning() {
-        // if (a) CtreConfigs.init();
-        // System.out.println("Refreshing tuning");
-        // this.slewRateLimiterTranslationalX = new SlewRateLimiter(slewRateTranslational.get());
-        // this.slewRateLimiterTranslationalY = new SlewRateLimiter(slewRateTranslational.get());
-        // this.slewRateLimiterRotaional = new SlewRateLimiter(slewRateRotaional.get());
-
-        // for (SwerveModule m : modules) {
-        //     m.configure();
-        // }
     }
 
     public SwerveModule getModule(int id) {
@@ -257,7 +225,6 @@ public class SwerveSubsystem extends SubsystemBase implements Refreshable {
         return driveRoutine.dynamic(direction);
     }
 
-    // Sysid functions
     private void sysIdDriveVolts(Voltage voltage) {
         for (SwerveModule m : this.modules) {
             m.setAngle(new Rotation2d());
@@ -266,7 +233,7 @@ public class SwerveSubsystem extends SubsystemBase implements Refreshable {
     }
 
     private void sysIdDriveLog(SysIdRoutineLog log) {
-        SwerveModule m = this.modules[0]; // Just use values from 1 module
+        SwerveModule m = this.modules[0];
         log.motor("Module0").linearPosition(Distance.ofBaseUnits(m.getPosition().distanceMeters, Meters));
         log.motor("Module0")
                 .linearVelocity(LinearVelocity.ofBaseUnits(m.getState().speedMetersPerSecond, MetersPerSecond));

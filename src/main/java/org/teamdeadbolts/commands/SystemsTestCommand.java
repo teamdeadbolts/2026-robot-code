@@ -11,6 +11,9 @@ import org.teamdeadbolts.subsystems.drive.SwerveSubsystem;
 import org.teamdeadbolts.subsystems.shooter.ShooterSubsystem;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
+/**
+ * Run a system test routine to test all the mechanisums
+ */
 public class SystemsTestCommand extends Command {
     private final SwerveSubsystem swerveSubsystem;
     private final HopperSubsystem hopperSubsystem;

@@ -6,27 +6,30 @@ import java.util.HashMap;
 import java.util.List;
 import org.littletonrobotics.junction.networktables.LoggedNetworkString;
 
+/**
+ * A wrapper for {@link LoggedNetworkString} that persists string values to the {@link ConfigManager}.
+ * Useful for persistent string settings, such as mode selectors or configuration identifiers.
+ */
 public class SavedLoggedNetworkString extends LoggedNetworkString implements Tuneable<String> {
-    private String key; // This is annoying
+    private final String key;
     private String lastValue = "";
-    private ConfigManager configManager = ConfigManager.getInstance();
-
-    private static final HashMap<String, SavedLoggedNetworkString> INSTANCES = new HashMap<>();
+    private final ConfigManager configManager = ConfigManager.getInstance();
 
     private String immediateValue;
     private boolean hasImmediateValue = false;
-    private List<Refreshable> refreshables = new ArrayList<>();
+    private final List<Refreshable> refreshables = new ArrayList<>();
     private boolean initialized = false;
 
+    private static final HashMap<String, SavedLoggedNetworkString> INSTANCES = new HashMap<>();
+
     /**
-     * Get an instance of a SavedLoggedNetworkString
-     *
-     * @param key The key of the value
-     * @param defautValue The default value
-     * @return An instance of SavedLoggedNetworkString
+     * Gets or creates a singleton instance for a specific network table key.
+     * @param key The network table key.
+     * @param defaultValue The default value if no config exists.
+     * @return The existing or new instance.
      */
-    public static synchronized SavedLoggedNetworkString get(String key, String defautValue) {
-        return INSTANCES.computeIfAbsent(key, k -> new SavedLoggedNetworkString(k, defautValue));
+    public static synchronized SavedLoggedNetworkString get(String key, String defaultValue) {
+        return INSTANCES.computeIfAbsent(key, k -> new SavedLoggedNetworkString(k, defaultValue));
     }
 
     private SavedLoggedNetworkString(String key, String value) {
@@ -34,20 +37,26 @@ public class SavedLoggedNetworkString extends LoggedNetworkString implements Tun
         this.key = key;
         this.immediateValue = value;
         this.hasImmediateValue = true;
-
         configManager.registerTunable(this);
     }
 
-    public void add(Refreshable refreshable) {
+    /**
+     * Adds a {@link Refreshable} component to be notified when this value changes.
+     * @param refreshable The component to refresh.
+     */
+    public void addRefreshable(Refreshable refreshable) {
         refreshables.add(refreshable);
     }
 
+    /**
+     * Initializes the value from {@link ConfigManager} or sets a default if missing.
+     */
     @Override
     public void initFromConfig() {
         if (initialized) return;
         initialized = true;
         if (!configManager.contains(key)) {
-            System.out.printf("Creating new config alue %s\n", key);
+            System.out.printf("Creating new config value %s\n", key);
             configManager.set(key, get());
             lastValue = get();
         } else {
@@ -55,22 +64,26 @@ public class SavedLoggedNetworkString extends LoggedNetworkString implements Tun
             if (value instanceof String s) {
                 System.out.printf("Updating %s to %s\n", key, s);
                 super.set(s);
+                lastValue = s;
                 immediateValue = s;
                 hasImmediateValue = true;
-                lastValue = s;
             } else {
                 System.out.printf("Warning: %s is of the wrong type\n", key);
             }
         }
-        //        refreshables.forEach(Refreshable::refresh);
+        refreshables.forEach(Refreshable::refresh);
     }
 
+    /**
+     * Updates the value locally, in the network table, and in persistent storage.
+     * @param value The new value.
+     */
     @Override
     public void set(String value) {
         super.set(value);
         configManager.set(this.key, value);
-        immediateValue = value;
-        hasImmediateValue = true;
+        this.immediateValue = value;
+        this.hasImmediateValue = true;
     }
 
     @Override
@@ -78,15 +91,21 @@ public class SavedLoggedNetworkString extends LoggedNetworkString implements Tun
         if (!initialized) {
             initFromConfig();
         }
-        if (hasImmediateValue) return immediateValue;
+        if (hasImmediateValue) {
+            return immediateValue;
+        }
         return super.get();
     }
 
+    /**
+     * Periodically checks for network updates and synchronizes with the
+     * config manager and registered refreshables.
+     */
     @Override
     public void periodic() {
         super.periodic();
-        String c = get();
-        if (!c.equals(this.lastValue)) {
+        String c = super.get();
+        if (c != null && !c.equals(this.lastValue)) {
             System.out.printf("Updating %s from the network to: %s\n", key, c);
             this.lastValue = c;
             immediateValue = c;

@@ -8,6 +8,11 @@ import org.teamdeadbolts.utils.StatefulSubsystem;
 import org.teamdeadbolts.utils.tuning.Refreshable;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
+/**
+ * Manages the indexing subsystem responsible for handling game pieces
+ * between the intake and the shooter. Operates via two motors: a floor
+ * motor for transport and a kicker motor for final feeding.
+ */
 public class IndexerSubsystem extends StatefulSubsystem<IndexerSubsystem.State> implements Refreshable {
     public enum State {
         OFF,
@@ -16,11 +21,11 @@ public class IndexerSubsystem extends StatefulSubsystem<IndexerSubsystem.State> 
         REVERSE,
     }
 
-    private CANBus canBus = new CANBus("*");
-    private TalonFX floorMotor = new TalonFX(IndexerConstants.INDEXER_FLOOR_MOTOR_CAN_ID, canBus);
-    private TalonFX kickerMotor = new TalonFX(IndexerConstants.INDEXER_KICKER_MOTOR_CAN_ID, canBus);
-    // private DigitalInput ballSensor = new DigitalInput(IndexerConstants.INDEXER_BALL_SENSOR_CHANNEL);
+    private final CANBus canBus = new CANBus("*");
+    private final TalonFX floorMotor = new TalonFX(IndexerConstants.INDEXER_FLOOR_MOTOR_CAN_ID, canBus);
+    private final TalonFX kickerMotor = new TalonFX(IndexerConstants.INDEXER_KICKER_MOTOR_CAN_ID, canBus);
 
+    /* --- Tuning Parameters --- */
     private final SavedLoggedNetworkNumber floorMotorIntakeVolts =
             SavedLoggedNetworkNumber.get("Tuning/Indexer/IndexerFloorMotorIntakeVolts", 6.0);
     private final SavedLoggedNetworkNumber floorMotorShootVolts =
@@ -29,12 +34,18 @@ public class IndexerSubsystem extends StatefulSubsystem<IndexerSubsystem.State> 
             SavedLoggedNetworkNumber.get("Tuning/Indexer/IndexerFloorMotorJiggleVolts", 3.0);
     private final SavedLoggedNetworkNumber kickerMotorShootVolts =
             SavedLoggedNetworkNumber.get("Tuning/Indexer/IndexerKickerMotorShootVolts", 6.0);
-
     private final SavedLoggedNetworkNumber jiggleFrequency =
             SavedLoggedNetworkNumber.get("Tuning/Indexer/IndexerJiggleFrequency", 1.0);
 
     public IndexerSubsystem() {
         this.targetState = State.OFF;
+
+        // Register tuning parameters for real-time updates
+        floorMotorIntakeVolts.addRefreshable(this);
+        floorMotorShootVolts.addRefreshable(this);
+        floorMotorJiggleVolts.addRefreshable(this);
+        kickerMotorShootVolts.addRefreshable(this);
+        jiggleFrequency.addRefreshable(this);
     }
 
     @Override
@@ -50,25 +61,26 @@ public class IndexerSubsystem extends StatefulSubsystem<IndexerSubsystem.State> 
     @Override
     public void periodic() {
         switch (targetState) {
-            case OFF:
+            case OFF -> {
                 floorMotor.setVoltage(0);
                 kickerMotor.setVoltage(0);
-                break;
-            case REVERSE:
+            }
+            case REVERSE -> {
                 floorMotor.setVoltage(-floorMotorShootVolts.get());
                 kickerMotor.setVoltage(-kickerMotorShootVolts.get());
-                break;
-            case JIGGLE:
+            }
+            case JIGGLE -> {
+                // Sinusoidal oscillation to prevent game piece jams
                 double jiggleVolts =
                         Math.sin(2 * Math.PI * jiggleFrequency.get() * (System.currentTimeMillis() / 1000.0))
                                 * floorMotorJiggleVolts.get();
                 floorMotor.setVoltage(jiggleVolts);
                 kickerMotor.setVoltage(0);
-                break;
-            case SHOOT:
+            }
+            case SHOOT -> {
                 floorMotor.setVoltage(floorMotorShootVolts.get());
                 kickerMotor.setVoltage(kickerMotorShootVolts.get());
-                break;
+            }
         }
     }
 }
