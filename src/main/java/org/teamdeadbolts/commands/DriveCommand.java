@@ -33,6 +33,10 @@ public class DriveCommand extends Command {
     private final SavedLoggedNetworkNumber maxRobotAnglarSpeed =
             SavedLoggedNetworkNumber.get("Tuning/Drive/MaxRobotAngluarSpeed", 1.0);
 
+    private final SavedLoggedNetworkNumber slowDrivePercent =
+            SavedLoggedNetworkNumber.get("Tuning/Drive/SlowDrivePercent", 0.75);
+
+    private boolean fast;
     /**
      * Command to drive swerve
      *
@@ -41,18 +45,21 @@ public class DriveCommand extends Command {
      * @param sidewaysSupplier A supplier for sideways motion (in <strong>%/strong>)
      * @param rotationSuplier A supplier for rotaional motion (in <strong>%</strong>)
      * @param fieldRelative Weather or not to drive the robot field relative
+     * @param fast Weather or not to drive at full speed (fast)
      */
     public DriveCommand(
             SwerveSubsystem swerveSubsystem,
             DoubleSupplier forwardSupplier,
             DoubleSupplier sidewaysSupplier,
             DoubleSupplier rotationSuplier,
-            boolean fieldRelative) {
+            boolean fieldRelative,
+            boolean fast) {
         this.swerveSubsystem = swerveSubsystem;
         this.forwardSupplier = forwardSupplier;
         this.sidewaysSupplier = sidewaysSupplier;
         this.rotationSupplier = rotationSuplier;
         this.fieldRelative = fieldRelative;
+        this.fast = fast;
 
         addRequirements(swerveSubsystem);
     }
@@ -66,9 +73,19 @@ public class DriveCommand extends Command {
         double sidewaysPercent = MathUtil.applyDeadband(-sidewaysSupplier.getAsDouble(), controllerDeadband.get(), 1);
         double rotationPercent = MathUtil.applyDeadband(-rotationSupplier.getAsDouble(), controllerDeadband.get(), 1);
 
-        double forwardMps = forwardPercent * maxRobotSpeed.get();
-        double sidewaysMps = sidewaysPercent * maxRobotSpeed.get();
-        double rotationMps = rotationPercent * Units.degreesToRadians(maxRobotAnglarSpeed.get());
+        double forwardMps;
+        double sidewaysMps;
+        double rotationRps;
+
+        if (fast) {
+            forwardMps = forwardPercent * maxRobotSpeed.get();
+            sidewaysMps = sidewaysPercent * maxRobotSpeed.get();
+            rotationRps = rotationPercent * Units.degreesToRadians(maxRobotAnglarSpeed.get());
+        } else {
+            forwardMps = forwardPercent * maxRobotSpeed.get() * slowDrivePercent.get();
+            sidewaysMps = sidewaysPercent * maxRobotSpeed.get() * slowDrivePercent.get();
+            rotationRps = rotationPercent * Units.degreesToRadians(maxRobotAnglarSpeed.get()) * slowDrivePercent.get();
+        }
 
         if (ZoneConstants.RED_TOP_BUMP_ZONE.contains(robotTrans)
                 || ZoneConstants.RED_BOTTOM_BUMP_ZONE.contains(robotTrans)
@@ -81,7 +98,10 @@ public class DriveCommand extends Command {
         Logger.recordOutput("Drive/ForwardPercent", forwardSupplier.getAsDouble());
         Logger.recordOutput("Drive/SidewaysPercent", sidewaysSupplier.getAsDouble());
         Logger.recordOutput("Drive/AnglePercent", rotationSupplier.getAsDouble());
+        Logger.recordOutput("Drive/ForwardMps", forwardMps);
+        Logger.recordOutput("Drive/SidewaysMps", sidewaysMps);
+        Logger.recordOutput("Drive/RotationRps", rotationRps);
 
-        swerveSubsystem.drive(new ChassisSpeeds(forwardMps, sidewaysMps, rotationMps), fieldRelative, false, false);
+        swerveSubsystem.drive(new ChassisSpeeds(forwardMps, sidewaysMps, rotationRps), fieldRelative, false, false);
     }
 }

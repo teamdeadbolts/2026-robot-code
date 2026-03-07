@@ -8,13 +8,13 @@ import edu.wpi.first.math.geometry.*;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import org.teamdeadbolts.commands.DriveCommand;
-// import org.teamdeadbolts.commands.HopperCommand;
-// import org.teamdeadbolts.subsystems.HopperSubsystem;
 import org.teamdeadbolts.commands.ShootCommand;
+import org.teamdeadbolts.subsystems.HopperSubsystem;
 import org.teamdeadbolts.subsystems.IndexerSubsystem;
 import org.teamdeadbolts.subsystems.IntakeSubsystem;
 import org.teamdeadbolts.subsystems.drive.SwerveSubsystem;
@@ -30,7 +30,7 @@ public class RobotContainer {
     private IndexerSubsystem indexerSubsystem = new IndexerSubsystem();
     private IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
     private ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
-    // private HopperSubsystem hopperSubsystem = new HopperSubsystem();
+    private HopperSubsystem hopperSubsystem = new HopperSubsystem();
 
     @SuppressWarnings("unused")
     private VisionSubsystem visionSubsystem = new VisionSubsystem(
@@ -71,7 +71,8 @@ public class RobotContainer {
                 primaryController::getLeftY,
                 primaryController::getLeftX,
                 primaryController::getRightX,
-                true));
+                true,
+                false));
 
         shooterSubsystem.setDefaultCommand(
                 new RunCommand(() -> shooterSubsystem.setState(ShooterSubsystem.State.OFF), shooterSubsystem));
@@ -79,6 +80,8 @@ public class RobotContainer {
                 new RunCommand(() -> intakeSubsystem.setState(IntakeSubsystem.State.OFF), intakeSubsystem));
         indexerSubsystem.setDefaultCommand(
                 new RunCommand(() -> indexerSubsystem.setState(IndexerSubsystem.State.OFF), indexerSubsystem));
+        hopperSubsystem.setDefaultCommand(
+                new RunCommand(() -> hopperSubsystem.setState(HopperSubsystem.State.HOLD), hopperSubsystem));
         //         hopperSubsystem.setDefaultCommand(new HopperCommand(hopperSubsystem, true));
 
         //        primaryController
@@ -96,9 +99,17 @@ public class RobotContainer {
                 .y()
                 .whileTrue(new RunCommand(() -> robotState.setEstimatedPose(new Pose3d()), swerveSubsystem));
 
-        primaryController.b().whileTrue(getAutonomousCommand());
-        //
-        //
+        primaryController
+                .leftTrigger(0.5)
+                .whileTrue(new DriveCommand(
+                        swerveSubsystem,
+                        primaryController::getLeftY,
+                        primaryController::getLeftX,
+                        primaryController::getRightX,
+                        true,
+                        true));
+        // Fast button
+
         primaryController
                 .a()
                 .whileTrue(new RunCommand(
@@ -119,16 +130,16 @@ public class RobotContainer {
                 .povLeft()
                 .whileTrue(new RunCommand(
                         () -> {
-                            intakeSubsystem.setState(IntakeSubsystem.State.STOWED);
+                            hopperSubsystem.setState(HopperSubsystem.State.DOWN);
                         },
-                        intakeSubsystem));
+                        hopperSubsystem));
         primaryController
                 .povRight()
                 .whileTrue(new RunCommand(
                         () -> {
-                            intakeSubsystem.setState(IntakeSubsystem.State.SHOOT);
+                            hopperSubsystem.setState(HopperSubsystem.State.UP);
                         },
-                        intakeSubsystem));
+                        hopperSubsystem));
         primaryController
                 .rightBumper()
                 .whileTrue(new RunCommand(
@@ -137,7 +148,17 @@ public class RobotContainer {
                         },
                         intakeSubsystem));
         //
-        primaryController.leftBumper().whileTrue(new ShootCommand(indexerSubsystem, shooterSubsystem, intakeSubsystem));
+        primaryController
+                .leftBumper()
+                .whileTrue(new ParallelCommandGroup(
+                        new ShootCommand(indexerSubsystem, shooterSubsystem, intakeSubsystem),
+                        new DriveCommand(
+                                swerveSubsystem,
+                                primaryController::getLeftY,
+                                primaryController::getLeftX,
+                                primaryController::getRightX,
+                                true,
+                                false)));
 
         // primaryController.povLeft().whileTrue(swerveSubsystem.runDriveQuasiTest(Direction.kReverse));
     }

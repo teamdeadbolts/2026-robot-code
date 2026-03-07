@@ -3,6 +3,7 @@ package org.teamdeadbolts.subsystems;
 
 import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.hardware.TalonFX;
+import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.constants.IndexerConstants;
 import org.teamdeadbolts.utils.StatefulSubsystem;
 import org.teamdeadbolts.utils.tuning.Refreshable;
@@ -82,5 +83,7 @@ public class IndexerSubsystem extends StatefulSubsystem<IndexerSubsystem.State> 
                 kickerMotor.setVoltage(kickerMotorShootVolts.get());
             }
         }
+
+        Logger.recordOutput("IndexerSubsystem/TargetState", this.targetState);
     }
 }
