@@ -6,6 +6,9 @@ import org.teamdeadbolts.subsystems.HopperSubsystem;
 import org.teamdeadbolts.subsystems.IndexerSubsystem;
 import org.teamdeadbolts.subsystems.IntakeSubsystem;
 
+/**
+ * Intake balls
+ */
 public class IntakeCommand extends Command {
     private IntakeSubsystem intakeSubsystem;
     private IndexerSubsystem indexerSubsystem;

@@ -18,76 +18,74 @@ import org.photonvision.targeting.PhotonPipelineResult;
 import org.photonvision.targeting.PhotonTrackedTarget;
 import org.teamdeadbolts.constants.VisionConstants;
 
+/**
+ * IO implementation for PhotonVision cameras. Handles hardware communication,
+ * AprilTag pose estimation, and camera-to-robot coordinate transformations.
+ */
 public class PhotonVisionIO {
     private final PhotonCamera camera;
     private Transform3d offset = null;
     private Supplier<Transform3d> offsetSupplier = null;
     private final Map<Integer, Pose3d> tagPoseCache = new HashMap<>();
 
-    private HashSet<Integer> tagIds = new HashSet<>(8);
-    private ArrayList<PoseObservation> poseObservations = new ArrayList<>(8);
+    private final HashSet<Integer> tagIds = new HashSet<>(8);
+    private final ArrayList<PoseObservation> poseObservations = new ArrayList<>(8);
 
     /**
      * @param camName The name of the PhotonCamera.
-     * @param offset The Transform3d from the Robot's center to the Camera's lens.
-     * @param fieldLayout The loaded AprilTagFieldLayout for the current competition.
+     * @param offset The static Transform3d from the robot's center to the camera.
      */
     public PhotonVisionIO(String camName, Transform3d offset) {
         this.camera = new PhotonCamera(camName);
         this.offset = offset;
-
-        for (AprilTag tag : VisionConstants.FIELD_LAYOUT.getTags()) {
-            tagPoseCache.put(tag.ID, tag.pose);
-        }
+        cacheTagPoses();
     }
 
+    /**
+     * @param camName The name of the PhotonCamera.
+     * @param offsetSupplier Supplier for dynamic camera-to-robot transformation.
+     */
     public PhotonVisionIO(String camName, Supplier<Transform3d> offsetSupplier) {
         this.camera = new PhotonCamera(camName);
         this.offsetSupplier = offsetSupplier;
+        cacheTagPoses();
+    }
 
+    private void cacheTagPoses() {
         for (AprilTag tag : VisionConstants.FIELD_LAYOUT.getTags()) {
             tagPoseCache.put(tag.ID, tag.pose);
         }
     }
 
+    /**
+     * Updates the provided context with the latest camera results and pose observations.
+     * @param ctx The IO context to populate.
+     */
     public void update(PhotonVisionIOCtx ctx) {
         Tracer tracer = new Tracer();
         long startTime = RobotController.getFPGATime();
-        Transform3d currOffset = this.offset;
-        if (offsetSupplier != null) {
-            currOffset = offsetSupplier.get();
-        }
-
-        tracer.addEpoch("Start");
+        Transform3d currOffset = (offsetSupplier != null) ? offsetSupplier.get() : this.offset;
 
         List<PhotonPipelineResult> results = camera.getAllUnreadResults();
-
-        tracer.addEpoch("Get Results");
 
         if (results.isEmpty()) {
             ctx.observations = new PoseObservation[0];
             ctx.tagIds = new int[0];
-            tracer.addEpoch("No Results");
         } else {
-
             PhotonPipelineResult result = results.get(results.size() - 1);
-
             tagIds.clear();
             poseObservations.clear();
-            tracer.addEpoch("Clear Lists");
 
             if (result.hasTargets()) {
                 PhotonTrackedTarget best = result.getBestTarget();
                 Pose3d tagPose = tagPoseCache.get(best.getFiducialId());
 
-                tracer.addEpoch("Tag lookup");
                 if (tagPose != null) {
+                    // Calculate field-relative robot pose: Robot = Target - CamToTarget - RobotToCam
                     Transform3d fieldToTarget = new Transform3d(tagPose.getTranslation(), tagPose.getRotation());
                     Transform3d camToTarget = best.bestCameraToTarget;
                     Transform3d fieldToCam = fieldToTarget.plus(camToTarget.inverse());
                     Transform3d fieldToRobot = fieldToCam.plus(currOffset.inverse());
-
-                    tracer.addEpoch("Pose calcs");
 
                     Pose3d robotPose = new Pose3d(fieldToRobot.getTranslation(), fieldToRobot.getRotation());
 
@@ -97,23 +95,15 @@ public class PhotonVisionIO {
                             robotPose,
                             best.poseAmbiguity,
                             camToTarget.getTranslation().getNorm()));
-
-                    tracer.addEpoch("Add Observation");
                 }
             }
 
-            ctx.observations = poseObservations.toArray(new PoseObservation[poseObservations.size()]);
-
-            ctx.tagIds = new int[tagIds.size()];
-            int i = 0;
-            for (int tagId : tagIds) {
-                ctx.tagIds[i++] = tagId;
-            }
-            tracer.addEpoch("Outputs");
+            ctx.observations = poseObservations.toArray(new PoseObservation[0]);
+            ctx.tagIds = tagIds.stream().mapToInt(Integer::intValue).toArray();
         }
 
-        long elapsed = RobotController.getFPGATime() - startTime;
-        if (elapsed > 300_000) {
+        // Performance monitoring
+        if (RobotController.getFPGATime() - startTime > 300_000) {
             tracer.printEpochs();
         }
     }
@@ -124,5 +114,5 @@ public class PhotonVisionIO {
         public int[] tagIds = new int[0];
     }
 
-    public static record PoseObservation(double timestamp, Pose3d pose, double ambiguity, double tagDist) {}
+    public record PoseObservation(double timestamp, Pose3d pose, double ambiguity, double tagDist) {}
 }

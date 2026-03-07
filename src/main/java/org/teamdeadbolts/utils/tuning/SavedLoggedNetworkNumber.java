@@ -6,25 +6,27 @@ import java.util.HashMap;
 import java.util.List;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
+/**
+ * A wrapper for {@link LoggedNetworkNumber} that persists values to the {@link ConfigManager}.
+ * This allows network-based tuning (e.g., AdvantageScope) to persist across robot reboots.
+ */
 public class SavedLoggedNetworkNumber extends LoggedNetworkNumber implements Tuneable<Double> {
-    private String key; // This is annoying
+    private final String key;
     private double lastValue = 0.0;
-    private ConfigManager configManager = ConfigManager.getInstance();
+    private final ConfigManager configManager = ConfigManager.getInstance();
 
-    // Some more hackery
     private double immediateValue;
     private boolean hasImmediateValue = false;
-    private List<Refreshable> refreshables = new ArrayList<>();
+    private final List<Refreshable> refreshables = new ArrayList<>();
     private boolean initialized = false;
 
     private static final HashMap<String, SavedLoggedNetworkNumber> INSTANCES = new HashMap<>();
 
     /**
-     * Get an instance of a SavedLoggedNetworkNumber
-     *
-     * @param key The key of the value
-     * @param defaultValue The default value
-     * @return An instance of SavedLoggedNetworkNumber
+     * Gets or creates a singleton instance for a specific network table key.
+     * @param key The network table key.
+     * @param defaultValue The default value if no config exists.
+     * @return The existing or new instance.
      */
     public static synchronized SavedLoggedNetworkNumber get(String key, double defaultValue) {
         return INSTANCES.computeIfAbsent(key, k -> new SavedLoggedNetworkNumber(k, defaultValue));
@@ -37,14 +39,19 @@ public class SavedLoggedNetworkNumber extends LoggedNetworkNumber implements Tun
         this.hasImmediateValue = true;
 
         configManager.registerTunable(this);
-
-        //        this.refreshables.addAll(Arrays.asList(refreshables));
     }
 
+    /**
+     * Adds a {@link Refreshable} component to be notified when this value changes.
+     * @param refreshable The component to refresh.
+     */
     public void addRefreshable(Refreshable refreshable) {
         refreshables.add(refreshable);
     }
 
+    /**
+     * Initializes the value from {@link ConfigManager} or sets a default if missing.
+     */
     @Override
     public void initFromConfig() {
         if (initialized) return;
@@ -68,6 +75,10 @@ public class SavedLoggedNetworkNumber extends LoggedNetworkNumber implements Tun
         refreshables.forEach(Refreshable::refresh);
     }
 
+    /**
+     * Updates the value locally, in the network table, and in persistent storage.
+     * @param value The new value.
+     */
     @Override
     public void set(double value) {
         super.set(value);
@@ -87,6 +98,10 @@ public class SavedLoggedNetworkNumber extends LoggedNetworkNumber implements Tun
         return super.get();
     }
 
+    /**
+     * Periodically checks for network updates (e.g., from AdvantageScope) and
+     * synchronizes with the config manager and registered refreshables.
+     */
     @Override
     public void periodic() {
         super.periodic();

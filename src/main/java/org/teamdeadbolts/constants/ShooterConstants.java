@@ -26,7 +26,8 @@ public class ShooterConstants {
 
     public static final double WHEEL_MAX_OMEGA_RAD_PER_SEC = 600.0 * 2.0 * Math.PI / 60.0; // 600 RPM
 
-    public static final double EXIT_SPEED_EFFICIENCY = 0.95;
+    public static final double EXIT_SPEED_EFFICIENCY =
+            0.95; // How well does the energy get transfered from the wheels to the ball
 
     public static final double SHOOTER_BIG_WHEEL_RADIUS_METERS = Units.inchesToMeters(1.5);
     public static final double SHOOTER_SMALL_WHEEL_RADIUS_METERS = Units.inchesToMeters(1.0);
@@ -45,9 +46,10 @@ public class ShooterConstants {
             Units.inchesToMeters(13.5),
             new Rotation3d(0.0, 0.0, -Math.PI / 2));
 
-    public static final double TURRENT_GEAR_RATIO = (145.0 / 18.0) * 3;
-    public static final double HOOD_GEAR_RATIO = (40.0 / 12.0) * (18.0 / 14.0) * (163.0 / 10.0);
-    public static final double WHEEL_GEAR_RATIO = 18.0 / 17.0;
+    public static final double TURRENT_GEAR_RATIO = (145.0 / 18.0) * 3; // The gear ratio of the turret
+    public static final double HOOD_GEAR_RATIO =
+            (40.0 / 12.0) * (18.0 / 14.0) * (163.0 / 10.0); // The gear ratio of the hood
+    public static final double WHEEL_GEAR_RATIO = 18.0 / 17.0; // The gear ratio of the wheels
 
     public static final TalonFXConfiguration SHOOTER_TURRET_MOTOR_CONFIG = new TalonFXConfiguration();
     public static final TalonFXConfiguration SHOOTER_HOOD_MOTOR_CONFIG = new TalonFXConfiguration();
@@ -78,14 +80,6 @@ public class ShooterConstants {
         SHOOTER_HOOD_MOTOR_CONFIG.Feedback.SensorToMechanismRatio = HOOD_GEAR_RATIO;
         SHOOTER_HOOD_MOTOR_CONFIG.MotorOutput.NeutralMode = NeutralModeValue.Coast;
         SHOOTER_HOOD_MOTOR_CONFIG.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
-        //        SHOOTER_HOOD_MOTOR_CONFIG.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
-
-        // SHOOTER_HOOD_MOTOR_CONFIG.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
-        // SHOOTER_HOOD_MOTOR_CONFIG.SoftwareLimitSwitch.ForwardSoftLimitThreshold =
-        //         Units.degreesToRotations(SHOOTER_HOOD_MAX_ANGLE_DEGREES + 3);
-        // SHOOTER_HOOD_MOTOR_CONFIG.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
-        // SHOOTER_HOOD_MOTOR_CONFIG.SoftwareLimitSwitch.ReverseSoftLimitThreshold =
-        //         Units.degreesToRotations(SHOOTER_HOOD_MIN_ANGLE_DEGREES - 3);
 
         shooterWheelMotorCurrentLimit.initFromConfig();
         SHOOTER_WHEEL_MOTOR_CONFIG.CurrentLimits.SupplyCurrentLimitEnable = true;

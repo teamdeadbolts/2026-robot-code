@@ -9,13 +9,16 @@ import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.math.util.Units;
 import org.littletonrobotics.junction.AutoLog;
-import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.constants.ShooterConstants;
 import org.teamdeadbolts.utils.ExtrapolatingDoubleMap;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
+/**
+ * Calculates optimal shooter parameters (hood angle, wheel speed, turret angle)
+ * to land a game piece in a target, accounting for robot motion, ball flight
+ * time, and air resistance.
+ */
 public class ShotCalculator {
     @AutoLog
     public static class ShotParameters {
@@ -26,8 +29,9 @@ public class ShotCalculator {
 
         @Override
         public String toString() {
-            return "ShotParameters{" + "hoodAngle=" + hoodAngle + ", turretAngle=" + turretAngle + ", wheelSpeed="
-                    + wheelSpeed + ", ballVelocity=" + ballVelocity + "}";
+            return String.format(
+                    "ShotParameters{hoodAngle=%.2f, turretAngle=%.2f, wheelSpeed=%.2f, ballVelocity=%.2f}",
+                    hoodAngle, turretAngle, wheelSpeed, ballVelocity);
         }
     }
 
@@ -36,12 +40,11 @@ public class ShotCalculator {
 
     private static final double G = 9.81;
 
+    /* --- Tuning Parameters --- */
     private static final SavedLoggedNetworkNumber calcIterations =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/CalcIterations", 3);
-
     private static final SavedLoggedNetworkNumber impactAngle =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/ImpactAngleDegrees", 20);
-
     private static final SavedLoggedNetworkNumber shootLatancyMs =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/ShootLatancyMs", 100);
     private static final SavedLoggedNetworkNumber timeToKeepVel =
@@ -54,22 +57,35 @@ public class ShotCalculator {
     private final ExtrapolatingDoubleMap vthetaMap = new ExtrapolatingDoubleMap(timeToKeepVel.get());
 
     public ShotCalculator() {}
-    ;
 
+    /**
+     * Records robot velocity state for motion compensation.
+     * @param timestamp Current FPGA timestamp.
+     * @param speeds Current field-relative chassis speeds.
+     */
     public void updateVelocityState(double timestamp, ChassisSpeeds speeds) {
         vxMap.put(timestamp, speeds.vxMetersPerSecond);
         vyMap.put(timestamp, speeds.vyMetersPerSecond);
         vthetaMap.put(timestamp, speeds.omegaRadiansPerSecond);
     }
 
+    /**
+     * Calculates shot parameters based on target position and robot motion.
+     * Uses iterative solving to compensate for target movement during flight time.
+     *
+     * @param robotPose Current field-relative robot pose.
+     * @param target Field-relative 3D target coordinates.
+     * @param currentTime Current timestamp.
+     * @param tolerance Distance threshold for updating target aim.
+     * @return Calculated shot parameters.
+     */
     public ShotParametersAutoLogged calculateShot(
-            Pose3d robotPose,
-            Translation3d target,
-            double currentTime,
-            double tolerance) { // Tolerance units are meters
+            Pose3d robotPose, Translation3d target, double currentTime, double tolerance) {
+
         Pose3d fieldRelTurret = robotPose.transformBy(ShooterConstants.SHOOTER_OFFSET);
         Translation2d turretPos2d = fieldRelTurret.getTranslation().toTranslation2d();
 
+        // Predict robot velocity at shot release
         double pVx = vxMap.get(currentTime + shootLatancyMs.get());
         double pVy = vyMap.get(currentTime + shootLatancyMs.get());
         double pVtheta = vthetaMap.get(currentTime + shootLatancyMs.get());
@@ -91,7 +107,9 @@ public class ShotCalculator {
         double ballVelocity = 0.0;
         double distFromPivotToTarget = 0.0;
         double heightFromPivotToTarget = targetZ - fieldRelTurret.getZ();
-        for (int i = 0; i < calcIterations.get(); i++) {
+
+        // Iteratively solve for flight time and target lead
+        for (int i = 0; i < (int) calcIterations.get(); i++) {
             distFromPivotToTarget = turretPos2d.getDistance(virtTarget2d);
             Translation2d relVirtTarget = new Translation2d(distFromPivotToTarget, heightFromPivotToTarget);
 
@@ -108,50 +126,41 @@ public class ShotCalculator {
         double turretAngle = calculateFieldRelativeTurrent(robotPose.toPose2d(), virtTarget2d);
 
         ShotParametersAutoLogged rawShot = new ShotParametersAutoLogged();
-        Logger.recordOutput("ShotCalc/VirtualTarget", new Pose2d(virtTarget2d, new Rotation2d()));
-        Logger.recordOutput("ShotCalc/TurretVel", turretVel);
-        Logger.recordOutput("ShotCalc/PivToVirtualTarget", distFromPivotToTarget);
-        Logger.recordOutput("ShotCalc/HeightFromPivot", heightFromPivotToTarget);
-        Logger.recordOutput("ShotCalc/HoodAngle", Units.radiansToDegrees(hoodAngle));
-        Logger.recordOutput("ShotCalc/Velocity", ballVelocity);
         rawShot.hoodAngle = Math.PI / 2 - hoodAngle;
         rawShot.turretAngle = turretAngle;
-        rawShot.wheelSpeed = shooterMPSToRPM(ballVelocity);
         rawShot.ballVelocity = ballVelocity;
 
+        // Apply hysteresis/tolerance check
         boolean acceptedNew = true;
-
         if (tolerance > 0.0 && lastAcceptedVirtTarget2d != null && lastAcceptedShot != null) {
-            double aimShift = virtTarget2d.minus(lastAcceptedVirtTarget2d).getNorm();
-
-            if (aimShift <= tolerance) {
+            if (virtTarget2d.minus(lastAcceptedVirtTarget2d).getNorm() <= tolerance) {
                 acceptedNew = false;
-
                 lastAcceptedShot.turretAngle = rawShot.turretAngle;
             }
         }
 
-        ShotParametersAutoLogged shotToUse;
-        Translation2d virtTargetToLog;
-
+        ShotParametersAutoLogged shotToUse = (acceptedNew || lastAcceptedShot == null) ? rawShot : lastAcceptedShot;
         if (acceptedNew || lastAcceptedShot == null) {
             lastAcceptedShot = rawShot;
             lastAcceptedVirtTarget2d = virtTarget2d;
-            shotToUse = rawShot;
-            virtTargetToLog = virtTarget2d;
-        } else {
-            shotToUse = lastAcceptedShot;
-            virtTargetToLog = lastAcceptedVirtTarget2d;
         }
 
-        Logger.recordOutput("ShotCalc/VirtualTargetUsed", new Pose2d(virtTargetToLog, new Rotation2d()));
-
+        // Apply air resistance compensation and RPM conversion
         shotToUse.ballVelocity *= 1 + (airResistanceMultiplier.get() * distFromPivotToTarget);
         shotToUse.wheelSpeed = shooterMPSToRPM(shotToUse.ballVelocity);
 
         return shotToUse;
     }
 
+    /**
+     * Calculates the turret angle required to aim at a target, accounting for the latency
+     * between the current time and when the shot will be fired.
+     *
+     * @param robotPose      Current field-relative robot pose.
+     * @param targetLocation Field-relative coordinates of the target.
+     * @param currrentTime   The current timestamp in seconds.
+     * @return The turret angle offset required for latency compensation in radians.
+     */
     public double calculateLatancyOffsetTurrentAngle(
             Pose2d robotPose, Translation2d targetLocation, double currrentTime) {
         double latancy = shootLatancyMs.get();
@@ -167,7 +176,6 @@ public class ShotCalculator {
     }
 
     private static double calculateFieldRelativeTurrent(Pose2d robotPose, Translation2d targetLocation) {
-
         Transform2d turretOffset =
                 new Transform2d(ShooterConstants.SHOOTER_OFFSET.getTranslation().toTranslation2d(), new Rotation2d());
         Pose2d turretFieldPose = robotPose.transformBy(turretOffset);
@@ -180,12 +188,7 @@ public class ShotCalculator {
     }
 
     public static double shooterMPSToRPM(double mps) {
-        double compressionOffsetMeters = Units.inchesToMeters((6.0 - 4.986) / 2.0);
-
-        double effectiveBigRadius = ShooterConstants.SHOOTER_BIG_WHEEL_RADIUS_METERS - compressionOffsetMeters;
-        double effectiveSmallRadius = ShooterConstants.SHOOTER_SMALL_WHEEL_RADIUS_METERS - compressionOffsetMeters;
-
-        // return (60.0 * mps * slipCoe.get()) / (Math.PI * (effectiveBigRadius + effectiveSmallRadius));
+        // Calculation accounts for ball compression and effective wheel geometry
         return (60.0 * mps) / ((5.0 / 6.0) * Math.PI * (2.0 * ShooterConstants.SHOOTER_BIG_WHEEL_RADIUS_METERS));
     }
 
@@ -193,35 +196,24 @@ public class ShotCalculator {
         double low = Math.PI / 2 - Math.toRadians(ShooterConstants.SHOOTER_HOOD_MAX_ANGLE_DEGREES);
         double high = Math.PI / 2 - Math.toRadians(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES);
 
-        for (int i = 0; i < calcIterations.get(); i++) {
+        for (int i = 0; i < (int) calcIterations.get(); i++) {
             double mid = (low + high) / 2;
-            if (evaluateError(mid, trans, alpha) > 0) {
-                high = mid;
-            } else {
-                low = mid;
-            }
+            if (evaluateError(mid, trans, alpha) > 0) high = mid;
+            else low = mid;
         }
-
         return (low + high) / 2;
     }
 
     private static double evaluateError(double theta, Translation2d trans, double alpha) {
         double dx = trans.getX() - (ShooterConstants.EXIT_RADIUS_METERS * Math.cos(theta));
         double dy = trans.getY() - (ShooterConstants.EXIT_RADIUS_METERS * Math.sin(theta));
-
         return Math.tan(theta) - ((2 * dy / dx) + Math.tan(alpha));
     }
 
     private static double calculateVel(double theta, Translation2d trans) {
         double dx = trans.getX() - (ShooterConstants.EXIT_RADIUS_METERS * Math.cos(theta));
         double dy = trans.getY() - (ShooterConstants.EXIT_RADIUS_METERS * Math.sin(theta));
-
-        double cos = Math.cos(theta);
-
-        double denom = 2 * Math.pow(cos, 2) * (dx * Math.tan(theta) - dy);
-        if (denom <= 0) {
-            return 0;
-        }
-        return Math.sqrt((G * Math.pow(dx, 2)) / denom);
+        double denom = 2 * Math.pow(Math.cos(theta), 2) * (dx * Math.tan(theta) - dy);
+        return (denom <= 0) ? 0 : Math.sqrt((G * Math.pow(dx, 2)) / denom);
     }
 }

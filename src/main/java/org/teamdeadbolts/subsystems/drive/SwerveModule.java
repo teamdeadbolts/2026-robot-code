@@ -18,6 +18,9 @@ import org.teamdeadbolts.utils.MathUtils;
 import org.teamdeadbolts.utils.tuning.Refreshable;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
+/**
+ * Provides hardware control for each swerve module
+ */
 public class SwerveModule implements Refreshable {
     private int moduleNumber;
     private Rotation2d offset;
@@ -87,14 +90,11 @@ public class SwerveModule implements Refreshable {
         dFFkA.addRefreshable(this);
         tFFkS.addRefreshable(this);
         tFFkV.addRefreshable(this);
-        //        refresh();
-        //        ConfigManager.getInstance().onReady(this::refresh);
     }
 
     @Override
     /** Update motor and PID configurations from NetworkTables */
     public void refresh() {
-        // CtreConfigs.init();
         if (this.driveMotor == null) return;
 
         System.out.printf("Refreshing %s\n", dP.get());
@@ -223,7 +223,6 @@ public class SwerveModule implements Refreshable {
 
         Logger.recordOutput("Swerve/Module " + moduleNumber + "/DrivePIDOut", drivePidOut);
         Logger.recordOutput("Swerve/Module " + moduleNumber + "/DriveVoltageOut", driveVoltage);
-        // Logger.recordOutput("Swerve/Module " + moduleNumber + "/TurnVoltage", turnVoltage);
 
         Logger.recordOutput("Swerve/Module " + moduleNumber + "/DriveReportedMPS", driveMeasurement);
         Logger.recordOutput(

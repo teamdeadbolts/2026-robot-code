@@ -6,27 +6,30 @@ import java.util.HashMap;
 import java.util.List;
 import org.littletonrobotics.junction.networktables.LoggedNetworkBoolean;
 
+/**
+ * A wrapper for {@link LoggedNetworkBoolean} that persists boolean values to the {@link ConfigManager}.
+ * Allows for persistent state toggling (e.g., enabling/disabling features) across robot reboots.
+ */
 public class SavedLoggedNetworkBoolean extends LoggedNetworkBoolean implements Tuneable<Boolean> {
-    private String key; // This is annoying
+    private final String key;
     private boolean lastValue = false;
-    private ConfigManager configManager = ConfigManager.getInstance();
+    private final ConfigManager configManager = ConfigManager.getInstance();
 
     private boolean immediateValue;
     private boolean hasImmediateValue = false;
-    private List<Refreshable> refreshables = new ArrayList<>();
+    private final List<Refreshable> refreshables = new ArrayList<>();
     private boolean initialized = false;
 
     private static final HashMap<String, SavedLoggedNetworkBoolean> INSTANCES = new HashMap<>();
 
     /**
-     * Get an instance of a SavedLoggedNetworkBoolean
-     *
-     * @param key The key of the value
-     * @param defautValue The default value
-     * @return An instance of SavedLoggedNetworkBoolean
+     * Gets or creates a singleton instance for a specific network table key.
+     * @param key The network table key.
+     * @param defaultValue The default value if no config exists.
+     * @return The existing or new instance.
      */
-    public static synchronized SavedLoggedNetworkBoolean get(String key, boolean defautValue) {
-        return INSTANCES.computeIfAbsent(key, k -> new SavedLoggedNetworkBoolean(k, defautValue));
+    public static synchronized SavedLoggedNetworkBoolean get(String key, boolean defaultValue) {
+        return INSTANCES.computeIfAbsent(key, k -> new SavedLoggedNetworkBoolean(k, defaultValue));
     }
 
     private SavedLoggedNetworkBoolean(String key, boolean value) {
@@ -37,10 +40,17 @@ public class SavedLoggedNetworkBoolean extends LoggedNetworkBoolean implements T
         configManager.registerTunable(this);
     }
 
-    public void add(Refreshable refreshable) {
+    /**
+     * Adds a {@link Refreshable} component to be notified when this value changes.
+     * @param refreshable The component to refresh.
+     */
+    public void addRefreshable(Refreshable refreshable) {
         refreshables.add(refreshable);
     }
 
+    /**
+     * Initializes the value from {@link ConfigManager} or sets a default if missing.
+     */
     @Override
     public void initFromConfig() {
         if (initialized) return;
@@ -48,6 +58,7 @@ public class SavedLoggedNetworkBoolean extends LoggedNetworkBoolean implements T
         if (!configManager.contains(key)) {
             System.out.printf("Creating new config value %s\n", key);
             configManager.set(key, get());
+            lastValue = get();
         } else {
             Object value = configManager.get(key);
             if (value instanceof Boolean b) {
@@ -60,9 +71,13 @@ public class SavedLoggedNetworkBoolean extends LoggedNetworkBoolean implements T
                 System.out.printf("Warning: %s is of the wrong type\n", key);
             }
         }
-        //        refreshables.forEach(Refreshable::refresh);
+        refreshables.forEach(Refreshable::refresh);
     }
 
+    /**
+     * Updates the value locally, in the network table, and in persistent storage.
+     * @param value The new value.
+     */
     @Override
     public void set(boolean value) {
         super.set(value);
@@ -82,6 +97,10 @@ public class SavedLoggedNetworkBoolean extends LoggedNetworkBoolean implements T
         return super.get();
     }
 
+    /**
+     * Periodically checks for network updates (e.g., from AdvantageScope) and
+     * synchronizes with the config manager and registered refreshables.
+     */
     @Override
     public void periodic() {
         super.periodic();

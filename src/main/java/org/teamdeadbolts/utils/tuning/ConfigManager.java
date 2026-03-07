@@ -14,7 +14,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-/** Store config data on the rio */
+/**
+ * Manages persistent robot configuration data on the RoboRIO.
+ * Handles versioning of configuration files using JSON serialization and
+ * maintains a symbolic link to the current active configuration.
+ */
 public class ConfigManager {
     private static ConfigManager INSTANCE = null;
     private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
@@ -27,12 +31,10 @@ public class ConfigManager {
 
     private boolean ready = false;
     private final List<Runnable> readyListeners = new ArrayList<>();
-    private final List<Tuneable> tuneables = new ArrayList<>();
+    private final List<Tuneable<?>> tuneables = new ArrayList<>();
 
     /**
-     * Get the current instance of config manager or create it if it doesn't exist
-     *
-     * @return An instance of ConfigManager
+     * @return The singleton instance of the ConfigManager.
      */
     public static synchronized ConfigManager getInstance() {
         if (INSTANCE == null) {
@@ -44,9 +46,9 @@ public class ConfigManager {
     }
 
     /**
-     * Get the current instance of config manager or create it if it doesn't exist
-     *
-     * @return An instance of ConfigManager
+     * Gets or creates an instance for testing purposes using a specific directory.
+     * * @param configDir The path to the test configuration directory.
+     * @return An instance of ConfigManager.
      */
     public static synchronized ConfigManager getTestInstance(Path configDir) {
         if (INSTANCE == null) {
@@ -57,10 +59,18 @@ public class ConfigManager {
         return INSTANCE;
     }
 
+    /**
+     * Registers a component that relies on configuration values.
+     * @param t The {@link Tuneable} component to register.
+     */
     public void registerTunable(Tuneable t) {
         tuneables.add(t);
     }
 
+    /**
+     * Executes a task once the configuration is initialized.
+     * @param r The runnable task to execute.
+     */
     public synchronized void onReady(Runnable r) {
         if (ready) {
             r.run();
@@ -69,18 +79,17 @@ public class ConfigManager {
         }
     }
 
+    /**
+     * Initializes all registered {@link Tuneable} components and triggers ready listeners.
+     */
     public void init() {
         if (ready) return;
         ready = true;
 
-        // Init tunables 1st
         System.out.println(tuneables.size() + " Tuneable values");
-        //        tuneables.forEach(Tuneable::initFromConfig);
         for (int i = 0; i < tuneables.size(); i++) {
             tuneables.get(i).initFromConfig();
         }
-
-        // Run ready listeners
 
         System.out.println(readyListeners);
         readyListeners.forEach(Runnable::run);
@@ -88,30 +97,36 @@ public class ConfigManager {
     }
 
     /**
-     * Get a value from the curret config
-     *
-     * @param key The key
-     * @return The value
+     * Retrieves a value from the currently loaded configuration.
+     * * @param key The key to look up.
+     * @return The value associated with the key.
      */
     public Object get(String key) {
         return this.currConfig.values.get(key);
     }
 
     /**
-     * Set a value in the config
-     *
-     * @param key
-     * @param value
+     * Sets a value in the current configuration and persists the changes.
+     * * @param key The key to store.
+     * @param value The value to associate with the key.
      */
     public void set(String key, Object value) {
         this.currConfig.values.put(key, value);
         this.saveCurrentVersion();
     }
 
+    /**
+     * Checks if a key exists in the current configuration.
+     * @param key The key to check.
+     * @return True if the key exists.
+     */
     public boolean contains(String key) {
         return this.currConfig.values.containsKey(key);
     }
 
+    /**
+     * Prints the current configuration and file structure state to console for debugging.
+     */
     public void debug() {
         System.out.println(this.currConfig.toString());
         System.out.println(this.currVerFile.toString());
@@ -128,7 +143,10 @@ public class ConfigManager {
         }
     }
 
-    /** Initalize config manager and load the current config */
+    /**
+     * Initializes the manager and loads the current configuration.
+     * Resolves the "current" symbolic link or creates a new configuration if none exists.
+     */
     private ConfigManager(Path configDir) {
         this.configDir = configDir;
         this.currentLink = configDir.resolve("current.json");
@@ -152,13 +170,11 @@ public class ConfigManager {
     }
 
     /**
-     * Save a version of the config file
-     *
-     * @param version The version to save
+     * Saves the current state to a versioned JSON file.
+     * @param version The version number to save as.
      */
     public void saveVersion(int version) {
         try {
-            // System.out.println("saving version " + version);
             this.currConfig.version = version;
             Path versionFile = configDir.resolve("v" + version + ".json");
 
@@ -170,13 +186,15 @@ public class ConfigManager {
         }
     }
 
+    /**
+     * Saves the current configuration to the existing active version file.
+     */
     public void saveCurrentVersion() {
         this.saveVersion(this.currConfig.version);
     }
 
     /**
-     * Save a new version This will save the config to a new file and also update the current file
-     * symlink
+     * Saves the configuration as a new version and updates the "current" symbolic link.
      */
     public void saveNewVersion() {
         int version = getNextVersionNumber();
@@ -195,9 +213,8 @@ public class ConfigManager {
     }
 
     /**
-     * Load an exsiting version
-     *
-     * @param version The version number to load
+     * Loads an existing version and updates the "current" symbolic link.
+     * @param version The version number to load.
      */
     public void loadVersion(int version) {
         try {
@@ -219,6 +236,10 @@ public class ConfigManager {
         }
     }
 
+    /**
+     * Retrieves an array of all available configuration versions.
+     * @return An array of version integers.
+     */
     public int[] getVersions() {
         try (var files = Files.list(configDir)) {
             return files.map(Path::getFileName)
@@ -234,23 +255,20 @@ public class ConfigManager {
     }
 
     /**
-     * Load config from a file
-     *
-     * @param file The path to load from
+     * Loads configuration data from a specific file.
+     * @param file The path to the JSON file.
      */
     private void loadFromFile(Path file) {
         try (Reader reader = Files.newBufferedReader(file)) {
             this.currConfig = gson.fromJson(reader, RobotConfig.class);
-            // System.out.println(this.currConfig.toString());
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     /**
-     * Get the next version numbers based of the already existing files
-     *
-     * @return The version number
+     * Determines the next available version number based on file naming conventions.
+     * @return The next version number.
      */
     private int getNextVersionNumber() {
         try (var files = Files.list(configDir)) {
@@ -266,7 +284,9 @@ public class ConfigManager {
         }
     }
 
-    /** A wrapper class to store config versions */
+    /**
+     * A wrapper class to store configuration data versions.
+     */
     public class RobotConfig {
         public int version;
         public HashMap<String, Object> values = new HashMap<>();
