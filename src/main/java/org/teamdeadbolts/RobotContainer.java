@@ -72,6 +72,7 @@ public class RobotContainer {
                 primaryController::getLeftX,
                 primaryController::getRightX,
                 true,
+                false,
                 false));
 
         shooterSubsystem.setDefaultCommand(
@@ -100,14 +101,15 @@ public class RobotContainer {
                 .whileTrue(new RunCommand(() -> robotState.setEstimatedPose(new Pose3d()), swerveSubsystem));
 
         primaryController
-                .leftTrigger(0.5)
+                .rightTrigger(0.4)
                 .whileTrue(new DriveCommand(
                         swerveSubsystem,
                         primaryController::getLeftY,
                         primaryController::getLeftX,
                         primaryController::getRightX,
                         true,
-                        true));
+                        true,
+                        false));
         // Fast button
 
         primaryController
@@ -158,7 +160,8 @@ public class RobotContainer {
                                 primaryController::getLeftX,
                                 primaryController::getRightX,
                                 true,
-                                false)));
+                                false,
+                                true)));
 
         // primaryController.povLeft().whileTrue(swerveSubsystem.runDriveQuasiTest(Direction.kReverse));
     }

@@ -79,7 +79,9 @@ public class SwerveSubsystem extends SubsystemBase implements Refreshable {
         };
 
         trajHeadingController.enableContinuousInput(-Math.PI, Math.PI);
-        refresh();
+        slewRateTranslational.addRefreshable(this);
+        slewRateRotaional.addRefreshable(this);
+        //        refresh();
     }
 
     @Override
