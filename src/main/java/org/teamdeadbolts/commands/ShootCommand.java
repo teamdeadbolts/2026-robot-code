@@ -25,6 +25,7 @@ public class ShootCommand extends Command {
 
     private final SavedLoggedNetworkNumber rpmErrorPassing =
             SavedLoggedNetworkNumber.get("Tuning/ShootCommand/RpmTolPassing", 0);
+  
 
     private boolean shouldDoIntake = false;
 

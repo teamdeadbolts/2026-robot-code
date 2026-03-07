@@ -19,7 +19,7 @@ public class ShooterConstants {
     public static final int SHOOTER_WHEEL_MOTOR_RIGHT_CAN_ID = 23;
 
     public static final double SHOOTER_HOOD_MIN_ANGLE_DEGREES = 11;
-    public static final double SHOOTER_HOOD_MAX_ANGLE_DEGREES = 40.0; // TODO fix!!
+    public static final double SHOOTER_HOOD_MAX_ANGLE_DEGREES = 43.0; // TODO fix!!
 
     public static final double TURRENT_MIN_POSITION_DEGREES = -360.0;
     public static final double TURRENT_MAX_POSITION_DEGREES = 360.0;

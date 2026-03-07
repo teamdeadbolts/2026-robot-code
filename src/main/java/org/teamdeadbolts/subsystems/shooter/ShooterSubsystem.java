@@ -3,6 +3,7 @@ package org.teamdeadbolts.subsystems.shooter;
 
 import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.controls.Follower;
+import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import edu.wpi.first.math.MathUtil;
@@ -268,7 +269,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
             }
             case SPINUP -> {
                 targetWheelSpeed = Optional.of(shooterWheelSpinupSpeed.get());
-                targetHoodAngle = Optional.of(Units.degreesToRadians(ShooterConstants.SHOOTER_HOOD_MAX_ANGLE_DEGREES));
+                targetHoodAngle = Optional.of(Units.degreesToRadians(testHoodAngle.get()));
             }
             case TEST -> {
                 ShotParametersAutoLogged shot = shotCalculator.calculateShot(
@@ -313,7 +314,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
 
         if (targetWheelSpeed.isPresent()) {
             double wheelOutput = (getRPMError() > bangTol.get()) ? 12.0 : wheelFF.calculate(targetWheelSpeed.get());
-            leftWheelMotor.setVoltage(wheelOutput);
+            leftWheelMotor.setControl(new VoltageOut(wheelOutput));
             Logger.recordOutput("ShooterSubsystem/WheelOutput", wheelOutput);
             Logger.recordOutput("ShooterSubsystem/TargetWheelSpeed", targetWheelSpeed.get());
         } else {

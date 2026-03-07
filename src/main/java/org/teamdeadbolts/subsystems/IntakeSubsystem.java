@@ -165,7 +165,7 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
             TrapezoidProfile.State setpoint = armController.getSetpoint();
             double feedforward = targetState == State.SHOOT
                     ? armShootFeedforward.calculate(setpoint.position, setpoint.velocity)
-                    : armFeedforward.calculate(Math.PI / 4.0, 0);
+                    : armFeedforward.calculate(setpoint.position, setpoint.velocity);
             double pidOut = armController.calculate(currentAngle, targetAngle.get());
 
             // Soft-stop logic for static positions to save power/reduce oscillation
@@ -174,11 +174,11 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
             boolean isAtVelocity =
                     absEncoder.getVelocity().getValueAsDouble() < Units.degreesToRotations(armCutoffVelTol.get());
 
-            if ((targetState == State.DEPLOYED || targetState == State.STOWED) && isAtTarget && isAtVelocity) {
-                armMotor.setVoltage(0);
-            } else {
-                armMotor.setVoltage(feedforward + pidOut);
-            }
+            // if ((targetState == State.DEPLOYED || targetState == State.STOWED) && isAtTarget && isAtVelocity) {
+            //     armMotor.setVoltage(0);
+            // } else {
+            armMotor.setVoltage(feedforward + pidOut);
+            // }
 
             // Telemetry logging
             Logger.recordOutput("IntakeSubsystem/SetpointPos", Units.radiansToDegrees(setpoint.position));
