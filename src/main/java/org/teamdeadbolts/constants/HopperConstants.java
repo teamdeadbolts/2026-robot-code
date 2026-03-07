@@ -5,6 +5,7 @@ import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import org.teamdeadbolts.utils.tuning.ConfigManager;
+import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
 public class HopperConstants {
     public static final int HOPPER_MOTOR_LEFT_CAN_ID = 60;
@@ -20,22 +21,22 @@ public class HopperConstants {
     public static final TalonFXConfiguration LEFT_HOPPER_MOTOR_CONFIG = new TalonFXConfiguration();
     public static final TalonFXConfiguration RIGHT_HOPPER_MOTOR_CONFIG = new TalonFXConfiguration();
 
+    private static SavedLoggedNetworkNumber lidLifterCurrentLimit =
+            SavedLoggedNetworkNumber.get("Tuning/Indexer/LidLifterCurrentLimit", 20);
+
     static {
         ConfigManager.getInstance().onReady(HopperConstants::init);
     }
 
-    //    private static SavedLoggedNetworkNumber hopperMotorCurrentLimit =
-    //            SavedLoggedNetworkNumber.get("Tuning/Hopper/HopperMotorCurrentLimit", 20);
-
     public static void init() {
-        // hopperMotorCurrentLimit.initFromConfig();
+        lidLifterCurrentLimit.initFromConfig();
         LEFT_HOPPER_MOTOR_CONFIG.CurrentLimits.SupplyCurrentLimitEnable = true;
-        // LEFT_HOPPER_MOTOR_CONFIG.CurrentLimits.SupplyCurrentLimit = hopperMotorCurrentLimit.get();
+        LEFT_HOPPER_MOTOR_CONFIG.CurrentLimits.SupplyCurrentLimit = lidLifterCurrentLimit.get();
         LEFT_HOPPER_MOTOR_CONFIG.MotorOutput.NeutralMode = NeutralModeValue.Brake;
         LEFT_HOPPER_MOTOR_CONFIG.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
 
         RIGHT_HOPPER_MOTOR_CONFIG.CurrentLimits.SupplyCurrentLimitEnable = true;
-        // RIGHT_HOPPER_MOTOR_CONFIG.CurrentLimits.SupplyCurrentLimit = hopperMotorCurrentLimit.get();
+        RIGHT_HOPPER_MOTOR_CONFIG.CurrentLimits.SupplyCurrentLimit = lidLifterCurrentLimit.get();
         RIGHT_HOPPER_MOTOR_CONFIG.MotorOutput.NeutralMode = NeutralModeValue.Brake;
         RIGHT_HOPPER_MOTOR_CONFIG.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
     }

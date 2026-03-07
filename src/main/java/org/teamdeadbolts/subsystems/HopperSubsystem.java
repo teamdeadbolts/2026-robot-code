@@ -117,6 +117,12 @@ public class HopperSubsystem extends StatefulSubsystem<HopperSubsystem.State> im
         Logger.recordOutput(
                 "HopperSubsystem/RightRawMotorPosition",
                 hopperMotorRight.getPosition().getValueAsDouble());
+        // current
+        Logger.recordOutput(
+                "Debug/Current/Hopper/Left", hopperMotorLeft.getSupplyCurrent().getValueAsDouble());
+        Logger.recordOutput(
+                "Debug/Current/Hopper/Right",
+                hopperMotorRight.getSupplyCurrent().getValueAsDouble());
     }
 
     /** @return The current lid height in meters. */

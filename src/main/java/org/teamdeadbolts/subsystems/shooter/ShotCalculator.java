@@ -80,7 +80,7 @@ public class ShotCalculator {
      * @return Calculated shot parameters.
      */
     public ShotParametersAutoLogged calculateShot(
-            Pose3d robotPose, Translation3d target, double currentTime, double tolerance) {
+            Pose3d robotPose, Translation3d target, double currentTime, double tolerance, double maxAngle) {
 
         Pose3d fieldRelTurret = robotPose.transformBy(ShooterConstants.SHOOTER_OFFSET);
         Translation2d turretPos2d = fieldRelTurret.getTranslation().toTranslation2d();
@@ -113,7 +113,7 @@ public class ShotCalculator {
             distFromPivotToTarget = turretPos2d.getDistance(virtTarget2d);
             Translation2d relVirtTarget = new Translation2d(distFromPivotToTarget, heightFromPivotToTarget);
 
-            hoodAngle = findLaunchAngle(relVirtTarget, impactAngleRad);
+            hoodAngle = findLaunchAngle(relVirtTarget, impactAngleRad, maxAngle);
             ballVelocity = calculateVel(hoodAngle, relVirtTarget);
 
             double v0x = ballVelocity * Math.cos(hoodAngle);
@@ -192,8 +192,8 @@ public class ShotCalculator {
         return (60.0 * mps) / ((5.0 / 6.0) * Math.PI * (2.0 * ShooterConstants.SHOOTER_BIG_WHEEL_RADIUS_METERS));
     }
 
-    private static double findLaunchAngle(Translation2d trans, double alpha) {
-        double low = Math.PI / 2 - Math.toRadians(ShooterConstants.SHOOTER_HOOD_MAX_ANGLE_DEGREES);
+    private static double findLaunchAngle(Translation2d trans, double alpha, double maxAngle) {
+        double low = Math.PI / 2 - maxAngle;
         double high = Math.PI / 2 - Math.toRadians(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES);
 
         for (int i = 0; i < (int) calcIterations.get(); i++) {

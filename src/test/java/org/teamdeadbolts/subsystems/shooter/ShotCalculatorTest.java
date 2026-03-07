@@ -12,12 +12,14 @@ import static org.mockito.Mockito.when;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.util.Units;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.littletonrobotics.junction.Logger;
 import org.mockito.MockedStatic;
 import org.teamdeadbolts.RobotState;
+import org.teamdeadbolts.constants.ShooterConstants;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
 public class ShotCalculatorTest {
@@ -72,7 +74,8 @@ public class ShotCalculatorTest {
         Translation3d target = new Translation3d(5, 0, 0);
         calculator.updateVelocityState(1000.0, new ChassisSpeeds());
 
-        ShotParametersAutoLogged shot = calculator.calculateShot(robotPOse, target, 1000, 0.0);
+        ShotParametersAutoLogged shot = calculator.calculateShot(
+                robotPOse, target, 1000, 0.0, Units.degreesToRadians(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
 
         System.out.println(shot.toString());
         assertTrue(shot.wheelSpeed > 0, "Wheel speed should be positive");
@@ -88,11 +91,21 @@ public class ShotCalculatorTest {
         calculator.updateVelocityState(1000.0, new ChassisSpeeds(2, 0, 0));
         calculator.updateVelocityState(1020.0, new ChassisSpeeds(2, 0, 0));
 
-        ShotParametersAutoLogged movingShot = calculator.calculateShot(robotPose, target, 1020.0, 0.0);
+        ShotParametersAutoLogged movingShot = calculator.calculateShot(
+                robotPose,
+                target,
+                1020.0,
+                0.0,
+                Units.degreesToRadians(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
 
         ShotCalculator staticCalc = new ShotCalculator();
         staticCalc.updateVelocityState(1020, new ChassisSpeeds());
-        ShotParametersAutoLogged staticShot = staticCalc.calculateShot(robotPose, target, 1020.0, 0.0);
+        ShotParametersAutoLogged staticShot = staticCalc.calculateShot(
+                robotPose,
+                target,
+                1020.0,
+                0.0,
+                Units.degreesToRadians(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
         System.out.printf("MPS Diff: %s\n", staticShot.ballVelocity - movingShot.ballVelocity);
 
         // Because we are driving towards the target, the virtual target should be CLOSER, requiring less wheel speed
@@ -107,7 +120,12 @@ public class ShotCalculatorTest {
         calculator.updateVelocityState(1000.0, new ChassisSpeeds(0, 0, 2));
         calculator.updateVelocityState(1020.0, new ChassisSpeeds(0, 0, 2));
 
-        ShotParametersAutoLogged shot = calculator.calculateShot(robotPose, target, 1020.0, 0.0);
+        ShotParametersAutoLogged shot = calculator.calculateShot(
+                robotPose,
+                target,
+                1020.0,
+                0.0,
+                Units.degreesToRadians(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
 
         assertNotEquals(0.0, shot.turretAngle, "Turret should compensate for rotational whip");
     }
@@ -128,7 +146,12 @@ public class ShotCalculatorTest {
             Translation3d target = new Translation3d(dist, 0.0, 2.0);
 
             calculator.updateVelocityState(0.0, new ChassisSpeeds());
-            ShotParametersAutoLogged shot = calculator.calculateShot(robotPose, target, 0.0, 0.0);
+            ShotParametersAutoLogged shot = calculator.calculateShot(
+                    robotPose,
+                    target,
+                    0.0,
+                    0.0,
+                    Units.degreesToRadians(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
 
             double hoodDeg = Math.toDegrees(shot.hoodAngle);
 

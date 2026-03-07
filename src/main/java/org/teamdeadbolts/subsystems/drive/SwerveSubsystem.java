@@ -6,18 +6,17 @@ import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
 
-import choreo.trajectory.SwerveSample;
 import com.studica.frc.AHRS;
 import com.studica.frc.AHRS.NavXComType;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.filter.SlewRateLimiter;
-import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.units.measure.Time;
@@ -92,7 +91,7 @@ public class SwerveSubsystem extends SubsystemBase implements Refreshable {
 
         this.slewRateLimiterTranslationalX = new SlewRateLimiter(slewRateTranslational.get());
         this.slewRateLimiterTranslationalY = new SlewRateLimiter(slewRateTranslational.get());
-        this.slewRateLimiterRotaional = new SlewRateLimiter(slewRateRotaional.get());
+        this.slewRateLimiterRotaional = new SlewRateLimiter(Units.degreesToRadians(slewRateRotaional.get()));
     }
 
     /**
@@ -135,29 +134,6 @@ public class SwerveSubsystem extends SubsystemBase implements Refreshable {
                 ? ChassisSpeeds.fromFieldRelativeSpeeds(
                         speeds.vxMetersPerSecond, speeds.vyMetersPerSecond, speeds.omegaRadiansPerSecond, robotRotation)
                 : speeds;
-    }
-
-    /**
-     * Follows a trajectory sample provided by Choreo.
-     * @param sample The current trajectory point to reach.
-     */
-    public void followTrajectory(SwerveSample sample) {
-        Pose2d currPose = RobotState.getInstance().getRobotPose().toPose2d();
-
-        double xPidOut = trajXController.calculate(currPose.getX(), sample.x);
-        double yPidOut = trajYController.calculate(currPose.getY(), sample.y);
-        double headingPidOut =
-                trajHeadingController.calculate(currPose.getRotation().getRadians(), sample.heading);
-
-        ChassisSpeeds speeds =
-                new ChassisSpeeds(sample.vx + xPidOut, sample.vy + yPidOut, sample.omega + headingPidOut);
-
-        this.drive(speeds, true, false, false);
-
-        // Telemetry
-        Logger.recordOutput("Swerve/TrajFollow/xPidOut", xPidOut);
-        Logger.recordOutput("Swerve/TrajFollow/yPidOut", yPidOut);
-        Logger.recordOutput("Swerve/TrajFollow/headingPidOut", headingPidOut);
     }
 
     /** Resets the gyro yaw. */

@@ -174,11 +174,11 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
             boolean isAtVelocity =
                     absEncoder.getVelocity().getValueAsDouble() < Units.degreesToRotations(armCutoffVelTol.get());
 
-            // if ((targetState == State.DEPLOYED || targetState == State.STOWED) && isAtTarget && isAtVelocity) {
-            //     armMotor.setVoltage(0);
-            // } else {
-            armMotor.setVoltage(feedforward + pidOut);
-            // }
+            if ((targetState == State.DEPLOYED || targetState == State.STOWED) && isAtTarget && isAtVelocity) {
+                armMotor.setVoltage(0);
+            } else {
+                armMotor.setVoltage(feedforward + pidOut);
+            }
 
             // Telemetry logging
             Logger.recordOutput("IntakeSubsystem/SetpointPos", Units.radiansToDegrees(setpoint.position));
@@ -193,5 +193,11 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
         Logger.recordOutput("IntakeSubsystem/TargetState", targetState);
         Logger.recordOutput(
                 "IntakeSubsystem/OutputVolts", armMotor.getMotorVoltage().getValueAsDouble());
+
+        // Current monitoring
+        Logger.recordOutput(
+                "Debug/Current/Intake/Arm", armMotor.getSupplyCurrent().getValueAsDouble());
+        Logger.recordOutput(
+                "Debug/Current/Intake/Wheel", wheelMotor.getSupplyCurrent().getValueAsDouble());
     }
 }

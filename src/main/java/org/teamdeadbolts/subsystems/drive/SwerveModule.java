@@ -239,6 +239,14 @@ public class SwerveModule implements Refreshable {
         Logger.recordOutput(
                 "Swerve/Module " + moduleNumber + "/TurnMeasurementDeg",
                 this.getRotation().getDegrees());
+
+        // Current monitoring
+        Logger.recordOutput(
+                "Debug/Current/Swerve/Module " + moduleNumber + "/Drive",
+                driveMotor.getSupplyCurrent().getValueAsDouble());
+        Logger.recordOutput(
+                "Debug/Current/Swerve/Module " + moduleNumber + "/Turn",
+                turningMotor.getSupplyCurrent().getValueAsDouble());
     }
 
     /**

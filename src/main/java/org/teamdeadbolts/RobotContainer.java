@@ -1,17 +1,19 @@
 /* The Deadbolts (C) 2025 */
 package org.teamdeadbolts;
 
-import choreo.auto.AutoFactory;
-import choreo.auto.AutoRoutine;
-import choreo.auto.AutoTrajectory;
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.config.PIDConstants;
+import com.pathplanner.lib.config.RobotConfig;
+import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 import edu.wpi.first.math.geometry.*;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
 import edu.wpi.first.wpilibj2.command.RunCommand;
-import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import java.util.Optional;
 import org.teamdeadbolts.commands.DriveCommand;
 import org.teamdeadbolts.commands.ShootCommand;
 import org.teamdeadbolts.subsystems.HopperSubsystem;
@@ -21,8 +23,10 @@ import org.teamdeadbolts.subsystems.drive.SwerveSubsystem;
 import org.teamdeadbolts.subsystems.shooter.ShooterSubsystem;
 import org.teamdeadbolts.subsystems.vision.PhotonVisionIO;
 import org.teamdeadbolts.subsystems.vision.VisionSubsystem;
+import org.teamdeadbolts.utils.tuning.Refreshable;
+import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
-public class RobotContainer {
+public class RobotContainer implements Refreshable {
 
     private SwerveSubsystem swerveSubsystem = new SwerveSubsystem();
 
@@ -44,23 +48,38 @@ public class RobotContainer {
 
     private RobotState robotState = RobotState.getInstance();
 
-    private final AutoFactory autoFactory;
-
     private SendableChooser<Command> autoChooser = new SendableChooser<>();
+
+    private final SavedLoggedNetworkNumber pathplannerTransKp =
+            SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Trans/kP", 0.0);
+    private final SavedLoggedNetworkNumber pathplannerTransKi =
+            SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Trans/kI", 0.0);
+    private final SavedLoggedNetworkNumber pathplannerTransKd =
+            SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Trans/kD", 0.0);
+
+    private final SavedLoggedNetworkNumber pathplannerRotKp =
+            SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Rot/kP", 0.0);
+    private final SavedLoggedNetworkNumber pathplannerRotKi =
+            SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Rot/kI", 0.0);
+    private final SavedLoggedNetworkNumber pathplannerRotKd =
+            SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Rot/kD", 0.0);
 
     public RobotContainer() {
         robotState.initPoseEstimator(
                 new Rotation3d(swerveSubsystem.getGyroRotation()), swerveSubsystem.getModulePositions());
 
-        this.autoFactory = new AutoFactory(
-                robotState.getRobotPose()::toPose2d,
-                (pose) -> robotState.setEstimatedPose(
-                        new Pose3d(new Translation3d(pose.getTranslation()), new Rotation3d(pose.getRotation()))),
-                swerveSubsystem::followTrajectory,
-                true,
-                swerveSubsystem);
-
         configureBindings();
+
+        pathplannerTransKp.addRefreshable(this);
+        pathplannerTransKi.addRefreshable(this);
+        pathplannerTransKd.addRefreshable(this);
+        pathplannerRotKp.addRefreshable(this);
+        pathplannerRotKi.addRefreshable(this);
+        pathplannerRotKd.addRefreshable(this);
+    }
+
+    @Override
+    public void refresh() {
         configureAuto();
     }
 
@@ -118,9 +137,6 @@ public class RobotContainer {
                         () -> shooterSubsystem.setState(ShooterSubsystem.State.SPINUP), shooterSubsystem));
 
         primaryController
-                .povDown() // Up
-                .whileTrue(new ShootCommand(indexerSubsystem, shooterSubsystem, intakeSubsystem));
-        primaryController
                 .povUp() // Down (retarded)
                 .whileTrue(new RunCommand(
                         () -> {
@@ -153,7 +169,7 @@ public class RobotContainer {
         primaryController
                 .leftBumper()
                 .whileTrue(new ParallelCommandGroup(
-                        new ShootCommand(indexerSubsystem, shooterSubsystem, intakeSubsystem),
+                        new ShootCommand(indexerSubsystem, shooterSubsystem, intakeSubsystem, hopperSubsystem),
                         new DriveCommand(
                                 swerveSubsystem,
                                 primaryController::getLeftY,
@@ -167,36 +183,38 @@ public class RobotContainer {
     }
     //
     private void configureAuto() {
-        //        autoFactory.bind(
-        //                "Index",
-        //                new RunCommand(
-        //                        () -> {
-        //                            indexerSubsystem.setState(IndexerSubsystem.State.SHOOT);
-        //                            System.out.println("Auto Command");
-        //                        },
-        //                        indexerSubsystem));
+        RobotConfig config;
+        try {
+            config = RobotConfig.fromGUISettings();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return;
+        }
 
-        autoChooser.addOption(
-                "Test",
-                new SequentialCommandGroup(
-                        autoFactory.resetOdometry("TestPath"), autoFactory.trajectoryCmd("TestPath")));
-    }
+        RobotState state = RobotState.getInstance();
 
-    private AutoRoutine testAuto() {
-        AutoRoutine routine = autoFactory.newRoutine("testRoutine");
-        AutoTrajectory testTraj = routine.trajectory("TestPath");
-
-        routine.active().onTrue(Commands.sequence(testTraj.resetOdometry(), testTraj.cmd()));
-
-        // testTraj.atTime("Index").onTrue(new RunCommand(() ->
-        // indexerSubsystem.setState(IndexerSubsystem.State.SHOOT)));
-        // testTraj.atTime("StopIndex").onTrue(new RunCommand(() ->
-        // indexerSubsystem.setState(IndexerSubsystem.State.OFF)));
-        return routine;
+        AutoBuilder.configure(
+                state.getRobotPose()::toPose2d,
+                (pose) -> state.setEstimatedPose(new Pose3d(pose)),
+                state::getRobotRelativeRobotVelocities,
+                (speeds, _feedforwards) -> {
+                    swerveSubsystem.drive(speeds, false, false, false);
+                },
+                new PPHolonomicDriveController(
+                        new PIDConstants(pathplannerTransKp.get(), pathplannerTransKi.get(), pathplannerTransKd.get()),
+                        new PIDConstants(pathplannerRotKp.get(), pathplannerRotKi.get(), pathplannerRotKd.get())),
+                config,
+                () -> {
+                    Optional<Alliance> alliance = DriverStation.getAlliance();
+                    if (alliance.isPresent()) return alliance.get() == DriverStation.Alliance.Red;
+                    return false;
+                },
+                swerveSubsystem);
     }
 
     public Command getAutonomousCommand() {
         // return autoChooser.getSelected();
-        return testAuto().cmd();
+        // return testAuto().cmd();
+        return new RunCommand(() -> {});
     }
 }

@@ -6,6 +6,7 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
 import org.teamdeadbolts.RobotState;
+import org.teamdeadbolts.subsystems.HopperSubsystem;
 import org.teamdeadbolts.subsystems.IndexerSubsystem;
 import org.teamdeadbolts.subsystems.IntakeSubsystem;
 import org.teamdeadbolts.subsystems.shooter.ShooterSubsystem;
@@ -19,6 +20,7 @@ public class ShootCommand extends Command {
     private final IndexerSubsystem indexerSubsystem;
     private final ShooterSubsystem shooterSubsystem;
     private final IntakeSubsystem intakeSubsystem;
+    private final HopperSubsystem hopperSubsystem;
 
     private final SavedLoggedNetworkNumber rpmErrorScoring =
             SavedLoggedNetworkNumber.get("Tuning/ShootCommand/RpmTolScoring", 200);
@@ -29,10 +31,14 @@ public class ShootCommand extends Command {
     private boolean shouldDoIntake = false;
 
     public ShootCommand(
-            IndexerSubsystem indexerSubsystem, ShooterSubsystem shooterSubsystem, IntakeSubsystem intakeSubsystem) {
+            IndexerSubsystem indexerSubsystem,
+            ShooterSubsystem shooterSubsystem,
+            IntakeSubsystem intakeSubsystem,
+            HopperSubsystem hopperSubsystem) {
         this.indexerSubsystem = indexerSubsystem;
         this.shooterSubsystem = shooterSubsystem;
         this.intakeSubsystem = intakeSubsystem;
+        this.hopperSubsystem = hopperSubsystem;
         addRequirements(indexerSubsystem, shooterSubsystem);
     }
 
@@ -49,7 +55,9 @@ public class ShootCommand extends Command {
         shouldDoIntake =
                 intakeSubsystem.getState() != IntakeSubsystem.State.INTAKE; // Minior race condition (should be chill?)
 
-        if (passing && shooterSubsystem.getRPMError() <= rpmErrorPassing.get()) {
+        if (passing
+                && shooterSubsystem.getRPMError() <= rpmErrorPassing.get()
+                && hopperSubsystem.getState() == HopperSubsystem.State.DOWN) {
             feedShooter();
             shooterSubsystem.setState(ShooterSubsystem.State.PASS);
             return;

@@ -259,7 +259,11 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                 }
 
                 ShotParametersAutoLogged passShot = shotCalculator.calculateShot(
-                        robotPose, passTargetPose.getTranslation(), System.currentTimeMillis(), 0.0);
+                        robotPose,
+                        passTargetPose.getTranslation(),
+                        System.currentTimeMillis(),
+                        0.0,
+                        Units.degreesToRadians(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
                 targetHoodAngle = Optional.of(passShot.hoodAngle);
                 targetTurretPosition = Optional.of(passShot.turretAngle);
                 targetWheelSpeed = Optional.of(passShot.wheelSpeed);
@@ -276,13 +280,14 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                         robotPose,
                         new Translation3d(testTargetX.get(), testTargetY.get(), 0),
                         (double) (System.currentTimeMillis()),
-                        0);
+                        0,
+                        Units.degreesToRadians(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
                 targetHoodAngle = Optional.of(shot.hoodAngle);
                 targetTurretPosition = Optional.of(shot.turretAngle);
             }
             case ZERO -> {
                 hoodMotor.setVoltage(-hoodZeroVoltage.get());
-                if (hoodMotor.getStatorCurrent().getValueAsDouble() >= hoodZeroCurrent.get()
+                if (hoodMotor.getSupplyCurrent().getValueAsDouble() >= hoodZeroCurrent.get()
                         && Math.abs(hoodMotor.getVelocity().getValueAsDouble())
                                 <= Units.degreesToRotations(hoodZeroVelTol.get())) {
                     targetState = State.OFF;
@@ -347,7 +352,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
 
         Logger.recordOutput("ShooterSubsystem/TurretPose", getFieldRelativeTurretPose());
         Logger.recordOutput(
-                "ShooterSubsystem/HoodAmps", hoodMotor.getStatorCurrent().getValueAsDouble());
+                "ShooterSubsystem/HoodAmps", hoodMotor.getSupplyCurrent().getValueAsDouble());
 
         Logger.recordOutput(
                 "ShooterSubsystem/LeftMotorVolts",
@@ -355,6 +360,18 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
         Logger.recordOutput(
                 "ShooterSubsystem/RightMotorVolts",
                 rightWheelMotor.getMotorVoltage().getValueAsDouble());
+
+        // Current
+        Logger.recordOutput(
+                "Debug/Current/Shooter/Hood", hoodMotor.getSupplyCurrent().getValueAsDouble());
+        Logger.recordOutput(
+                "Debug/Current/Shooter/Turret", turretMotor.getSupplyCurrent().getValueAsDouble());
+        Logger.recordOutput(
+                "Debug/Current/Shooter/LeftWheel",
+                leftWheelMotor.getSupplyCurrent().getValueAsDouble());
+        Logger.recordOutput(
+                "Debug/Current/Shooter/RightWheel",
+                rightWheelMotor.getSupplyCurrent().getValueAsDouble());
     }
 
     private double calculateTurretSetpoint(double currentAngle, double targetAngle) {
