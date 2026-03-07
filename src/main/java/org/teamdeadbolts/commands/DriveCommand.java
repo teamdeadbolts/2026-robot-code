@@ -44,9 +44,9 @@ public class DriveCommand extends Command implements Refreshable {
             SavedLoggedNetworkNumber.get("Tuning/Drive/MaxRobotAngluarSpeed", 1.0);
 
     private final SavedLoggedNetworkNumber defaultDrivePercent =
-            SavedLoggedNetworkNumber.get("Tuning/Drive/DefaultDrivePercent", 0.5);
+            SavedLoggedNetworkNumber.get("Tuning/Drive/DefaultDrivePercent", 0.75);
     private final SavedLoggedNetworkNumber slowDrivePercent =
-            SavedLoggedNetworkNumber.get("Tuning/Drive/SlowDrivePercent", 0.28);
+            SavedLoggedNetworkNumber.get("Tuning/Drive/slowDrivePercent", 0.28);
 
     private final SavedLoggedNetworkNumber angleControllerP =
             SavedLoggedNetworkNumber.get("Tuning/Drive/AngleController/kP", 0);
@@ -113,7 +113,8 @@ public class DriveCommand extends Command implements Refreshable {
         } else if (slow) {
             forwardMps = forwardPercent * maxRobotSpeed.get() * slowDrivePercent.get();
             sidewaysMps = sidewaysPercent * maxRobotSpeed.get() * slowDrivePercent.get();
-            rotationRps = rotationPercent * Units.degreesToRadians(maxRobotAnglarSpeed.get()) * slowDrivePercent.get();
+            rotationRps =
+                    rotationPercent * Units.degreesToRadians(maxRobotAnglarSpeed.get()) * slowDrivePercent.get();
         } else {
             forwardMps = forwardPercent * maxRobotSpeed.get() * slowDrivePercent.get();
             sidewaysMps = sidewaysPercent * maxRobotSpeed.get() * slowDrivePercent.get();
