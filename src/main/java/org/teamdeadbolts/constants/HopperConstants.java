@@ -18,17 +18,17 @@ public class HopperConstants {
 
     public static final TalonFXConfiguration HOPPER_MOTOR_CONFIG = new TalonFXConfiguration();
 
+    private static SavedLoggedNetworkNumber hopperMotorCurrentLimit =
+            SavedLoggedNetworkNumber.get("Tuning/Hopper/HopperMotorCurrentLimit", 20);
+
     static {
         ConfigManager.getInstance().onReady(HopperConstants::init);
     }
 
-    private static final SavedLoggedNetworkNumber HopperMotorCurrentLimit =
-            SavedLoggedNetworkNumber.get("Tuning/Hopper/HopperMotorCurrentLimit", 20);
-
     public static void init() {
-        HopperMotorCurrentLimit.initFromConfig();
+        hopperMotorCurrentLimit.initFromConfig();
         HOPPER_MOTOR_CONFIG.CurrentLimits.SupplyCurrentLimitEnable = true;
-        HOPPER_MOTOR_CONFIG.CurrentLimits.SupplyCurrentLimit = HopperMotorCurrentLimit.get();
+        HOPPER_MOTOR_CONFIG.CurrentLimits.SupplyCurrentLimit = hopperMotorCurrentLimit.get();
         HOPPER_MOTOR_CONFIG.MotorOutput.NeutralMode = NeutralModeValue.Brake;
     }
 }

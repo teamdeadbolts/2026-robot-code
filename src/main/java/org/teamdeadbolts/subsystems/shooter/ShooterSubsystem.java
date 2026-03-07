@@ -12,6 +12,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
@@ -23,6 +24,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.RobotState;
 import org.teamdeadbolts.constants.ShooterConstants;
 import org.teamdeadbolts.constants.VisionConstants;
@@ -220,6 +222,10 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
 
                 aprilTagTrackZone.setVertices(vertexFieldRel, forwardLegFieldRel, sideLegFieldRel);
 
+                Logger.recordOutput("ShooterSubsystem/AprilTagTrack/RangeVertex", vertexFieldRel);
+                Logger.recordOutput("ShooterSubsystem/AprilTagTrack/RangeForward", forwardLegFieldRel);
+                Logger.recordOutput("ShooterSubsystem/AprilTagTrack/RangeSide", sideLegFieldRel);
+
                 List<Pose3d> filteredTagPoses = VisionConstants.FIELD_LAYOUT.getTags().stream()
                         .map(t -> t.pose)
                         .filter(p -> aprilTagTrackZone.contains(p.toPose2d().getTranslation()))
@@ -232,6 +238,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                 if (targetPose.isPresent()) {
                     targetTurretPosition = Optional.of(shotCalculator.calculateLatancyOffsetTurrentAngle(
                             robotPose2d, targetPose.get().toPose2d().getTranslation(), System.currentTimeMillis()));
+                    Logger.recordOutput("ShooterSubsystem/AprilTagTrack/TargetTagPose", targetPose.get());
                 }
             }
             case PASS -> {
@@ -298,6 +305,8 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                     Units.degreesToRadians(ShooterConstants.SHOOTER_HOOD_MAX_ANGLE_DEGREES));
             double pidOutput = hoodController.calculate(currentHoodAngle, targetHoodAngleClamped);
             if (!hoodController.atSetpoint()) hoodMotor.setVoltage(pidOutput);
+            Logger.recordOutput("ShooterSubsystem/TargetHoodAngle", Units.radiansToDegrees(targetHoodAngle.get()));
+            Logger.recordOutput("ShooterSubsystem/HoodOutput", pidOutput);
         } else if (targetState != State.ZERO) {
             hoodMotor.setVoltage(0);
         }
@@ -305,6 +314,8 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
         if (targetWheelSpeed.isPresent()) {
             double wheelOutput = (getRPMError() > bangTol.get()) ? 12.0 : wheelFF.calculate(targetWheelSpeed.get());
             leftWheelMotor.setVoltage(wheelOutput);
+            Logger.recordOutput("ShooterSubsystem/WheelOutput", wheelOutput);
+            Logger.recordOutput("ShooterSubsystem/TargetWheelSpeed", targetWheelSpeed.get());
         } else {
             leftWheelMotor.setVoltage(0);
         }
@@ -314,10 +325,35 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                     Units.rotationsToRadians(turretMotor.getPosition().getValueAsDouble()), targetTurretPosition.get());
             double turretOutput = turretController.calculate(
                     Units.rotationsToRadians(turretMotor.getPosition().getValueAsDouble()), normalizedTurretPosition);
+
+            Transform2d targetTurretTransform = new Transform2d(
+                    ShooterConstants.SHOOTER_OFFSET.getTranslation().toTranslation2d(),
+                    Rotation2d.fromRadians(normalizedTurretPosition));
+            Pose2d targetTurretFieldPose = robotPose.toPose2d().transformBy(targetTurretTransform);
+
             turretMotor.setVoltage(turretOutput);
+            Logger.recordOutput("ShooterSubsystem/TargetTurretPose", targetTurretFieldPose);
+            Logger.recordOutput("ShooterSubsystem/TargetTurretPosition", targetTurretPosition.get());
+            Logger.recordOutput("ShooterSubsystem/TurretOutput", turretOutput);
         } else {
             turretMotor.setVoltage(0);
         }
+
+        Logger.recordOutput("ShooterSubsystem/CurrentHoodAngle", Units.radiansToDegrees(currentHoodAngle));
+        Logger.recordOutput("ShooterSubsystem/CurrentTurretPosition", getTurretRotation());
+        Logger.recordOutput(
+                "ShooterSubsystem/CurrentWheelSpeed", Units.radiansPerSecondToRotationsPerMinute(currentWheelSpeed));
+
+        Logger.recordOutput("ShooterSubsystem/TurretPose", getFieldRelativeTurretPose());
+        Logger.recordOutput(
+                "ShooterSubsystem/HoodAmps", hoodMotor.getStatorCurrent().getValueAsDouble());
+
+        Logger.recordOutput(
+                "ShooterSubsystem/LeftMotorVolts",
+                leftWheelMotor.getMotorVoltage().getValueAsDouble());
+        Logger.recordOutput(
+                "ShooterSubsystem/RightMotorVolts",
+                rightWheelMotor.getMotorVoltage().getValueAsDouble());
     }
 
     private double calculateTurretSetpoint(double currentAngle, double targetAngle) {

@@ -2,7 +2,6 @@
 package org.teamdeadbolts.utils;
 
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import org.littletonrobotics.junction.AutoLogOutput;
 
 /**
  * An abstract base class for subsystems that operate on a finite set of discrete states.
@@ -12,7 +11,6 @@ import org.littletonrobotics.junction.AutoLogOutput;
  * @param <S> The enum representing the valid states for the subsystem.
  */
 public abstract class StatefulSubsystem<S extends Enum<S>> extends SubsystemBase {
-    @AutoLogOutput
     protected S targetState;
 
     /**
