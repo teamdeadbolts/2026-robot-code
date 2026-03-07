@@ -21,12 +21,12 @@ public class HopperConstants {
     public static final TalonFXConfiguration LEFT_HOPPER_MOTOR_CONFIG = new TalonFXConfiguration();
     public static final TalonFXConfiguration RIGHT_HOPPER_MOTOR_CONFIG = new TalonFXConfiguration();
 
-    private static SavedLoggedNetworkNumber hopperMotorCurrentLimit =
-            SavedLoggedNetworkNumber.get("Tuning/Hopper/HopperMotorCurrentLimit", 20);
-
     static {
         ConfigManager.getInstance().onReady(HopperConstants::init);
     }
+
+    private static SavedLoggedNetworkNumber hopperMotorCurrentLimit =
+            SavedLoggedNetworkNumber.get("Tuning/Hopper/HopperMotorCurrentLimit", 20);
 
     public static void init() {
         hopperMotorCurrentLimit.initFromConfig();
