@@ -16,6 +16,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import java.util.Optional;
 import org.teamdeadbolts.commands.DriveCommand;
 import org.teamdeadbolts.commands.ShootCommand;
+import org.teamdeadbolts.constants.VisionConstants;
 import org.teamdeadbolts.subsystems.HopperSubsystem;
 import org.teamdeadbolts.subsystems.IndexerSubsystem;
 import org.teamdeadbolts.subsystems.IntakeSubsystem;
@@ -37,7 +38,7 @@ public class RobotContainer {
 
     @SuppressWarnings("unused")
     private VisionSubsystem visionSubsystem = new VisionSubsystem(
-            swerveSubsystem, new PhotonVisionIO("CenterCam", new Transform3d())
+            swerveSubsystem, new PhotonVisionIO("Left Cam", VisionConstants.LEFT_CAM_TRANSFORM)
             // new PhotonVisionIO(
             //         "TurretCam", () ->
             // shooterSubsystem.getTurretOffset().plus(VisionConstants.TURRET_CAM_TO_TURRET)));
@@ -130,15 +131,15 @@ public class RobotContainer {
                 .povUp() // Down
                 .whileTrue(new RunCommand(
                         () -> {
-                            hopperSubsystem.setState(HopperSubsystem.State.DOWN);
+                            shooterSubsystem.setState(ShooterSubsystem.State.TEST);
                         },
-                        hopperSubsystem));
+                        shooterSubsystem));
 
         primaryController
                 .povDown() // up
                 .whileTrue(new RunCommand(
                         () -> {
-                            intakeSubsystem.setState(IntakeSubsystem.State.DEPLOYED);
+                            intakeSubsystem.setState(IntakeSubsystem.State.SHOOT);
                         },
                         intakeSubsystem));
 
@@ -146,9 +147,9 @@ public class RobotContainer {
                 .povLeft()
                 .whileTrue(new RunCommand(
                         () -> {
-                            intakeSubsystem.setState(IntakeSubsystem.State.STOWED);
+                            hopperSubsystem.setState(HopperSubsystem.State.DOWN);
                         },
-                        intakeSubsystem));
+                        hopperSubsystem));
         primaryController
                 .povRight()
                 .whileTrue(new RunCommand(

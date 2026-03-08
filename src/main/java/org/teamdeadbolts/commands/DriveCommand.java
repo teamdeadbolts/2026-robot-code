@@ -9,12 +9,10 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.Command;
-
 import java.util.Optional;
 import java.util.function.DoubleSupplier;
 import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.RobotState;
-import org.teamdeadbolts.constants.ShooterConstants;
 import org.teamdeadbolts.constants.ZoneConstants;
 import org.teamdeadbolts.subsystems.drive.SwerveSubsystem;
 import org.teamdeadbolts.subsystems.shooter.ShooterSubsystem;
@@ -50,9 +48,8 @@ public class DriveCommand extends Command implements Refreshable {
     private final SavedLoggedNetworkNumber slowDrivePercent =
             SavedLoggedNetworkNumber.get("Tuning/Drive/SlowDrivePercent", 0.28);
 
-    private final SavedLoggedNetworkNumber angleControllerP = SavedLoggedNetworkNumber.get("Tuning/Drive/AngleController/kP", 0);
-
-
+    private final SavedLoggedNetworkNumber angleControllerP =
+            SavedLoggedNetworkNumber.get("Tuning/Drive/AngleController/kP", 0);
 
     private boolean fast;
     private boolean slow;
@@ -98,8 +95,7 @@ public class DriveCommand extends Command implements Refreshable {
     @Override
     public void execute() {
         Pose2d robotPose = RobotState.getInstance().getRobotPose().toPose2d();
-        Translation2d robotTrans =
-                robotPose.getTranslation();
+        Translation2d robotTrans = robotPose.getTranslation();
 
         double forwardPercent = MathUtil.applyDeadband(-forwardSupplier.getAsDouble(), controllerDeadband.get(), 1);
         double sidewaysPercent = MathUtil.applyDeadband(-sidewaysSupplier.getAsDouble(), controllerDeadband.get(), 1);
@@ -134,7 +130,8 @@ public class DriveCommand extends Command implements Refreshable {
 
         Optional<Rotation2d> aimAngle = shooterSubsystem.getFallbackChassisTargetAngle();
         if (aimAngle.isPresent()) {
-            rotationRps = angleController.calculate(robotPose.getRotation().getRadians(), aimAngle.get().getRadians());
+            rotationRps = angleController.calculate(
+                    robotPose.getRotation().getRadians(), aimAngle.get().getRadians());
             Logger.recordOutput("Drive/ShooterAimFallback", true);
         } else {
             Logger.recordOutput("Drive/ShooterAimFallback", false);

@@ -18,11 +18,11 @@ public class ShooterConstants {
     public static final int SHOOTER_WHEEL_MOTOR_LEFT_CAN_ID = 22;
     public static final int SHOOTER_WHEEL_MOTOR_RIGHT_CAN_ID = 23;
 
-    public static final double SHOOTER_HOOD_MIN_ANGLE_DEGREES = 11;
+    public static final double SHOOTER_HOOD_MIN_ANGLE_DEGREES = 10.2;
     public static final double SHOOTER_HOOD_MAX_ANGLE_DEGREES = 43.0; // TODO fix!!
 
-    public static final double TURRET_MIN_POSITION_DEGREES = 0.0;
-    public static final double TURRET_MAX_POSITION_DEGREES = 360.0;
+    public static final double TURRET_MIN_POSITION_DEGREES = -45.0;
+    public static final double TURRET_MAX_POSITION_DEGREES = 315.0;
 
     public static final double WHEEL_MAX_OMEGA_RAD_PER_SEC = 600.0 * 2.0 * Math.PI / 60.0; // 600 RPM
 
@@ -44,7 +44,7 @@ public class ShooterConstants {
             Units.inchesToMeters(-27.5 / 2 + 6.125),
             Units.inchesToMeters(-27.5 / 2 + 6.125),
             Units.inchesToMeters(13.5),
-            new Rotation3d(0.0, 0.0, -Math.PI / 2));
+            new Rotation3d(0.0, 0.0, Math.PI / 2));
 
     public static final double TURRET_GEAR_RATIO = (145.0 / 18.0) * 3; // The gear ratio of the turret
     public static final double HOOD_GEAR_RATIO =

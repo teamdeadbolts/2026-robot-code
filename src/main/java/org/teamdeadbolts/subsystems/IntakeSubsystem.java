@@ -9,6 +9,7 @@ import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.Timer;
 import java.util.Optional;
 import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.constants.IntakeConstants;
@@ -44,8 +45,6 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
             SavedLoggedNetworkNumber.get("Tuning/Intake/IntakeDeployedAngle", 90.0);
     private final SavedLoggedNetworkNumber intakeStowedAngle =
             SavedLoggedNetworkNumber.get("Tuning/Intake/IntakeStowedAngle", 0.0);
-    private final SavedLoggedNetworkNumber intakeShootArmAngle =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/IntakeShootArmAngle", 45.0);
 
     private final SavedLoggedNetworkNumber armControllerP =
             SavedLoggedNetworkNumber.get("Tuning/Intake/ArmController/kP", 0.1);
@@ -62,6 +61,9 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
 
     private final SavedLoggedNetworkNumber wheelIntakeVoltage =
             SavedLoggedNetworkNumber.get("Tuning/Intake/WheelIntakeVoltage", 6.0);
+    private final SavedLoggedNetworkNumber wheelShootVoltage =
+            SavedLoggedNetworkNumber.get("Tuning/Intake/Shoot/WheelVoltage", 0.0);
+
     private final SavedLoggedNetworkNumber armOffsetDeg = SavedLoggedNetworkNumber.get("Tuning/Intake/ArmOffsetDeg", 0);
 
     private final SavedLoggedNetworkNumber armFeedforwardKs =
@@ -73,6 +75,13 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
             SavedLoggedNetworkNumber.get("Tuning/Intake/Observer/Gain", 0.0);
     private final SavedLoggedNetworkNumber maxObserverVolts =
             SavedLoggedNetworkNumber.get("Tuning/Intake/Observer/MaxVolts", 0.0);
+
+    private final SavedLoggedNetworkNumber intakeShootMinAngle =
+            SavedLoggedNetworkNumber.get("Tuning/Intake/Shoot/MinAngle", 0);
+    private final SavedLoggedNetworkNumber intakeShootMaxAngle =
+            SavedLoggedNetworkNumber.get("Tuning/Intake/Shoot/MaxAngle", 0);
+    private final SavedLoggedNetworkNumber intakeShootFreq =
+            SavedLoggedNetworkNumber.get("Tuning/Intake/Shoot/Freq", 0);
 
     private double currentAngle = 0;
     private double disturbanceAccumulator = 0.0;
@@ -147,7 +156,19 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
                 targetAngle = Optional.of(Units.degreesToRadians(intakeDeployedAngle.get()));
                 wheelMotor.setVoltage(0);
             }
-            case SHOOT -> targetAngle = Optional.of(Units.degreesToRadians(intakeShootArmAngle.get()));
+            case SHOOT -> {
+                double time = Timer.getFPGATimestamp();
+                double freq = intakeShootFreq.get();
+                double minAngle = Units.degreesToRadians(intakeShootMinAngle.get());
+                double maxAngle = Units.degreesToRadians(intakeShootMaxAngle.get());
+
+                double midAngle = (maxAngle + minAngle) / 2.0;
+                double amplitude = (maxAngle - minAngle) / 2.0;
+                double target = midAngle + amplitude * Math.sin(2 * Math.PI * freq * time);
+
+                targetAngle = Optional.of(target);
+                wheelMotor.setVoltage(wheelShootVoltage.get());
+            }
         }
 
         if (targetAngle.isPresent()) {
