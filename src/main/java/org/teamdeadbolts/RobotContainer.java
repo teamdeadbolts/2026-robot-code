@@ -75,6 +75,7 @@ public class RobotContainer {
         // Xbox controllers push "up" = neg valve so invert everything
         swerveSubsystem.setDefaultCommand(new DriveCommand(
                 swerveSubsystem,
+                shooterSubsystem,
                 primaryController::getLeftY,
                 primaryController::getLeftX,
                 primaryController::getRightX,
@@ -111,6 +112,7 @@ public class RobotContainer {
                 .rightTrigger(0.4)
                 .whileTrue(new DriveCommand(
                         swerveSubsystem,
+                        shooterSubsystem,
                         primaryController::getLeftY,
                         primaryController::getLeftX,
                         primaryController::getRightX,
@@ -168,6 +170,7 @@ public class RobotContainer {
                         new ShootCommand(indexerSubsystem, shooterSubsystem, intakeSubsystem, hopperSubsystem),
                         new DriveCommand(
                                 swerveSubsystem,
+                                shooterSubsystem,
                                 primaryController::getLeftY,
                                 primaryController::getLeftX,
                                 primaryController::getRightX,

@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.littletonrobotics.junction.Logger;
+import org.opencv.core.Mat;
 import org.teamdeadbolts.RobotState;
 import org.teamdeadbolts.constants.ShooterConstants;
 import org.teamdeadbolts.constants.VisionConstants;
@@ -114,6 +115,9 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
     private final ShotCalculator shotCalculator;
     private int systemTestCount = 0;
 
+    private boolean turretFallbackMode = false;
+    private Optional<Rotation2d> fallbackChassisTargetAngle = Optional.empty();
+
     public ShooterSubsystem() {
         this.shotCalculator = new ShotCalculator();
         this.targetState = State.OFF;
@@ -161,6 +165,19 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
         this.turretMotor.setPosition(0);
     }
 
+    public void setTurretFallbackMode(boolean enabled) {
+        this.turretFallbackMode = enabled;
+    }
+
+    public boolean isTurretFallbackMode() {
+        return this.turretFallbackMode;
+    }
+
+    public Optional<Rotation2d> getFallbackChassisTargetAngle() {
+        return this.fallbackChassisTargetAngle;
+    }
+
+
     public Pose3d getFieldRelativeTurretPose() {
         Pose3d robotPose = RobotState.getInstance().getRobotPose();
         return robotPose.transformBy(getTurretOffset());
@@ -183,6 +200,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                 Units.rotationsToRadians(hoodMotor.getPosition().getValueAsDouble());
         Optional<Double> targetHoodAngle = Optional.empty();
         Optional<Double> targetTurretPosition = Optional.empty();
+        Optional<Translation2d> currentTargetTranslation = Optional.empty();
 
         currentWheelSpeed =
                 Units.rotationsToRadians(leftWheelMotor.getVelocity().getValueAsDouble());
@@ -257,6 +275,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                     targetWheelSpeed = Optional.of(shooterWheelSpinupSpeed.get());
                     break;
                 }
+                currentTargetTranslation = Optional.of(passTargetPose.toPose2d().getTranslation());
 
                 ShotParametersAutoLogged passShot = shotCalculator.calculateShot(
                         robotPose,
@@ -282,6 +301,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                         (double) (System.currentTimeMillis()),
                         0,
                         Units.degreesToRadians(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
+                currentTargetTranslation = Optional.of(new Translation2d(testTargetX.get(), testTargetY.get()));
                 targetHoodAngle = Optional.of(shot.hoodAngle);
                 targetTurretPosition = Optional.of(shot.turretAngle);
             }
@@ -301,6 +321,17 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                         Optional.of((((Math.sin(((double) systemTestCount / 850) + 1)) / 2) * 520) - 260);
                 targetHoodAngle = Optional.of((((Math.sin(((double) systemTestCount / 150) + 1)) / 2) * 35) + 10);
             }
+        }
+
+        fallbackChassisTargetAngle = Optional.empty();
+        if (turretFallbackMode && targetTurretPosition.isPresent() && currentTargetTranslation.isPresent()) {
+            double lockedTurrentRad = Units.rotationsToRadians(turretMotor.getPosition().getValueAsDouble());
+            fallbackChassisTargetAngle = Optional.of(calculateChassisAngleForLockedTurret(
+                    robotPose.toPose2d(), currentTargetTranslation.get(), lockedTurrentRad));
+
+            targetTurretPosition = Optional.empty();
+            Logger.recordOutput("ShooterSubsystem/TurretFallback", true);
+            Logger.recordOutput("ShooterSybsystem/FallbackChassisTarget", fallbackChassisTargetAngle.get());
         }
 
         // --- Hardware Control ---
@@ -390,5 +421,24 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
     private double getTurretRotation() {
         return Units.rotationsToRadians(turretMotor.getPosition().getValueAsDouble())
                 + ShooterConstants.SHOOTER_OFFSET.getRotation().getZ();
+    }
+
+    private Rotation2d calculateChassisAngleForLockedTurret(
+        Pose2d robotPose, Translation2d targetLocation, double lockedTurretAngle
+    ) {
+        Translation2d robotToTarget = targetLocation.minus(robotPose.getTranslation());
+        double distToTarget = robotToTarget.getNorm();
+        double angleToTarget = Math.atan2(robotToTarget.getY(),robotToTarget.getX());
+
+        Translation2d turretOffset = ShooterConstants.SHOOTER_OFFSET.getTranslation().toTranslation2d();
+        double perpendicularOffset = turretOffset.getX() * Math.sin(lockedTurretAngle)
+                                   - turretOffset.getY() * Math.cos(lockedTurretAngle);
+        
+        if (Math.abs(perpendicularOffset) > distToTarget) {
+            return new Rotation2d(angleToTarget - lockedTurretAngle);
+        }
+
+        double offsetCompensationAngle = Math.asin(perpendicularOffset / distToTarget);
+        return new Rotation2d(angleToTarget - lockedTurretAngle + offsetCompensationAngle);
     }
 }

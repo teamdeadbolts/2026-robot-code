@@ -2,26 +2,38 @@
 package org.teamdeadbolts.commands;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.Command;
+
+import java.util.Optional;
 import java.util.function.DoubleSupplier;
 import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.RobotState;
+import org.teamdeadbolts.constants.ShooterConstants;
 import org.teamdeadbolts.constants.ZoneConstants;
 import org.teamdeadbolts.subsystems.drive.SwerveSubsystem;
+import org.teamdeadbolts.subsystems.shooter.ShooterSubsystem;
+import org.teamdeadbolts.utils.tuning.Refreshable;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
 /**
  * Command to drive the swerve
  */
-public class DriveCommand extends Command {
+public class DriveCommand extends Command implements Refreshable {
     private SwerveSubsystem swerveSubsystem;
+    private ShooterSubsystem shooterSubsystem;
     private DoubleSupplier forwardSupplier;
     private DoubleSupplier sidewaysSupplier;
     private DoubleSupplier rotationSupplier;
     private boolean fieldRelative;
+
+    // For shooter fallback aiming
+    private final PIDController angleController = new PIDController(0, 0, 0);
 
     private final SavedLoggedNetworkNumber controllerDeadband =
             SavedLoggedNetworkNumber.get("Tuning/Drive/ControllerDeadband", 0.08);
@@ -38,6 +50,10 @@ public class DriveCommand extends Command {
     private final SavedLoggedNetworkNumber slowDrivePercent =
             SavedLoggedNetworkNumber.get("Tuning/Drive/SlowDrivePercent", 0.28);
 
+    private final SavedLoggedNetworkNumber angleControllerP = SavedLoggedNetworkNumber.get("Tuning/Drive/AngleController/kP", 0);
+
+
+
     private boolean fast;
     private boolean slow;
     /**
@@ -53,6 +69,7 @@ public class DriveCommand extends Command {
      */
     public DriveCommand(
             SwerveSubsystem swerveSubsystem,
+            ShooterSubsystem shooterSubsystem,
             DoubleSupplier forwardSupplier,
             DoubleSupplier sidewaysSupplier,
             DoubleSupplier rotationSuplier,
@@ -60,6 +77,7 @@ public class DriveCommand extends Command {
             boolean fast,
             boolean slow) {
         this.swerveSubsystem = swerveSubsystem;
+        this.shooterSubsystem = shooterSubsystem;
         this.forwardSupplier = forwardSupplier;
         this.sidewaysSupplier = sidewaysSupplier;
         this.rotationSupplier = rotationSuplier;
@@ -67,13 +85,21 @@ public class DriveCommand extends Command {
         this.fast = fast;
         this.slow = slow;
 
+        angleControllerP.addRefreshable(this);
+
         addRequirements(swerveSubsystem);
     }
 
     @Override
+    public void refresh() {
+        angleController.setP(angleControllerP.get());
+    }
+
+    @Override
     public void execute() {
+        Pose2d robotPose = RobotState.getInstance().getRobotPose().toPose2d();
         Translation2d robotTrans =
-                RobotState.getInstance().getRobotPose().toPose2d().getTranslation();
+                robotPose.getTranslation();
 
         double forwardPercent = MathUtil.applyDeadband(-forwardSupplier.getAsDouble(), controllerDeadband.get(), 1);
         double sidewaysPercent = MathUtil.applyDeadband(-sidewaysSupplier.getAsDouble(), controllerDeadband.get(), 1);
@@ -104,6 +130,14 @@ public class DriveCommand extends Command {
                 || ZoneConstants.BLUE_BOTTOM_BUMP_ZONE.contains(robotTrans)) {
             forwardMps = forwardMps * bumbSpeed.get();
             sidewaysMps = sidewaysMps * bumbSpeed.get();
+        }
+
+        Optional<Rotation2d> aimAngle = shooterSubsystem.getFallbackChassisTargetAngle();
+        if (aimAngle.isPresent()) {
+            rotationRps = angleController.calculate(robotPose.getRotation().getRadians(), aimAngle.get().getRadians());
+            Logger.recordOutput("Drive/ShooterAimFallback", true);
+        } else {
+            Logger.recordOutput("Drive/ShooterAimFallback", false);
         }
 
         Logger.recordOutput("Drive/ForwardPercent", forwardSupplier.getAsDouble());
