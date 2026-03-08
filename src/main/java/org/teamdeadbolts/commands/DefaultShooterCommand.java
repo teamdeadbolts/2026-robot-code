@@ -46,8 +46,6 @@ public class DefaultShooterCommand extends Command {
         return ZoneConstants.BLUE_BOTTOM_TRENCH_ZONE.contains(robotPosMeters)
                 || ZoneConstants.RED_BOTTOM_TRENCH_ZONE.contains(robotPosMeters)
                 || ZoneConstants.BLUE_TOP_TRENCH_ZONE.contains(robotPosMeters)
-                || ZoneConstants.RED_TOP_TRENCH_ZONE.contains(robotPosMeters)
-                || ZoneConstants.BLUE_TOWER_CLEARANCE_ZONE.contains(robotPosMeters)
-                || ZoneConstants.RED_TOWER_CLEARANCE_ZONE.contains(robotPosMeters);
+                || ZoneConstants.RED_TOP_TRENCH_ZONE.contains(robotPosMeters);
     }
 }

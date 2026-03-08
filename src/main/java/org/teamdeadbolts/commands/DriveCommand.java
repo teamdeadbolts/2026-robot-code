@@ -113,8 +113,7 @@ public class DriveCommand extends Command implements Refreshable {
         } else if (slow) {
             forwardMps = forwardPercent * maxRobotSpeed.get() * slowDrivePercent.get();
             sidewaysMps = sidewaysPercent * maxRobotSpeed.get() * slowDrivePercent.get();
-            rotationRps =
-                    rotationPercent * Units.degreesToRadians(maxRobotAnglarSpeed.get()) * slowDrivePercent.get();
+            rotationRps = rotationPercent * Units.degreesToRadians(maxRobotAnglarSpeed.get()) * slowDrivePercent.get();
         } else {
             forwardMps = forwardPercent * maxRobotSpeed.get() * slowDrivePercent.get();
             sidewaysMps = sidewaysPercent * maxRobotSpeed.get() * slowDrivePercent.get();
