@@ -35,11 +35,15 @@ public class HopperSubsystem extends StatefulSubsystem<HopperSubsystem.State> im
     /* --- Tuning Parameters --- */
     private final SavedLoggedNetworkNumber leftLifterControllerP =
             SavedLoggedNetworkNumber.get("Tuning/Hopper/LeftLifterController/kP", 0.1);
+    private final SavedLoggedNetworkNumber leftLifterControllerI =
+            SavedLoggedNetworkNumber.get("Tuning/Hopper/LeftLifterController/kI", 0.1);
     private final SavedLoggedNetworkNumber leftLifterFFkS =
             SavedLoggedNetworkNumber.get("Tuning/Hopper/LeftLifterFF/kS", 0.0);
 
     private final SavedLoggedNetworkNumber rightLifterControllerP =
             SavedLoggedNetworkNumber.get("Tuning/Hopper/RightLifterController/kP", 0.1);
+    private final SavedLoggedNetworkNumber rightLifterControllerI =
+            SavedLoggedNetworkNumber.get("Tuning/Hopper/RightLifterController/kI", 0.1);
     private final SavedLoggedNetworkNumber rightLifterFFkS =
             SavedLoggedNetworkNumber.get("Tuning/Hopper/RightLifterFF/kS", 0.0);
 
@@ -60,8 +64,10 @@ public class HopperSubsystem extends StatefulSubsystem<HopperSubsystem.State> im
         //         new Follower(HopperConstants.HOPPER_MOTOR_LEFT_CAN_ID, MotorAlignmentValue.Aligned));
 
         leftLifterControllerP.addRefreshable(this);
+        leftLifterControllerP.addRefreshable(this);
         leftLifterFFkS.addRefreshable(this);
         rightLifterControllerP.addRefreshable(this);
+        rightLifterControllerI.addRefreshable(this);
         rightLifterFFkS.addRefreshable(this);
     }
 
@@ -69,9 +75,11 @@ public class HopperSubsystem extends StatefulSubsystem<HopperSubsystem.State> im
     public void refresh() {
         HopperConstants.init();
         leftLifterController.setP(leftLifterControllerP.get());
+        leftLifterController.setI(leftLifterControllerI.get());
         leftLifterFF.setKs(leftLifterFFkS.get());
 
         rightLifterController.setP(rightLifterControllerP.get());
+        rightLifterController.setI(rightLifterControllerI.get());
         rightLifterFF.setKs(rightLifterFFkS.get());
 
         hopperMotorLeft.getConfigurator().apply(HopperConstants.LEFT_HOPPER_MOTOR_CONFIG);

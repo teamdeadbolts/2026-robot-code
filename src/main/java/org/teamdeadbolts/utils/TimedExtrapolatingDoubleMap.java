@@ -7,14 +7,14 @@ import java.util.TreeMap;
  * A time-series utility that maintains a sliding window of historical data points
  * and provides interpolated or extrapolated values for any requested timestamp.
  */
-public class ExtrapolatingDoubleMap {
+public class TimedExtrapolatingDoubleMap {
     private final TreeMap<Double, Double> map = new TreeMap<>();
     private final double maxHistoryMs;
 
     /**
      * @param maxHistoryMs The duration in milliseconds to retain data points.
      */
-    public ExtrapolatingDoubleMap(double maxHistoryMs) {
+    public TimedExtrapolatingDoubleMap(double maxHistoryMs) {
         this.maxHistoryMs = maxHistoryMs;
     }
 

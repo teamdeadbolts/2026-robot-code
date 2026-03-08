@@ -38,9 +38,7 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
 
     private final ProfiledPIDController armController =
             new ProfiledPIDController(0.0, 0.0, 0.0, new TrapezoidProfile.Constraints(0.0, 0.0));
-    private final ArmFeedforward armFeedforward = new ArmFeedforward(0.0, 0.0, 0.0);
-    private final ArmFeedforward armShootFeedforward = new ArmFeedforward(0.0, 0.0, 0.0);
-
+    private final ArmFeedforward armFeedforward = new ArmFeedforward(0, 0, 0);
     /* --- Configuration and Tuning --- */
     private final SavedLoggedNetworkNumber intakeDeployedAngle =
             SavedLoggedNetworkNumber.get("Tuning/Intake/IntakeDeployedAngle", 90.0);
@@ -61,27 +59,23 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
             SavedLoggedNetworkNumber.get("Tuning/Intake/ArmController/MaxAccel", 0.0);
     private final SavedLoggedNetworkNumber armControllerTol =
             SavedLoggedNetworkNumber.get("Tuning/Intake/ArmController/TolDeg", 10);
-    private final SavedLoggedNetworkNumber armCutoffVelTol =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmController/VelTolDeg", 10);
-
-    private final SavedLoggedNetworkNumber armFeedforwardKs =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmEmptyFeedforward/kS", 0.0);
-    private final SavedLoggedNetworkNumber armFeedforwardKg =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmEmptyFeedforward/kG", 0.0);
-    private final SavedLoggedNetworkNumber armFeedforwardKv =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmEmptyFeedforward/kV", 0.0);
-    private final SavedLoggedNetworkNumber armShootFeedforwardKs =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmShootFeedforward/kS", 0.0);
-    private final SavedLoggedNetworkNumber armShootFeedforwardKg =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmShootFeedforward/kG", 0.0);
-    private final SavedLoggedNetworkNumber armShootFeedforwardKv =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmShootFeedforward/kV", 0.0);
 
     private final SavedLoggedNetworkNumber wheelIntakeVoltage =
             SavedLoggedNetworkNumber.get("Tuning/Intake/WheelIntakeVoltage", 6.0);
     private final SavedLoggedNetworkNumber armOffsetDeg = SavedLoggedNetworkNumber.get("Tuning/Intake/ArmOffsetDeg", 0);
 
+    private final SavedLoggedNetworkNumber armFeedforwardKs =
+            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmFeedforward/kS", 0);
+    private final SavedLoggedNetworkNumber armFeedforwardKg =
+            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmFeedforward/kG", 0);
+
+    private final SavedLoggedNetworkNumber observerGain =
+            SavedLoggedNetworkNumber.get("Tuning/Intake/Observer/Gain", 0.0);
+    private final SavedLoggedNetworkNumber maxObserverVolts =
+            SavedLoggedNetworkNumber.get("Tuning/Intake/Observer/MaxVolts", 0.0);
+
     private double currentAngle = 0;
+    private double disturbanceAccumulator = 0.0;
 
     public IntakeSubsystem() {
         this.targetState = State.OFF;
@@ -93,12 +87,9 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
         armControllerD.addRefreshable(this);
         armControllerMaxVel.addRefreshable(this);
         armControllerMaxAccel.addRefreshable(this);
-        armFeedforwardKg.addRefreshable(this);
-        armFeedforwardKv.addRefreshable(this);
-        armShootFeedforwardKg.addRefreshable(this);
-        armShootFeedforwardKs.addRefreshable(this);
-        armShootFeedforwardKv.addRefreshable(this);
         wheelIntakeVoltage.addRefreshable(this);
+        armFeedforwardKg.addRefreshable(this);
+        armFeedforwardKs.addRefreshable(this);
     }
 
     @Override
@@ -109,12 +100,8 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
                 Units.degreesToRadians(armControllerMaxAccel.get())));
 
         armController.setTolerance(Units.degreesToRadians(armControllerTol.get()));
-        armFeedforward.setKg(armFeedforwardKg.get());
         armFeedforward.setKs(armFeedforwardKs.get());
-        armFeedforward.setKv(armFeedforwardKv.get());
-        armShootFeedforward.setKs(armShootFeedforwardKs.get());
-        armShootFeedforward.setKg(armShootFeedforwardKg.get());
-        armShootFeedforward.setKv(armShootFeedforwardKv.get());
+        armFeedforward.setKg(armFeedforwardKg.get());
 
         IntakeConstants.init();
         armMotor.getConfigurator().apply(IntakeConstants.INTAKE_ARM_MOTOR_CONFIG);
@@ -126,6 +113,8 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
     protected void onStateChange(State to, State from) {
         armController.reset(new TrapezoidProfile.State(
                 currentAngle, Units.rotationsToRadians(absEncoder.getVelocity().getValueAsDouble())));
+
+        disturbanceAccumulator = 0.0;
     }
 
     @Override
@@ -162,31 +151,33 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
         }
 
         if (targetAngle.isPresent()) {
+            double pidVolts = armController.calculate(currentAngle, targetAngle.get());
             TrapezoidProfile.State setpoint = armController.getSetpoint();
-            double feedforward = targetState == State.SHOOT
-                    ? armShootFeedforward.calculate(setpoint.position, setpoint.velocity)
-                    : armFeedforward.calculate(setpoint.position, setpoint.velocity);
-            double pidOut = armController.calculate(currentAngle, targetAngle.get());
 
-            // Soft-stop logic for static positions to save power/reduce oscillation
-            boolean isAtTarget =
-                    Math.abs(targetAngle.get() - currentAngle) < Units.degreesToRadians(armControllerTol.get());
-            boolean isAtVelocity =
-                    absEncoder.getVelocity().getValueAsDouble() < Units.degreesToRotations(armCutoffVelTol.get());
+            double feedforward = armFeedforward.calculate(setpoint.position, setpoint.velocity);
+            double actualVelocity =
+                    Units.rotationsToRadians(absEncoder.getVelocity().getValueAsDouble());
+            double vError = setpoint.velocity - actualVelocity;
 
-            if ((targetState == State.DEPLOYED || targetState == State.STOWED) && isAtTarget && isAtVelocity) {
+            disturbanceAccumulator += vError * observerGain.get();
+            disturbanceAccumulator =
+                    MathUtil.clamp(disturbanceAccumulator, -maxObserverVolts.get(), maxObserverVolts.get());
+            double totalVolts = feedforward + pidVolts + disturbanceAccumulator;
+
+            if ((targetState == State.DEPLOYED || targetState == State.STOWED) && armController.atGoal()) {
                 armMotor.setVoltage(0);
             } else {
-                armMotor.setVoltage(feedforward + pidOut);
+                armMotor.set(totalVolts);
             }
-
-            // Telemetry logging
             Logger.recordOutput("IntakeSubsystem/SetpointPos", Units.radiansToDegrees(setpoint.position));
             Logger.recordOutput("IntakeSubsystem/SetpointVel", Units.radiansToDegrees(setpoint.velocity));
-            Logger.recordOutput(
-                    "IntakeSubsystem/CurrVelocity",
-                    Units.rotationsToDegrees(absEncoder.getVelocity().getValueAsDouble()));
+            Logger.recordOutput("IntakeSubsystem/CurrVelocity", Units.radiansToDegrees(actualVelocity));
             Logger.recordOutput("IntakeSubsystem/TargetAngle", Units.radiansToDegrees(targetAngle.get()));
+
+            // Log control effort breakdown
+            Logger.recordOutput("IntakeSubsystem/Effort/PIDVolts", pidVolts);
+            Logger.recordOutput("IntakeSubsystem/Effort/FFVolts", feedforward);
+            Logger.recordOutput("IntakeSubsystem/Effort/ObserverVolts", disturbanceAccumulator);
         }
 
         Logger.recordOutput("IntakeSubsystem/CurrentAngle", Units.radiansToDegrees(currentAngle));

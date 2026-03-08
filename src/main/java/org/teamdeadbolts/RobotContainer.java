@@ -23,10 +23,9 @@ import org.teamdeadbolts.subsystems.drive.SwerveSubsystem;
 import org.teamdeadbolts.subsystems.shooter.ShooterSubsystem;
 import org.teamdeadbolts.subsystems.vision.PhotonVisionIO;
 import org.teamdeadbolts.subsystems.vision.VisionSubsystem;
-import org.teamdeadbolts.utils.tuning.Refreshable;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
-public class RobotContainer implements Refreshable {
+public class RobotContainer {
 
     private SwerveSubsystem swerveSubsystem = new SwerveSubsystem();
 
@@ -41,7 +40,7 @@ public class RobotContainer implements Refreshable {
             swerveSubsystem, new PhotonVisionIO("CenterCam", new Transform3d())
             // new PhotonVisionIO(
             //         "TurretCam", () ->
-            // shooterSubsystem.getTurretOffset().plus(VisionConstants.TURRET_CAM_TO_TURRENT)));
+            // shooterSubsystem.getTurretOffset().plus(VisionConstants.TURRET_CAM_TO_TURRET)));
             );
 
     private CommandXboxController primaryController = new CommandXboxController(0);
@@ -68,19 +67,8 @@ public class RobotContainer implements Refreshable {
         robotState.initPoseEstimator(
                 new Rotation3d(swerveSubsystem.getGyroRotation()), swerveSubsystem.getModulePositions());
 
-        configureBindings();
-
-        pathplannerTransKp.addRefreshable(this);
-        pathplannerTransKi.addRefreshable(this);
-        pathplannerTransKd.addRefreshable(this);
-        pathplannerRotKp.addRefreshable(this);
-        pathplannerRotKi.addRefreshable(this);
-        pathplannerRotKd.addRefreshable(this);
-    }
-
-    @Override
-    public void refresh() {
         configureAuto();
+        configureBindings();
     }
 
     private void configureBindings() {
@@ -137,20 +125,28 @@ public class RobotContainer implements Refreshable {
                         () -> shooterSubsystem.setState(ShooterSubsystem.State.SPINUP), shooterSubsystem));
 
         primaryController
-                .povUp() // Down (retarded)
-                .whileTrue(new RunCommand(
-                        () -> {
-                            shooterSubsystem.setState(ShooterSubsystem.State.ZERO);
-                        },
-                        shooterSubsystem));
-
-        primaryController
-                .povLeft()
+                .povUp() // Down
                 .whileTrue(new RunCommand(
                         () -> {
                             hopperSubsystem.setState(HopperSubsystem.State.DOWN);
                         },
                         hopperSubsystem));
+
+        primaryController
+                .povDown() // up
+                .whileTrue(new RunCommand(
+                        () -> {
+                            intakeSubsystem.setState(IntakeSubsystem.State.DEPLOYED);
+                        },
+                        intakeSubsystem));
+
+        primaryController
+                .povLeft()
+                .whileTrue(new RunCommand(
+                        () -> {
+                            intakeSubsystem.setState(IntakeSubsystem.State.STOWED);
+                        },
+                        intakeSubsystem));
         primaryController
                 .povRight()
                 .whileTrue(new RunCommand(

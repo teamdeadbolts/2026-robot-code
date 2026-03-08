@@ -21,8 +21,8 @@ public class ShooterConstants {
     public static final double SHOOTER_HOOD_MIN_ANGLE_DEGREES = 11;
     public static final double SHOOTER_HOOD_MAX_ANGLE_DEGREES = 43.0; // TODO fix!!
 
-    public static final double TURRENT_MIN_POSITION_DEGREES = -360.0;
-    public static final double TURRENT_MAX_POSITION_DEGREES = 360.0;
+    public static final double TURRET_MIN_POSITION_DEGREES = 0.0;
+    public static final double TURRET_MAX_POSITION_DEGREES = 360.0;
 
     public static final double WHEEL_MAX_OMEGA_RAD_PER_SEC = 600.0 * 2.0 * Math.PI / 60.0; // 600 RPM
 
@@ -46,7 +46,7 @@ public class ShooterConstants {
             Units.inchesToMeters(13.5),
             new Rotation3d(0.0, 0.0, -Math.PI / 2));
 
-    public static final double TURRENT_GEAR_RATIO = (145.0 / 18.0) * 3; // The gear ratio of the turret
+    public static final double TURRET_GEAR_RATIO = (145.0 / 18.0) * 3; // The gear ratio of the turret
     public static final double HOOD_GEAR_RATIO =
             (40.0 / 12.0) * (18.0 / 14.0) * (163.0 / 10.0); // The gear ratio of the hood
     public static final double WHEEL_GEAR_RATIO = 18.0 / 17.0; // The gear ratio of the wheels
@@ -71,7 +71,7 @@ public class ShooterConstants {
         shooterTurretMotorCurrentLimit.initFromConfig();
         SHOOTER_TURRET_MOTOR_CONFIG.CurrentLimits.SupplyCurrentLimitEnable = true;
         SHOOTER_TURRET_MOTOR_CONFIG.CurrentLimits.SupplyCurrentLimit = shooterTurretMotorCurrentLimit.get();
-        SHOOTER_TURRET_MOTOR_CONFIG.Feedback.SensorToMechanismRatio = TURRENT_GEAR_RATIO;
+        SHOOTER_TURRET_MOTOR_CONFIG.Feedback.SensorToMechanismRatio = TURRET_GEAR_RATIO;
         SHOOTER_TURRET_MOTOR_CONFIG.MotorOutput.NeutralMode = NeutralModeValue.Brake;
 
         shooterHoodMotorCurrentLimit.initFromConfig();

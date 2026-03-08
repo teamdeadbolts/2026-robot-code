@@ -13,6 +13,6 @@ public class VisionConstants {
     public static final AprilTagFieldLayout FIELD_LAYOUT =
             AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
 
-    // The transform from the center of the turrent to the on-turrent camera
-    public static final Transform3d TURRET_CAM_TO_TURRENT = new Transform3d();
+    // The transform from the center of the turret to the on-turret camera
+    public static final Transform3d TURRET_CAM_TO_TURRET = new Transform3d();
 }

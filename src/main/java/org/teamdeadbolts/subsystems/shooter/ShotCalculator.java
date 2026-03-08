@@ -11,7 +11,7 @@ import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import org.littletonrobotics.junction.AutoLog;
 import org.teamdeadbolts.constants.ShooterConstants;
-import org.teamdeadbolts.utils.ExtrapolatingDoubleMap;
+import org.teamdeadbolts.utils.TimedExtrapolatingDoubleMap;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
 /**
@@ -52,9 +52,9 @@ public class ShotCalculator {
     private static final SavedLoggedNetworkNumber airResistanceMultiplier =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/airResistanceMultiplier", 0.01);
 
-    private final ExtrapolatingDoubleMap vxMap = new ExtrapolatingDoubleMap(timeToKeepVel.get());
-    private final ExtrapolatingDoubleMap vyMap = new ExtrapolatingDoubleMap(timeToKeepVel.get());
-    private final ExtrapolatingDoubleMap vthetaMap = new ExtrapolatingDoubleMap(timeToKeepVel.get());
+    private final TimedExtrapolatingDoubleMap vxMap = new TimedExtrapolatingDoubleMap(timeToKeepVel.get());
+    private final TimedExtrapolatingDoubleMap vyMap = new TimedExtrapolatingDoubleMap(timeToKeepVel.get());
+    private final TimedExtrapolatingDoubleMap vthetaMap = new TimedExtrapolatingDoubleMap(timeToKeepVel.get());
 
     public ShotCalculator() {}
 
@@ -123,7 +123,7 @@ public class ShotCalculator {
             virtTarget2d = target.toTranslation2d().minus(turretVel.times(totalTime / 1000));
         }
 
-        double turretAngle = calculateFieldRelativeTurrent(robotPose.toPose2d(), virtTarget2d);
+        double turretAngle = calculateFieldRelativeTURRET(robotPose.toPose2d(), virtTarget2d);
 
         ShotParametersAutoLogged rawShot = new ShotParametersAutoLogged();
         rawShot.hoodAngle = Math.PI / 2 - hoodAngle;
@@ -161,7 +161,7 @@ public class ShotCalculator {
      * @param currrentTime   The current timestamp in seconds.
      * @return The turret angle offset required for latency compensation in radians.
      */
-    public double calculateLatancyOffsetTurrentAngle(
+    public double calculateLatancyOffsetTURRETAngle(
             Pose2d robotPose, Translation2d targetLocation, double currrentTime) {
         double latancy = shootLatancyMs.get();
 
@@ -172,10 +172,10 @@ public class ShotCalculator {
                 new Rotation2d(
                         robotPose.getRotation().getRadians() + vthetaMap.get(currrentTime + latancy) * latancy / 1000));
 
-        return calculateFieldRelativeTurrent(predictedRobotPose, targetLocation);
+        return calculateFieldRelativeTURRET(predictedRobotPose, targetLocation);
     }
 
-    private static double calculateFieldRelativeTurrent(Pose2d robotPose, Translation2d targetLocation) {
+    private static double calculateFieldRelativeTURRET(Pose2d robotPose, Translation2d targetLocation) {
         Transform2d turretOffset =
                 new Transform2d(ShooterConstants.SHOOTER_OFFSET.getTranslation().toTranslation2d(), new Rotation2d());
         Pose2d turretFieldPose = robotPose.transformBy(turretOffset);

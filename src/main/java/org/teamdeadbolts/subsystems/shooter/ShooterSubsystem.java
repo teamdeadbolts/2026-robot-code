@@ -237,7 +237,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                                 p -> p.getTranslation().getDistance(turretPose.getTranslation())));
 
                 if (targetPose.isPresent()) {
-                    targetTurretPosition = Optional.of(shotCalculator.calculateLatancyOffsetTurrentAngle(
+                    targetTurretPosition = Optional.of(shotCalculator.calculateLatancyOffsetTURRETAngle(
                             robotPose2d, targetPose.get().toPose2d().getTranslation(), System.currentTimeMillis()));
                     Logger.recordOutput("ShooterSubsystem/AprilTagTrack/TargetTagPose", targetPose.get());
                 }
@@ -380,9 +380,9 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
         error -= Math.PI;
         double shortestPath = currentAngle + error;
 
-        if (shortestPath > Math.toRadians(ShooterConstants.TURRENT_MAX_POSITION_DEGREES))
+        if (shortestPath > Math.toRadians(ShooterConstants.TURRET_MAX_POSITION_DEGREES))
             return shortestPath - 2 * Math.PI;
-        else if (shortestPath < Math.toRadians(ShooterConstants.TURRENT_MIN_POSITION_DEGREES))
+        else if (shortestPath < Math.toRadians(ShooterConstants.TURRET_MIN_POSITION_DEGREES))
             return shortestPath + 2 * Math.PI;
         return shortestPath;
     }
