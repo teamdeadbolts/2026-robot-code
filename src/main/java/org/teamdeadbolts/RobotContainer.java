@@ -5,6 +5,7 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
+import com.pathplanner.lib.events.EventTrigger;
 import edu.wpi.first.math.geometry.*;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
@@ -71,6 +72,28 @@ public class RobotContainer {
 
         configureAuto();
         configureBindings();
+        new EventTrigger("Index")
+                .onTrue(new RunCommand(
+                        () -> indexerSubsystem.setState(IndexerSubsystem.State.JIGGLE), indexerSubsystem));
+        new EventTrigger("StopIndex")
+                .onTrue(new RunCommand(() -> indexerSubsystem.setState(IndexerSubsystem.State.OFF), indexerSubsystem));
+        new EventTrigger("Intake")
+                .onTrue(new RunCommand(() -> intakeSubsystem.setState(IntakeSubsystem.State.INTAKE), intakeSubsystem));
+        new EventTrigger("StopIntake")
+                .onTrue(new RunCommand(() -> intakeSubsystem.setState(IntakeSubsystem.State.DEPLOYED), intakeSubsystem));
+        new EventTrigger("Shoot")
+                .onTrue(new RunCommand(
+                        () -> shooterSubsystem.setState(ShooterSubsystem.State.SHOOT), shooterSubsystem));
+        new EventTrigger("SpinUp")
+                .onTrue(new RunCommand(
+                        () -> shooterSubsystem.setState(ShooterSubsystem.State.SPINUP), shooterSubsystem));
+        new EventTrigger("StopShoot")
+                .onTrue(new RunCommand(() -> shooterSubsystem.setState(ShooterSubsystem.State.OFF), shooterSubsystem));
+        new EventTrigger("HopperUp")
+                .onTrue(new RunCommand(() -> hopperSubsystem.setState(HopperSubsystem.State.UP), hopperSubsystem));
+        new EventTrigger("HopperDown")
+                .onTrue(new RunCommand(() -> hopperSubsystem.setState(HopperSubsystem.State.DOWN), hopperSubsystem));
+
     }
 
     private void configureBindings() {
@@ -181,7 +204,9 @@ public class RobotContainer {
                                 false,
                                 true)));
 
-        // primaryController.povLeft().whileTrue(swerveSubsystem.runDriveQuasiTest(Direction.kReverse));
+
+
+         primaryController.b().whileTrue(AutoBuilder.buildAuto("Test Top Auto"));
     }
     //
     private void configureAuto() {
