@@ -72,9 +72,9 @@ public class ShooterConstants {
         SHOOTER_RPM_TO_MPS_MAP.put(4.151, 1500.0);
         SHOOTER_RPM_TO_MPS_MAP.put(6.773, 2000.0);
         SHOOTER_RPM_TO_MPS_MAP.put(7.175, 2500.0);
-        SHOOTER_RPM_TO_MPS_MAP.put(7.62, 3000.0);
-        // SHOOTER_RPM_TO_MPS_MAP.put(null, 3500.0);
-        // SHOOTER_RPM_TO_MPS_MAP.put(null, 4000.0);
+        SHOOTER_RPM_TO_MPS_MAP.put(8.709, 3000.0);
+        SHOOTER_RPM_TO_MPS_MAP.put(9.562, 3500.0);
+        SHOOTER_RPM_TO_MPS_MAP.put(10.16, 4000.0);
     }
 
     public static void init() {

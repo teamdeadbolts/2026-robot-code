@@ -16,6 +16,7 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -189,6 +190,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
 
     @Override
     protected void onStateChange(State from, State to) {
+        Logger.recordOutput("ShooterSubsystem/TargetState", to);
         hoodController.reset();
         turretController.reset();
     }
@@ -294,16 +296,19 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                 targetHoodAngle = Optional.of(Units.degreesToRadians(testHoodAngle.get()));
             }
             case TEST -> {
-                // ShotParametersAutoLogged shot = shotCalculator.calculateShot(
-                //         robotPose,
-                //         new Translation3d(testTargetX.get(), testTargetY.get(), 0),
-                //         (double) (System.currentTimeMillis()),
-                //         0,
-                //         Units.degreesToRadians(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
-                // currentTargetTranslation = Optional.of(new Translation2d(testTargetX.get(), testTargetY.get()));
-                // targetHoodAngle = Optional.of(shot.hoodAngle);
+                ShotParametersAutoLogged shot = shotCalculator.calculateShot(
+                        robotPose,
+                        new Translation3d(testTargetX.get(), testTargetY.get(), 0),
+                        (double) (System.currentTimeMillis()),
+                        0,
+                        Units.degreesToRadians(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
+                currentTargetTranslation = Optional.of(new Translation2d(testTargetX.get(), testTargetY.get()));
+                targetHoodAngle = Optional.of(shot.hoodAngle);
+                Logger.recordOutput(
+                        "ShooterSubsystem/TestTargetPose",
+                        new Pose2d(testTargetX.get(), testTargetY.get(), new Rotation2d()));
                 // targetTurretPosition = Optional.of(shot.turretAngle);
-                targetTurretPosition = Optional.of(Units.degreesToRadians(testTurretPosition.get()));
+                // targetTurretPosition = Optional.of(Units.degreesToRadians(testTurretPosition.get()));
             }
             case ZERO -> {
                 hoodMotor.setVoltage(-hoodZeroVoltage.get());
