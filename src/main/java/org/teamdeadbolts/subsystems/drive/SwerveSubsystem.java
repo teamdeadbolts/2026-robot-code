@@ -21,6 +21,7 @@ import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.units.measure.Time;
 import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.wpilibj.Tracer;
 import edu.wpi.first.wpilibj.sysid.SysIdRoutineLog;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -67,6 +68,10 @@ public class SwerveSubsystem extends SubsystemBase implements Refreshable {
     private final SysIdRoutine driveRoutine = new SysIdRoutine(
             new SysIdRoutine.Config(null, null, Time.ofBaseUnits(1.5, Seconds)),
             new SysIdRoutine.Mechanism(this::sysIdDriveVolts, this::sysIdDriveLog, this));
+
+    private final RobotState state = RobotState.getInstance();
+
+    private Tracer tracer = new Tracer();
 
     public SwerveSubsystem() {
         this.resetGyro();
@@ -220,15 +225,16 @@ public class SwerveSubsystem extends SubsystemBase implements Refreshable {
 
     @Override
     public void periodic() {
+        tracer.resetTimer();
         Logger.recordOutput("Swerve/GyroRotationDeg", getGyroRotation().getDegrees());
         for (SwerveModule m : this.modules) {
             m.periodic();
         }
 
-        RobotState.getInstance().updateFromSwerve(getModulePositions(), new Rotation3d(getGyroRotation()));
+        state.updateFromSwerve(getModulePositions(), new Rotation3d(getGyroRotation()));
         ChassisSpeeds speeds = getFieldRelativeChassisSpeeds();
-        RobotState.getInstance().setFieldRelativeVelocities(speeds);
-        RobotState.getInstance().setRobotRelativeVelocities(getRobotRelativeChassisSpeeds());
-        Logger.recordOutput("Swerve/RobotVelocities", speeds);
+        state.setFieldRelativeVelocities(speeds);
+        state.setRobotRelativeVelocities(getRobotRelativeChassisSpeeds());
+        // Logger.recordOutput("Swerve/RobotVelocities", speeds);
     }
 }

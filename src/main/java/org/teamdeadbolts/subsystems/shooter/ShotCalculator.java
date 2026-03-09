@@ -123,7 +123,7 @@ public class ShotCalculator {
             virtTarget2d = target.toTranslation2d().minus(turretVel.times(totalTime / 1000));
         }
 
-        double turretAngle = calculateFieldRelativeTURRET(robotPose.toPose2d(), virtTarget2d);
+        double turretAngle = calculateFieldRelativeTurret(robotPose.toPose2d(), virtTarget2d);
 
         ShotParametersAutoLogged rawShot = new ShotParametersAutoLogged();
         rawShot.hoodAngle = Math.PI / 2 - hoodAngle;
@@ -161,7 +161,7 @@ public class ShotCalculator {
      * @param currrentTime   The current timestamp in seconds.
      * @return The turret angle offset required for latency compensation in radians.
      */
-    public double calculateLatancyOffsetTURRETAngle(
+    public double calculateLatancyOffsetTurretAngle(
             Pose2d robotPose, Translation2d targetLocation, double currrentTime) {
         double latancy = shootLatancyMs.get();
 
@@ -172,10 +172,10 @@ public class ShotCalculator {
                 new Rotation2d(
                         robotPose.getRotation().getRadians() + vthetaMap.get(currrentTime + latancy) * latancy / 1000));
 
-        return calculateFieldRelativeTURRET(predictedRobotPose, targetLocation);
+        return calculateFieldRelativeTurret(predictedRobotPose, targetLocation);
     }
 
-    private static double calculateFieldRelativeTURRET(Pose2d robotPose, Translation2d targetLocation) {
+    private static double calculateFieldRelativeTurret(Pose2d robotPose, Translation2d targetLocation) {
         Transform2d turretOffset =
                 new Transform2d(ShooterConstants.SHOOTER_OFFSET.getTranslation().toTranslation2d(), new Rotation2d());
         Pose2d turretFieldPose = robotPose.transformBy(turretOffset);
@@ -188,7 +188,6 @@ public class ShotCalculator {
     }
 
     public static double shooterMPSToRPM(double mps) {
-        // Calculation accounts for ball compression and effective wheel geometry
         return (60.0 * mps) / ((5.0 / 6.0) * Math.PI * (2.0 * ShooterConstants.SHOOTER_BIG_WHEEL_RADIUS_METERS));
     }
 

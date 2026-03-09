@@ -254,7 +254,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                                 p -> p.getTranslation().getDistance(turretPose.getTranslation())));
 
                 if (targetPose.isPresent()) {
-                    targetTurretPosition = Optional.of(shotCalculator.calculateLatancyOffsetTURRETAngle(
+                    targetTurretPosition = Optional.of(shotCalculator.calculateLatancyOffsetTurretAngle(
                             robotPose2d, targetPose.get().toPose2d().getTranslation(), System.currentTimeMillis()));
                     Logger.recordOutput("ShooterSubsystem/AprilTagTrack/TargetTagPose", targetPose.get());
                 }
@@ -359,29 +359,26 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
         }
 
         if (targetTurretPosition.isPresent()) {
-            double rawTurrentPosition =
+            double currentEncoderRad =
                     Units.rotationsToRadians(turretMotor.getPosition().getValueAsDouble());
-            double normalizedTurretPosition = calculateTurretSetpoint(
-                    rawTurrentPosition,
-                    targetTurretPosition.get()
-                            - ShooterConstants.SHOOTER_OFFSET
-                                    .getRotation()
-                                    .toRotation2d()
-                                    .getRadians());
-            double turretOutput = turretController.calculate(
-                    Units.rotationsToRadians(turretMotor.getPosition().getValueAsDouble()), normalizedTurretPosition);
 
+            // Just pass the robot-relative target directly into the new method
+            double normalizedTurretPosition = calculateTurretSetpoint(currentEncoderRad, targetTurretPosition.get());
+
+            double turretOutput = turretController.calculate(currentEncoderRad, normalizedTurretPosition);
+
+            // Calculate field pose for logging
             Transform2d targetTurretTransform = new Transform2d(
                     ShooterConstants.SHOOTER_OFFSET.getTranslation().toTranslation2d(),
-                    Rotation2d.fromRadians(normalizedTurretPosition));
+                    Rotation2d.fromRadians(normalizedTurretPosition
+                            + ShooterConstants.SHOOTER_OFFSET.getRotation().getZ()));
             Pose2d targetTurretFieldPose = robotPose.toPose2d().transformBy(targetTurretTransform);
 
             turretMotor.setVoltage(turretOutput);
+
             Logger.recordOutput(
-                    "ShooterSubsystem/NormalizedTurretTargetAngle", Units.radiansToDegrees(normalizedTurretPosition));
+                    "ShooterSubsystem/NormalizedTurretSetpoint", Units.radiansToDegrees(normalizedTurretPosition));
             Logger.recordOutput("ShooterSubsystem/TargetTurretPose", targetTurretFieldPose);
-            Logger.recordOutput(
-                    "ShooterSubsystem/TargetTurretPosition", Units.degreesToRadians(targetTurretPosition.get()));
             Logger.recordOutput("ShooterSubsystem/TurretOutput", turretOutput);
         } else {
             turretMotor.setVoltage(0);
@@ -416,21 +413,56 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                 rightWheelMotor.getSupplyCurrent().getValueAsDouble());
     }
 
-    private double calculateTurretSetpoint(double currentAngle, double targetAngle) {
-        double error = ((targetAngle - currentAngle + Math.PI) % (2 * Math.PI)) - Math.PI;
-        if (error < 0) error += 2 * Math.PI;
-        error -= Math.PI;
-        Logger.recordOutput("ShooterSubsystem/NormalizedError", Units.radiansToDegrees(error));
-        Logger.recordOutput("ShooterSubsystem/RawTargetAngle", Units.radiansToDegrees(targetAngle));
-        Logger.recordOutput("ShooterSubsystem/RawCurrentTurrentAngle", Units.radiansToDegrees(currentAngle));
+    /**
+     * Calculates the continuous encoder setpoint for the turret, choosing the shortest path
+     * to the target while respecting physical cable chain limits.
+     * * @param currentEncoderRad The raw, un-wrapped current position of the turret encoder (radians).
+     * @param targetRobotRelativeRad The desired angle relative to the front of the robot (radians).
+     * @return The optimal continuous setpoint for the PID controller (radians).
+     */
+    private double calculateTurretSetpoint(double currentEncoderRad, double targetRobotRelativeRad) {
+        // 1. Shift the target from the Robot Frame to the Encoder Frame
+        double offsetRad = ShooterConstants.SHOOTER_OFFSET.getRotation().getZ();
+        double targetEncoderRad = targetRobotRelativeRad - offsetRad;
 
-        double shortestPath = currentAngle + error;
+        // 2. Find the shortest path error using WPILib's reliable angle wrap [-pi, pi]
+        double error = MathUtil.angleModulus(targetEncoderRad - currentEncoderRad);
 
-        if (shortestPath > Math.toRadians(ShooterConstants.TURRET_MAX_POSITION_DEGREES))
-            return shortestPath - 2 * Math.PI;
-        else if (shortestPath < Math.toRadians(ShooterConstants.TURRET_MIN_POSITION_DEGREES))
-            return shortestPath + 2 * Math.PI;
-        return shortestPath;
+        // 3. Calculate the ideal continuous setpoint based on where the turret is right now
+        double setpoint = currentEncoderRad + error;
+
+        // 4. Convert constraints to radians for comparison
+        double maxLimitRad = Math.toRadians(ShooterConstants.TURRET_MAX_POSITION_DEGREES);
+        double minLimitRad = Math.toRadians(ShooterConstants.TURRET_MIN_POSITION_DEGREES);
+
+        // 5. Cable chain / Hardstop limit enforcement
+        if (setpoint > maxLimitRad) {
+            // We overshot the positive limit. Can we reach the target by spinning the long way around?
+            if (setpoint - (2 * Math.PI) >= minLimitRad) {
+                setpoint -= (2 * Math.PI);
+            } else {
+                // If wrapping the long way breaks the negative limit, we clamp to the max to avoid breaking the robot
+                setpoint = maxLimitRad;
+                Logger.recordOutput("ShooterSubsystem/TurretLimitHit", "MAX");
+            }
+        } else if (setpoint < minLimitRad) {
+            // We overshot the negative limit. Can we reach it by spinning the long way around?
+            if (setpoint + (2 * Math.PI) <= maxLimitRad) {
+                setpoint += (2 * Math.PI);
+            } else {
+                // Clamped to minimum limit
+                setpoint = minLimitRad;
+                Logger.recordOutput("ShooterSubsystem/TurretLimitHit", "MIN");
+            }
+        } else {
+            Logger.recordOutput("ShooterSubsystem/TurretLimitHit", "NONE");
+        }
+
+        Logger.recordOutput("ShooterSubsystem/RawTargetAngle", Units.radiansToDegrees(targetRobotRelativeRad));
+        Logger.recordOutput("ShooterSubsystem/TargetEncoderRad", Units.radiansToDegrees(targetEncoderRad));
+        Logger.recordOutput("ShooterSubsystem/ShortestPathError", Units.radiansToDegrees(error));
+
+        return setpoint;
     }
 
     private double getTurretRotation() {

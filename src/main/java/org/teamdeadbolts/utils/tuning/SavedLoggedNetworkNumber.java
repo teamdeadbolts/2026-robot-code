@@ -109,10 +109,10 @@ public class SavedLoggedNetworkNumber extends LoggedNetworkNumber implements Tun
         if (c != this.lastValue) {
             System.out.printf("Updating %s from the network to: %s\n", key, c);
             this.lastValue = c;
-            immediateValue = c;
-            hasImmediateValue = false;
-            configManager.set(key, c);
-            refreshables.forEach(Refreshable::refresh);
+            this.immediateValue = c;
+            this.hasImmediateValue = false;
+            this.configManager.set(key, c);
+            this.refreshables.forEach(Refreshable::refresh);
         }
     }
 }

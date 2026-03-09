@@ -185,11 +185,11 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
                     MathUtil.clamp(disturbanceAccumulator, -maxObserverVolts.get(), maxObserverVolts.get());
             double totalVolts = feedforward + pidVolts + disturbanceAccumulator;
 
-            if ((targetState == State.DEPLOYED || targetState == State.STOWED) && armController.atGoal()) {
-                armMotor.setVoltage(0);
-            } else {
-                armMotor.set(totalVolts);
-            }
+            // if ((targetState == State.DEPLOYED || targetState == State.STOWED) && armController.atGoal()) {
+            //     // armMotor.setVoltage(0);
+            // } else {
+            armMotor.set(totalVolts);
+            // }
             Logger.recordOutput("IntakeSubsystem/SetpointPos", Units.radiansToDegrees(setpoint.position));
             Logger.recordOutput("IntakeSubsystem/SetpointVel", Units.radiansToDegrees(setpoint.velocity));
             Logger.recordOutput("IntakeSubsystem/CurrVelocity", Units.radiansToDegrees(actualVelocity));

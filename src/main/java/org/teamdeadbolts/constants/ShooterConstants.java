@@ -8,6 +8,7 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
+import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.math.util.Units;
 import org.teamdeadbolts.utils.tuning.ConfigManager;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
@@ -21,8 +22,8 @@ public class ShooterConstants {
     public static final double SHOOTER_HOOD_MIN_ANGLE_DEGREES = 10.2;
     public static final double SHOOTER_HOOD_MAX_ANGLE_DEGREES = 43.0; // TODO fix!!
 
-    public static final double TURRET_MIN_POSITION_DEGREES = -45.0;
-    public static final double TURRET_MAX_POSITION_DEGREES = 315.0;
+    public static final double TURRET_MIN_POSITION_DEGREES = -90.0;
+    public static final double TURRET_MAX_POSITION_DEGREES = 270.0;
 
     public static final double WHEEL_MAX_OMEGA_RAD_PER_SEC = 600.0 * 2.0 * Math.PI / 60.0; // 600 RPM
 
@@ -46,7 +47,7 @@ public class ShooterConstants {
             Units.inchesToMeters(13.5),
             new Rotation3d(0.0, 0.0, Math.PI / 2));
 
-    public static final double TURRET_GEAR_RATIO = (145.0 / 18.0) * 3; // The gear ratio of the turret
+    public static final double TURRET_GEAR_RATIO = ((145.0 / 18.0) * 3) * 1.2088889; // The gear ratio of the turret
     public static final double HOOD_GEAR_RATIO =
             (40.0 / 12.0) * (18.0 / 14.0) * (163.0 / 10.0); // The gear ratio of the hood
     public static final double WHEEL_GEAR_RATIO = 18.0 / 17.0; // The gear ratio of the wheels
@@ -55,6 +56,8 @@ public class ShooterConstants {
     public static final TalonFXConfiguration SHOOTER_HOOD_MOTOR_CONFIG = new TalonFXConfiguration();
     public static final TalonFXConfiguration SHOOTER_WHEEL_MOTOR_CONFIG = new TalonFXConfiguration();
     public static final CANcoderConfiguration SHOOTER_ABS_ENCODER_CONFIG = new CANcoderConfiguration();
+
+    public static final InterpolatingDoubleTreeMap SHOOTER_RPM_TO_MPS_MAP = new InterpolatingDoubleTreeMap();
 
     private static final SavedLoggedNetworkNumber shooterTurretMotorCurrentLimit =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/ShooterTurretMotorCurrentLimit", 40);
@@ -65,6 +68,13 @@ public class ShooterConstants {
 
     static {
         ConfigManager.getInstance().onReady(ShooterConstants::init);
+        SHOOTER_RPM_TO_MPS_MAP.put(2.902, 1000.0);
+        SHOOTER_RPM_TO_MPS_MAP.put(4.151, 1500.0);
+        SHOOTER_RPM_TO_MPS_MAP.put(6.773, 2000.0);
+        SHOOTER_RPM_TO_MPS_MAP.put(7.175, 2500.0);
+        SHOOTER_RPM_TO_MPS_MAP.put(7.62, 3000.0);
+        // SHOOTER_RPM_TO_MPS_MAP.put(null, 3500.0);
+        // SHOOTER_RPM_TO_MPS_MAP.put(null, 4000.0);
     }
 
     public static void init() {
