@@ -1,8 +1,6 @@
 package org.teamdeadbolts.subsystems.shooter;
 
-import edu.wpi.first.math.geometry.Pose3d;
-import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.math.geometry.*;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import io.javalin.Javalin;
@@ -20,9 +18,9 @@ public class InteractiveShotVisualizer {
     private static final SavedLoggedNetworkNumber calcIterations =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/CalcIterations", 30);
     private static final SavedLoggedNetworkNumber minImpactAngle =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/MinImpactAngleDegrees", 10);
+            SavedLoggedNetworkNumber.get("Tuning/Shooter/MinImpactAngleDegrees", 50);
     private static final SavedLoggedNetworkNumber maxImpactAngle =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/MaxImpactAngleDegrees", 45);
+            SavedLoggedNetworkNumber.get("Tuning/Shooter/MaxImpactAngleDegrees", 90);
     private static final SavedLoggedNetworkNumber shootLatancyMs =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/ShootLatancyMs", 0);
     private static final SavedLoggedNetworkNumber timeToKeepVel =
@@ -45,7 +43,7 @@ public class InteractiveShotVisualizer {
             double targetX, double targetY, double targetZ,
             double virtX, double virtY, double virtZ,
             double aimU, double aimV, double aimW,
-            double calcHoodAngle, double calcTurretAngle, double calcRpm, double impactAngle
+            double calcHoodAngle, double calcTurretAngle, double calcRpm, double impactAngle, double ballVelocity
     ) {}
 
     @Test
@@ -111,9 +109,17 @@ public class InteractiveShotVisualizer {
             double v = Math.cos(theta) * Math.sin(phi);
             double w = Math.sin(theta);
 
-            // True environmental velocities
-            double vx = (pureV0 * u) + speeds.vxMetersPerSecond;
-            double vy = (pureV0 * v) + speeds.vyMetersPerSecond;
+// Calculate the field-relative offset of the turret
+            Translation2d robotRelOffset = ShooterConstants.SHOOTER_OFFSET.getTranslation().toTranslation2d();
+            Translation2d fieldRelOffset = robotRelOffset.rotateBy(new Rotation2d(robotPose.getRotation().getZ()));
+
+// Calculate the true linear velocity of the turret (Chassis V + Tangential V)
+            double turretVx = speeds.vxMetersPerSecond - (speeds.omegaRadiansPerSecond * fieldRelOffset.getY());
+            double turretVy = speeds.vyMetersPerSecond + (speeds.omegaRadiansPerSecond * fieldRelOffset.getX());
+
+// True environmental velocities applied to the ball
+            double vx = (pureV0 * u) + turretVx;
+            double vy = (pureV0 * v) + turretVy;
             double vz = pureV0 * w;
 
             double exitRadius = ShooterConstants.EXIT_RADIUS_METERS;
@@ -143,7 +149,7 @@ public class InteractiveShotVisualizer {
                     targetPos.getX(), targetPos.getY(), targetPos.getZ(),
                     result.virtTarget.getX(), result.virtTarget.getY(), result.virtTarget.getZ(),
                     u, v, w,
-                    Math.toDegrees(result.hoodAngle), Math.toDegrees(result.turretAngle), result.wheelSpeed, Math.toDegrees(result.impactAngle)
+                    Math.toDegrees(result.hoodAngle), Math.toDegrees(result.turretAngle), result.wheelSpeed, Math.toDegrees(result.impactAngle),result.ballVelocity
             );
 
             ctx.json(response);
@@ -187,7 +193,7 @@ public class InteractiveShotVisualizer {
             <div id="sidebar">
                 <h3>Robot Pose</h3>
                 <div class="control-group"><label>X Position (m) <span id="rXVal" class="val-display">0</span></label><input type="number" id="rX" min="-5" max="5" step="0.1" value="0" oninput="updateUI()"></div>
-                <div class="control-group"><label>Y Position (m) <span id="rYVal" class="val-display">-0.5</span></label><input type="number" id="rY" min="-5" max="5" step="0.1" value="-0.5" oninput="updateUI()"></div>
+                <div class="control-group"><label>Y Position (m) <span id="rYVal" class="val-display">-0.5</span></label><input type="number" id="rY" min="-5" max="5" step="0.1" value="0.0" oninput="updateUI()"></div>
                 <div class="control-group"><label>Rotation (rad) <span id="rRotVal" class="val-display">0</span></label><input type="number" id="rRot" min="-3.14" max="3.14" step="0.05" value="0" oninput="updateUI()"></div>
                 
                 <h3>Robot Speeds</h3>
@@ -196,14 +202,14 @@ public class InteractiveShotVisualizer {
                 <div class="control-group"><label>Omega (rad/s) <span id="vOmegaVal" class="val-display">0</span></label><input type="number" id="vOmega" min="-3.14" max="3.14" step="0.1" value="0" oninput="updateUI()"></div>
                 
                 <h3>Target Position</h3>
-                <div class="control-group"><label>Target X (m) <span id="tXVal" class="val-display">3.0</span></label><input type="number" id="tX" min="-10" max="10" step="0.1" value="3.0" oninput="updateUI()"></div>
-                <div class="control-group"><label>Target Y (m) <span id="tYVal" class="val-display">5.0</span></label><input type="number" id="tY" min="-10" max="10" step="0.1" value="5.0" oninput="updateUI()"></div>
-                <div class="control-group"><label>Target Z (m) <span id="tZVal" class="val-display">2.0</span></label><input type="number" id="tZ" min="0" max="4" step="0.1" value="2.0" oninput="updateUI()"></div>
+                <div class="control-group"><label>Target X (m) <span id="tXVal" class="val-display">3.0</span></label><input type="number" id="tX" min="-10" max="10" step="0.1" value="1.0" oninput="updateUI()"></div>
+                <div class="control-group"><label>Target Y (m) <span id="tYVal" class="val-display">5.0</span></label><input type="number" id="tY" min="-10" max="10" step="0.1" value="1.0" oninput="updateUI()"></div>
+                <div class="control-group"><label>Target Z (m) <span id="tZVal" class="val-display">2.0</span></label><input type="number" id="tZ" min="0" max="4" step="0.1" value="1.8288" oninput="updateUI()"></div>
 
                 <h3>Tuning & NetworkTables</h3>
                 <div class="control-group"><label>Calc Iterations</label><input type="number" id="calcIters" value="30" step="1" onchange="runSimulation()"></div>
-                <div class="control-group"><label>Min Impact Angle (°)</label><input type="number" id="minImpact" value="10" step="1" onchange="runSimulation()"></div>
-                <div class="control-group"><label>Max Impact Angle (°)</label><input type="number" id="maxImpact" value="45" step="1" onchange="runSimulation()"></div>
+                <div class="control-group"><label>Min Impact Angle (°)</label><input type="number" id="minImpact" value="50" step="1" onchange="runSimulation()"></div>
+                <div class="control-group"><label>Max Impact Angle (°)</label><input type="number" id="maxImpact" value="90" step="1" onchange="runSimulation()"></div>
                 <div class="control-group"><label>Shoot Latency (ms)</label><input type="number" id="latencyMs" value="0" step="1" onchange="runSimulation()"></div>
                 <div class="control-group"><label>Time to Keep Vel (ms)</label><input type="number" id="timeToKeep" value="1000" step="100" onchange="runSimulation()"></div>
                 <div class="control-group"><label>Air Resistance Multiplier</label><input type="number" id="airRes" value="0.01" step="0.001" onchange="runSimulation()"></div>
@@ -212,6 +218,7 @@ public class InteractiveShotVisualizer {
                     <div>Hood Angle: <span id="outHood">0.0</span>°</div>
                     <div>Turret Angle: <span id="outTurret">0.0</span>°</div>
                     <div>Wheel RPM: <span id="outRpm">0</span> RPM</div>
+                    <div>Ball Velocity: <span id="ballVelocity">0</span> m/s</div>
                     <div>Impact Angle: <span id="impactAngle">0.0</span>°</div>
                 </div>
             </div>
@@ -267,6 +274,7 @@ public class InteractiveShotVisualizer {
                     document.getElementById('outTurret').innerText = data.calcTurretAngle.toFixed(2);
                     document.getElementById('outRpm').innerText = data.calcRpm.toFixed(0);
                     document.getElementById('impactAngle').innerText = data.impactAngle.toFixed(2);
+                    document.getElementById('ballVelocity').innerText = data.ballVelocity.toFixed(0);
 
                     const traces = [
                         { x: data.xCoords, y: data.yCoords, z: data.zCoords, mode: 'lines', type: 'scatter3d', name: 'Ball Path', line: {width: 6, color: 'cyan'} },

@@ -95,9 +95,10 @@ public class ShotCalculator {
         Translation2d turretPos2d = fieldRelTurret.getTranslation().toTranslation2d();
 
         // Predict robot velocity at shot release
-        double pVx = vxMap.get(currentTime + shootLatancyMs.get());
-        double pVy = vyMap.get(currentTime + shootLatancyMs.get());
-        double pVtheta = vthetaMap.get(currentTime + shootLatancyMs.get());
+        double latencySec = shootLatancyMs.get() / 1000;
+        double pVx = vxMap.get(currentTime + latencySec);
+        double pVy = vyMap.get(currentTime + latencySec);
+        double pVtheta = vthetaMap.get(currentTime + latencySec);
 
         Rotation2d robotAngle = robotPose.toPose2d().getRotation();
         Translation2d robotRelOffset =
@@ -105,7 +106,7 @@ public class ShotCalculator {
         Translation2d fieldRelOffset = robotRelOffset.rotateBy(robotAngle);
 
         double tVx = pVx - (pVtheta * fieldRelOffset.getY());
-        double tVy = pVy - (pVtheta * fieldRelOffset.getX());
+        double tVy = pVy + (pVtheta * fieldRelOffset.getX()); //Could need to be a subtraction. Very well might be subtraction. We should check
         Translation2d turretVel = new Translation2d(tVx, tVy);
 
         Translation2d virtTarget2d = target.toTranslation2d();
@@ -194,19 +195,27 @@ public class ShotCalculator {
      *
      * @param robotPose      Current field-relative robot pose.
      * @param targetLocation Field-relative coordinates of the target.
-     * @param currrentTime   The current timestamp in seconds.
      * @return The turret angle offset required for latency compensation in radians.
      */
     public double calculateLatancyOffsetTurretAngle(
-            Pose2d robotPose, Translation2d targetLocation, double currrentTime) {
-        double latancy = shootLatancyMs.get();
+            Pose2d robotPose, Translation2d targetLocation, double currentTime) {
 
+        // Get latency in ms and convert to seconds for math
+        double latencyMs = shootLatancyMs.get();
+        double latencySec = latencyMs / 1000.0;
+
+        // Look up the predicted velocities at (currentTime + latencySec)
+        double predictedVx = vxMap.get(currentTime + latencySec);
+        double predictedVy = vyMap.get(currentTime + latencySec);
+        double predictedOmega = vthetaMap.get(currentTime + latencySec);
+
+        // Calculate predicted pose: Current Position + (Velocity * Time)
         Pose2d predictedRobotPose = new Pose2d(
                 new Translation2d(
-                        robotPose.getX() + vxMap.get(currrentTime + latancy) * latancy / 1000,
-                        robotPose.getY() + vyMap.get(currrentTime + latancy) * latancy / 1000),
+                        robotPose.getX() + (predictedVx * latencySec),
+                        robotPose.getY() + (predictedVy * latencySec)),
                 new Rotation2d(
-                        robotPose.getRotation().getRadians() + vthetaMap.get(currrentTime + latancy) * latancy / 1000));
+                        robotPose.getRotation().getRadians() + (predictedOmega * latencySec)));
 
         return calculateFieldRelativeTurret(predictedRobotPose, targetLocation);
     }
