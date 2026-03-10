@@ -80,7 +80,8 @@ public class RobotContainer {
         new EventTrigger("Intake")
                 .onTrue(new RunCommand(() -> intakeSubsystem.setState(IntakeSubsystem.State.INTAKE), intakeSubsystem));
         new EventTrigger("StopIntake")
-                .onTrue(new RunCommand(() -> intakeSubsystem.setState(IntakeSubsystem.State.DEPLOYED), intakeSubsystem));
+                .onTrue(new RunCommand(
+                        () -> intakeSubsystem.setState(IntakeSubsystem.State.DEPLOYED), intakeSubsystem));
         new EventTrigger("Shoot")
                 .onTrue(new RunCommand(
                         () -> shooterSubsystem.setState(ShooterSubsystem.State.SHOOT), shooterSubsystem));
@@ -93,7 +94,6 @@ public class RobotContainer {
                 .onTrue(new RunCommand(() -> hopperSubsystem.setState(HopperSubsystem.State.UP), hopperSubsystem));
         new EventTrigger("HopperDown")
                 .onTrue(new RunCommand(() -> hopperSubsystem.setState(HopperSubsystem.State.DOWN), hopperSubsystem));
-
     }
 
     private void configureBindings() {
@@ -153,7 +153,7 @@ public class RobotContainer {
                         () -> shooterSubsystem.setState(ShooterSubsystem.State.SPINUP), shooterSubsystem));
 
         primaryController
-                .povUp() // Down
+                .povUp() // Down for white
                 .whileTrue(new RunCommand(
                         () -> {
                             shooterSubsystem.setState(ShooterSubsystem.State.TEST);
@@ -161,20 +161,26 @@ public class RobotContainer {
                         shooterSubsystem));
 
         primaryController
-                .povDown() // up
-                .whileTrue(new RunCommand(
-                        () -> {
-                            intakeSubsystem.setState(IntakeSubsystem.State.SHOOT);
-                        },
-                        intakeSubsystem));
+                .povDown() // up for white
+                .whileTrue(new ParallelCommandGroup(
+                        new RunCommand(
+                                () -> {
+                                    indexerSubsystem.setState(IndexerSubsystem.State.SHOOT);
+                                },
+                                indexerSubsystem),
+                        new RunCommand(
+                                () -> {
+                                    indexerSubsystem.setState(IndexerSubsystem.State.SHOOT);
+                                },
+                                intakeSubsystem)));
 
         primaryController
                 .povLeft()
                 .whileTrue(new RunCommand(
                         () -> {
-                            hopperSubsystem.setState(HopperSubsystem.State.DOWN);
+                            intakeSubsystem.setState(IntakeSubsystem.State.SHOOT);
                         },
-                        hopperSubsystem));
+                        intakeSubsystem));
         primaryController
                 .povRight()
                 .whileTrue(new RunCommand(
@@ -204,9 +210,7 @@ public class RobotContainer {
                                 false,
                                 true)));
 
-
-
-         primaryController.b().whileTrue(AutoBuilder.buildAuto("Test Top Auto"));
+        primaryController.b().whileTrue(new RunCommand(() -> robotState.setEstimatedPose(new Pose3d())));
     }
     //
     private void configureAuto() {

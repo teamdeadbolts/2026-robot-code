@@ -107,6 +107,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
             SavedLoggedNetworkNumber.get("Tuning/Shooter/TestShooterRPM", 3);
     private final SavedLoggedNetworkNumber testTargetX = SavedLoggedNetworkNumber.get("Tuning/Shooter/TestTargetX", 0);
     private final SavedLoggedNetworkNumber testTargetY = SavedLoggedNetworkNumber.get("Tuning/Shooter/TestTargetY", 0);
+    private final SavedLoggedNetworkNumber testTargetZ = SavedLoggedNetworkNumber.get("Tuning/Shooter/TestTargetZ", 0);
     private final SavedLoggedNetworkNumber aprilTagTrackRange =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/AprilTagTrackRange", 0);
 
@@ -190,13 +191,13 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
 
     @Override
     protected void onStateChange(State from, State to) {
-        Logger.recordOutput("ShooterSubsystem/TargetState", to);
         hoodController.reset();
         turretController.reset();
     }
 
     @Override
     public void periodic() {
+        Logger.recordOutput("ShooterSubsystem/TargetState", targetState);
         double currentHoodAngle =
                 Units.rotationsToRadians(hoodMotor.getPosition().getValueAsDouble());
         Optional<Double> targetHoodAngle = Optional.empty();
@@ -298,12 +299,13 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
             case TEST -> {
                 ShotParametersAutoLogged shot = shotCalculator.calculateShot(
                         robotPose,
-                        new Translation3d(testTargetX.get(), testTargetY.get(), 0),
+                        new Translation3d(testTargetX.get(), testTargetY.get(), testTargetZ.get()),
                         (double) (System.currentTimeMillis()),
                         0,
                         Units.degreesToRadians(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
                 currentTargetTranslation = Optional.of(new Translation2d(testTargetX.get(), testTargetY.get()));
                 targetHoodAngle = Optional.of(shot.hoodAngle);
+                targetWheelSpeed = Optional.of(shot.wheelSpeed);
                 Logger.recordOutput(
                         "ShooterSubsystem/TestTargetPose",
                         new Pose2d(testTargetX.get(), testTargetY.get(), new Rotation2d()));

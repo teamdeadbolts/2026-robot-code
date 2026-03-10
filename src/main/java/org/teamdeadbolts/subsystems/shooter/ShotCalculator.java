@@ -9,7 +9,9 @@ import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.util.Units;
 import org.littletonrobotics.junction.AutoLog;
+import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.constants.ShooterConstants;
 import org.teamdeadbolts.utils.TimedExtrapolatingDoubleMap;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
@@ -121,6 +123,7 @@ public class ShotCalculator {
             double totalTime = flightTime + shootLatancyMs.get();
 
             virtTarget2d = target.toTranslation2d().minus(turretVel.times(totalTime / 1000));
+            Logger.recordOutput("ShotCalc/Interation " + i + "/hoodAngle", Units.degreesToRadians(hoodAngle));
         }
 
         double turretAngle = calculateFieldRelativeTurret(robotPose.toPose2d(), virtTarget2d);
@@ -129,6 +132,9 @@ public class ShotCalculator {
         rawShot.hoodAngle = Math.PI / 2 - hoodAngle;
         rawShot.turretAngle = turretAngle;
         rawShot.ballVelocity = ballVelocity;
+        rawShot.wheelSpeed = shooterMPSToRPM(ballVelocity);
+
+        Logger.processInputs("ShotCalc/RawShot", rawShot);
 
         // Apply hysteresis/tolerance check
         boolean acceptedNew = true;
@@ -139,8 +145,8 @@ public class ShotCalculator {
             }
         }
 
-        ShotParametersAutoLogged shotToUse = (acceptedNew || lastAcceptedShot == null) ? rawShot : lastAcceptedShot;
-        if (acceptedNew || lastAcceptedShot == null) {
+        ShotParametersAutoLogged shotToUse = acceptedNew ? rawShot : lastAcceptedShot;
+        if (acceptedNew) {
             lastAcceptedShot = rawShot;
             lastAcceptedVirtTarget2d = virtTarget2d;
         }
@@ -148,6 +154,7 @@ public class ShotCalculator {
         // Apply air resistance compensation and RPM conversion
         shotToUse.ballVelocity *= 1 + (airResistanceMultiplier.get() * distFromPivotToTarget);
         shotToUse.wheelSpeed = shooterMPSToRPM(shotToUse.ballVelocity);
+        Logger.processInputs("ShotCalc/RealShot", shotToUse);
 
         return shotToUse;
     }
@@ -188,11 +195,11 @@ public class ShotCalculator {
     }
 
     public static double shooterMPSToRPM(double mps) {
-        return (60.0 * mps) / ((5.0 / 6.0) * Math.PI * (2.0 * ShooterConstants.SHOOTER_BIG_WHEEL_RADIUS_METERS));
+        return ShooterConstants.SHOOTER_RPM_TO_MPS_MAP.get(mps);
     }
 
     private static double findLaunchAngle(Translation2d trans, double alpha, double maxAngle) {
-        double low = Math.PI / 2 - maxAngle;
+        double low = Math.PI / 2 - Math.toRadians(ShooterConstants.SHOOTER_HOOD_MAX_ANGLE_DEGREES);
         double high = Math.PI / 2 - Math.toRadians(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES);
 
         for (int i = 0; i < (int) calcIterations.get(); i++) {
