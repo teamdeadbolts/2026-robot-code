@@ -30,8 +30,8 @@ public class ShotCalculator {
         public double impactAngle;
 
         public double ballVelocity;
-        public double rawLaunchAngleRad; 
-        
+        public double rawLaunchAngleRad;
+
         public Translation3d virtTarget;
 
         @Override
@@ -106,12 +106,16 @@ public class ShotCalculator {
         Translation2d fieldRelOffset = robotRelOffset.rotateBy(robotAngle);
 
         double tVx = pVx - (pVtheta * fieldRelOffset.getY());
-        double tVy = pVy + (pVtheta * fieldRelOffset.getX()); //Could need to be a subtraction. Very well might be subtraction. We should check
+        double tVy = pVy
+                + (pVtheta
+                        * fieldRelOffset
+                                .getX()); // Could need to be a subtraction. Very well might be subtraction. We should
+        // check
         Translation2d turretVel = new Translation2d(tVx, tVy);
 
         Translation2d virtTarget2d = target.toTranslation2d();
         double targetZ = target.getZ();
-        
+
         double minAlphaRad = Math.toRadians(minImpactAngle.get());
         double maxAlphaRad = Math.toRadians(maxImpactAngle.get());
 
@@ -137,7 +141,7 @@ public class ShotCalculator {
             // Calculate optimal impact angle to minimize velocity
             double k = dy / dx;
             double idealAlphaRad = Math.atan(Math.sqrt(k * k + 1) - k);
-            
+
             // Clamp within our physical/strategic bounds
             impactAngle = MathUtil.clamp(idealAlphaRad, minAlphaRad, maxAlphaRad);
 
@@ -159,7 +163,7 @@ public class ShotCalculator {
         rawShot.hoodAngle = Math.PI / 2 - hoodAngle;
         rawShot.turretAngle = turretAngle;
         rawShot.ballVelocity = ballVelocity;
-        rawShot.rawLaunchAngleRad = hoodAngle; 
+        rawShot.rawLaunchAngleRad = hoodAngle;
         rawShot.impactAngle = impactAngle;
         rawShot.virtTarget = new Translation3d(virtTarget2d.getX(), virtTarget2d.getY(), targetZ);
         rawShot.wheelSpeed = shooterMPSToRPM(ballVelocity);
@@ -212,10 +216,8 @@ public class ShotCalculator {
         // Calculate predicted pose: Current Position + (Velocity * Time)
         Pose2d predictedRobotPose = new Pose2d(
                 new Translation2d(
-                        robotPose.getX() + (predictedVx * latencySec),
-                        robotPose.getY() + (predictedVy * latencySec)),
-                new Rotation2d(
-                        robotPose.getRotation().getRadians() + (predictedOmega * latencySec)));
+                        robotPose.getX() + (predictedVx * latencySec), robotPose.getY() + (predictedVy * latencySec)),
+                new Rotation2d(robotPose.getRotation().getRadians() + (predictedOmega * latencySec)));
 
         return calculateFieldRelativeTurret(predictedRobotPose, targetLocation);
     }

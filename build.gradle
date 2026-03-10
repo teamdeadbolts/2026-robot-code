@@ -82,32 +82,32 @@ dependencies {
 	testImplementation platform("org.junit:junit-bom:5.11.4")
 	testImplementation "org.junit.jupiter:junit-jupiter-api"
 	testImplementation "org.junit.jupiter:junit-jupiter-params"
-    testImplementation 'io.javalin:javalin:5.6.3'
-    testImplementation 'org.slf4j:slf4j-simple:2.0.9'
-    testImplementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+	testImplementation 'io.javalin:javalin:5.6.3'
+	testImplementation 'org.slf4j:slf4j-simple:2.0.9'
+	testImplementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
 	testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
 }
 
 test {
-    useJUnitPlatform {
-        excludeTags 'visualizer'
-    }
-    systemProperty 'junit.jupiter.extensions.autodetection.enabled', 'true'
+	useJUnitPlatform {
+		excludeTags 'visualizer'
+	}
+	systemProperty 'junit.jupiter.extensions.autodetection.enabled', 'true'
 }
 
 task runVisualizer(type: Test) {
-    group = "Team Deadbolts"
-    description = "Runs the Interactive Shot Visualizer web server"
-    
-    useJUnitPlatform {
-        includeTags 'visualizer'
-    }
-    systemProperty 'junit.jupiter.extensions.autodetection.enabled', 'true'
-    
-    // This ensures your System.out.println statements show up in the terminal
-    testLogging {
-        showStandardStreams = true
-    }
+	group = "Team Deadbolts"
+	description = "Runs the Interactive Shot Visualizer web server"
+
+	useJUnitPlatform {
+		includeTags 'visualizer'
+	}
+	systemProperty 'junit.jupiter.extensions.autodetection.enabled', 'true'
+
+	// This ensures your System.out.println statements show up in the terminal
+	testLogging {
+		showStandardStreams = true
+	}
 }
 
 // 3. Tell WPILib to inject the native JNI libraries into our new task!

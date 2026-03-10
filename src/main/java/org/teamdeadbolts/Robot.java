@@ -4,12 +4,10 @@ package org.teamdeadbolts;
 import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
-import org.littletonrobotics.junction.LogFileUtil;
 import org.littletonrobotics.junction.LoggedPowerDistribution;
 import org.littletonrobotics.junction.LoggedRobot;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.NT4Publisher;
-import org.littletonrobotics.junction.wpilog.WPILOGReader;
 import org.littletonrobotics.junction.wpilog.WPILOGWriter;
 import org.teamdeadbolts.utils.tuning.ConfigManager;
 
@@ -29,9 +27,9 @@ public class Robot extends LoggedRobot {
             setUseTiming(false);
             Logger.addDataReceiver(new NT4Publisher());
 
-        //     String logPath = LogFileUtil.findReplayLog();
-        //     Logger.setReplaySource(new WPILOGReader(logPath));
-        //     Logger.addDataReceiver(new WPILOGWriter(LogFileUtil.addPathSuffix(logPath, "_sim")));
+            //     String logPath = LogFileUtil.findReplayLog();
+            //     Logger.setReplaySource(new WPILOGReader(logPath));
+            //     Logger.addDataReceiver(new WPILOGWriter(LogFileUtil.addPathSuffix(logPath, "_sim")));
         }
         LoggedPowerDistribution.getInstance(50, ModuleType.kRev);
         Logger.start();
@@ -101,4 +99,3 @@ public class Robot extends LoggedRobot {
     @Override
     public void testExit() {}
 }
-

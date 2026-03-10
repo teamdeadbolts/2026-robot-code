@@ -47,7 +47,7 @@ public class ShooterConstants {
             Units.inchesToMeters(13.5),
             new Rotation3d(0.0, 0.0, Math.PI / 2));
 
-    public static final double TURRET_GEAR_RATIO = ((145.0 / 18.0) * 3) * 1.2088889; // The gear ratio of the turret
+    public static final double TURRET_GEAR_RATIO = ((145.0 / 15.0) * 3); // The gear ratio of the turret
     public static final double HOOD_GEAR_RATIO =
             (40.0 / 12.0) * (18.0 / 14.0) * (163.0 / 10.0); // The gear ratio of the hood
     public static final double WHEEL_GEAR_RATIO = 18.0 / 17.0; // The gear ratio of the wheels
