@@ -19,7 +19,7 @@ import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 /**
  * Calculates optimal shooter parameters (hood angle, wheel speed, turret angle)
  * to land a game piece in a target, accounting for robot motion, ball flight
- * time, and air resistance.
+ * time, air resistance, and optimal impact angle to minimize RPM.
  */
 public class ShotCalculator {
     @AutoLog
@@ -27,7 +27,12 @@ public class ShotCalculator {
         public double hoodAngle;
         public double turretAngle;
         public double wheelSpeed;
+        public double impactAngle;
+
         public double ballVelocity;
+        public double rawLaunchAngleRad; 
+        
+        public Translation3d virtTarget;
 
         @Override
         public String toString() {
@@ -44,11 +49,13 @@ public class ShotCalculator {
 
     /* --- Tuning Parameters --- */
     private static final SavedLoggedNetworkNumber calcIterations =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/CalcIterations", 3);
-    private static final SavedLoggedNetworkNumber impactAngle =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/ImpactAngleDegrees", 20);
+            SavedLoggedNetworkNumber.get("Tuning/Shooter/CalcIterations", 30);
+    private static final SavedLoggedNetworkNumber minImpactAngle =
+            SavedLoggedNetworkNumber.get("Tuning/Shooter/MinImpactAngleDegrees", 10);
+    private static final SavedLoggedNetworkNumber maxImpactAngle =
+            SavedLoggedNetworkNumber.get("Tuning/Shooter/MaxImpactAngleDegrees", 45);
     private static final SavedLoggedNetworkNumber shootLatancyMs =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/ShootLatancyMs", 100);
+            SavedLoggedNetworkNumber.get("Tuning/Shooter/ShootLatancyMs", 0);
     private static final SavedLoggedNetworkNumber timeToKeepVel =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/TimeToKeepVelMs", 1000);
     private static final SavedLoggedNetworkNumber airResistanceMultiplier =
@@ -103,19 +110,37 @@ public class ShotCalculator {
 
         Translation2d virtTarget2d = target.toTranslation2d();
         double targetZ = target.getZ();
-        double impactAngleRad = Math.toRadians(impactAngle.get());
+        
+        double minAlphaRad = Math.toRadians(minImpactAngle.get());
+        double maxAlphaRad = Math.toRadians(maxImpactAngle.get());
 
         double hoodAngle = 0.0;
         double ballVelocity = 0.0;
+        double impactAngle = 0.0;
         double distFromPivotToTarget = 0.0;
         double heightFromPivotToTarget = targetZ - fieldRelTurret.getZ();
 
-        // Iteratively solve for flight time and target lead
+        // Iteratively solve for flight time, target lead, and optimal impact angle
         for (int i = 0; i < (int) calcIterations.get(); i++) {
             distFromPivotToTarget = turretPos2d.getDistance(virtTarget2d);
             Translation2d relVirtTarget = new Translation2d(distFromPivotToTarget, heightFromPivotToTarget);
 
-            hoodAngle = findLaunchAngle(relVirtTarget, impactAngleRad, maxAngle);
+            // Estimate true dx/dy by accounting for exit radius using previous hood angle
+            double dx = Math.max(0.01, distFromPivotToTarget); // Prevent division by zero
+            double dy = heightFromPivotToTarget;
+            if (i > 0) {
+                dx = Math.max(0.01, dx - (ShooterConstants.EXIT_RADIUS_METERS * Math.cos(hoodAngle)));
+                dy -= ShooterConstants.EXIT_RADIUS_METERS * Math.sin(hoodAngle);
+            }
+
+            // Calculate optimal impact angle to minimize velocity
+            double k = dy / dx;
+            double idealAlphaRad = Math.atan(Math.sqrt(k * k + 1) - k);
+            
+            // Clamp within our physical/strategic bounds
+            impactAngle = MathUtil.clamp(idealAlphaRad, minAlphaRad, maxAlphaRad);
+
+            hoodAngle = findLaunchAngle(relVirtTarget, impactAngle, maxAngle);
             ballVelocity = calculateVel(hoodAngle, relVirtTarget);
 
             double v0x = ballVelocity * Math.cos(hoodAngle);
@@ -124,6 +149,7 @@ public class ShotCalculator {
 
             virtTarget2d = target.toTranslation2d().minus(turretVel.times(totalTime / 1000));
             Logger.recordOutput("ShotCalc/Interation " + i + "/hoodAngle", Units.degreesToRadians(hoodAngle));
+            Logger.recordOutput("ShotCalc/Interation " + i + "/impactAngleRad", impactAngle);
         }
 
         double turretAngle = calculateFieldRelativeTurret(robotPose.toPose2d(), virtTarget2d);
@@ -132,6 +158,9 @@ public class ShotCalculator {
         rawShot.hoodAngle = Math.PI / 2 - hoodAngle;
         rawShot.turretAngle = turretAngle;
         rawShot.ballVelocity = ballVelocity;
+        rawShot.rawLaunchAngleRad = hoodAngle; 
+        rawShot.impactAngle = impactAngle;
+        rawShot.virtTarget = new Translation3d(virtTarget2d.getX(), virtTarget2d.getY(), targetZ);
         rawShot.wheelSpeed = shooterMPSToRPM(ballVelocity);
 
         Logger.processInputs("ShotCalc/RawShot", rawShot);
@@ -191,7 +220,7 @@ public class ShotCalculator {
         Rotation2d fieldRelativeAngle = new Rotation2d(relativeTrans.getX(), relativeTrans.getY());
 
         Rotation2d robotRelAngle = fieldRelativeAngle.minus(robotPose.getRotation());
-        return MathUtil.inputModulus(robotRelAngle.getRadians() + Math.PI, -Math.PI, Math.PI);
+        return MathUtil.inputModulus(robotRelAngle.getRadians(), -Math.PI, Math.PI);
     }
 
     public static double shooterMPSToRPM(double mps) {

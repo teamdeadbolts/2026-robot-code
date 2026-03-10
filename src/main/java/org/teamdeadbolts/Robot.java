@@ -27,9 +27,11 @@ public class Robot extends LoggedRobot {
             Logger.addDataReceiver(new NT4Publisher());
         } else {
             setUseTiming(false);
-            String logPath = LogFileUtil.findReplayLog();
-            Logger.setReplaySource(new WPILOGReader(logPath));
-            Logger.addDataReceiver(new WPILOGWriter(LogFileUtil.addPathSuffix(logPath, "_sim")));
+            Logger.addDataReceiver(new NT4Publisher());
+
+        //     String logPath = LogFileUtil.findReplayLog();
+        //     Logger.setReplaySource(new WPILOGReader(logPath));
+        //     Logger.addDataReceiver(new WPILOGWriter(LogFileUtil.addPathSuffix(logPath, "_sim")));
         }
         LoggedPowerDistribution.getInstance(50, ModuleType.kRev);
         Logger.start();
@@ -99,3 +101,4 @@ public class Robot extends LoggedRobot {
     @Override
     public void testExit() {}
 }
+
