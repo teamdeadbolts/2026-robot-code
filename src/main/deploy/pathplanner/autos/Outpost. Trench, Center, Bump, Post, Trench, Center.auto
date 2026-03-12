@@ -1,0 +1,67 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Outpost Trench to Center"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Outpost Fuel Scoop"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Outpost Center to Zone"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Outpost Shoot to Station"
+          }
+        },
+        {
+          "type": "wait",
+          "data": {
+            "waitTime": 5.5
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Outpost Station to Trench"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Pass"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Outpost Close Scoop"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Outpost Fuel Scoop"
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": "Outpost",
+  "choreoAuto": false
+}

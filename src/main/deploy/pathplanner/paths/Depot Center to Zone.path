@@ -1,0 +1,82 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 7.737964192708333,
+        "y": 4.496832537615741
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 7.022612557870371,
+        "y": 5.151888093171297
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 2.9533161168981485,
+        "y": 5.24695775462963
+      },
+      "prevControl": {
+        "x": 3.613358072916667,
+        "y": 5.824658492476852
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": null
+    }
+  ],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.36350740131578974,
+      "rotationDegrees": 40.0
+    },
+    {
+      "waypointRelativePos": 0.6644634046052632,
+      "rotationDegrees": 40.0
+    }
+  ],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [
+    {
+      "name": "StopIntake",
+      "waypointRelativePos": 0.30746470099667805,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
+      "name": "SpinUp",
+      "waypointRelativePos": 0.5333004568106313,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
+      "name": "Shoot",
+      "waypointRelativePos": 0.9417566445182729,
+      "endWaypointRelativePos": null,
+      "command": null
+    }
+  ],
+  "globalConstraints": {
+    "maxVelocity": 6.0,
+    "maxAcceleration": 6.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0.0,
+    "rotation": 24.28242707752575
+  },
+  "reversed": false,
+  "folder": "Depot Side",
+  "idealStartingState": {
+    "velocity": 1.0,
+    "rotation": -151.80899631765487
+  },
+  "useDefaultConstraints": true
+}

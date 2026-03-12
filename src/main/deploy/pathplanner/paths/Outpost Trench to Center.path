@@ -1,0 +1,72 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 4.39276272446362,
+        "y": 0.6901334392490661
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 7.051773991371269,
+        "y": 0.7459880771921632
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 7.533181480293843,
+        "y": 1.2170839406483207
+      },
+      "prevControl": {
+        "x": 6.424102639072766,
+        "y": 0.9887133176156593
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": null
+    }
+  ],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.21750616776315795,
+      "rotationDegrees": 90.0
+    }
+  ],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [
+    {
+      "name": "Intake",
+      "waypointRelativePos": 0.37956810631229226,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
+      "name": "HopperUp",
+      "waypointRelativePos": 0.45006229235880424,
+      "endWaypointRelativePos": null,
+      "command": null
+    }
+  ],
+  "globalConstraints": {
+    "maxVelocity": 6.0,
+    "maxAcceleration": 6.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 1.4,
+    "rotation": 73.67
+  },
+  "reversed": false,
+  "folder": "Outpost Side",
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": 90.0
+  },
+  "useDefaultConstraints": true
+}
