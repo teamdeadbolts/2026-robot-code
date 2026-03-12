@@ -109,7 +109,7 @@ public class RobotContainer {
                         true,
                         false));
         primaryController
-                .rightTrigger()
+                .rightTrigger(0.4)
                 .whileTrue(new ParallelCommandGroup(new DriveCommand(
                         swerveSubsystem,
                         shooterSubsystem,
