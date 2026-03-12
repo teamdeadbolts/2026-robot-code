@@ -44,6 +44,10 @@ public class VisionSubsystem extends SubsystemBase {
         }
     }
 
+    public PhotonVisionIO[] getCameras() {
+        return this.ios;
+    }
+
     @Override
     public void periodic() {
         long startTime = RobotController.getFPGATime();
@@ -55,7 +59,7 @@ public class VisionSubsystem extends SubsystemBase {
         // Update IO interfaces
         for (int i = 0; i < ios.length; i++) {
             ios[i].update(ctxs[i]);
-            Logger.processInputs("Vision/Camera " + i, ctxs[i]);
+            Logger.processInputs("Vision/Camera " + ios[i].getName() + "/Ctx", ctxs[i]);
         }
 
         tracer.addEpoch("Process Inputs");
@@ -81,7 +85,7 @@ public class VisionSubsystem extends SubsystemBase {
 
                 if (acceptPose) {
                     robotPoses.add(observation.pose());
-                    if (enableVision.get()) {
+                    if (enableVision.get() && observation.good()) {
                         RobotState.getInstance()
                                 .addVisionMeasurement(
                                         observation.pose(), observation.timestamp(), observation.tagDist());
@@ -91,12 +95,14 @@ public class VisionSubsystem extends SubsystemBase {
 
             tracer.addEpoch("Camera" + index + " Add Observations");
 
-            // Logging telemetry
-            if (loopCount++ > 4) {
-                loopCount = 0;
-                Logger.recordOutput("Vision/Camera " + index + "/TagPoses", tagPoses.toArray(new Pose3d[0]));
-                Logger.recordOutput("Vision/Camera " + index + "/RobotPoses", robotPoses.toArray(new Pose3d[0]));
-            }
+            // // Logging telemetry
+            // if (loopCount++ > 4) {
+            //     loopCount = 0;
+            //     Logger.recordOutput(
+            //             "Vision/Camera " + ios[index].getName() + "/TagPoses", tagPoses.toArray(new Pose3d[0]));
+            //     Logger.recordOutput(
+            //             "Vision/Camera " + ios[index].getName() + "/RobotPoses", robotPoses.toArray(new Pose3d[0]));
+            // }
         }
 
         // Performance monitoring

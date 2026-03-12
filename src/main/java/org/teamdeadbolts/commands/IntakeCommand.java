@@ -19,26 +19,40 @@ public class IntakeCommand extends Command {
     private HopperSubsystem hopperSubsystem;
     private Target target;
     private HopperSubsystem.State prevHopperState;
+    private boolean hopperUp = false;
 
     public IntakeCommand(IntakeSubsystem intakeSubsystem, HopperSubsystem hopperSubsystem, Target target) {
         this.intakeSubsystem = intakeSubsystem;
         this.hopperSubsystem = hopperSubsystem;
         this.target = target;
-
-        addRequirements(intakeSubsystem, hopperSubsystem);
+        if (target == Target.SHOOT) {
+            addRequirements(intakeSubsystem);
+        } else {
+            addRequirements(intakeSubsystem, hopperSubsystem);
+        }
     }
 
     @Override
     public void initialize() {
         this.prevHopperState = hopperSubsystem.getState();
-        if (this.prevHopperState != HopperSubsystem.State.UP && this.target != Target.SHOOT) {
+        // boolean needHopper = this.prevHopperState != HopperSubsystem.State.UP && this.target != Target.SHOOT &&
+        // ((this.target == Target.S) || ());
+
+        if (this.prevHopperState != HopperSubsystem.State.UP
+                && this.target != Target.SHOOT
+                && ((target == Target.STOW && intakeSubsystem.getState() != IntakeSubsystem.State.STOWED)
+                        || target == Target.INTAKE
+                                && (intakeSubsystem.getState() != IntakeSubsystem.State.INTAKE
+                                        || intakeSubsystem.getState() != IntakeSubsystem.State.DEPLOYED))) {
             hopperSubsystem.setState(HopperSubsystem.State.UP);
+            hopperUp = false;
         }
     }
 
     @Override
     public void execute() {
         if (hopperSubsystem.lidAtGoal()) {
+            hopperUp = true;
             switch (target) {
                 case INTAKE -> {
                     intakeSubsystem.setState(IntakeSubsystem.State.INTAKE);
@@ -52,14 +66,15 @@ public class IntakeCommand extends Command {
             }
         }
 
-        if (intakeSubsystem.armAtGoal()) {
+        if (intakeSubsystem.armAtGoal() && hopperUp) {
             this.hopperSubsystem.setState(this.prevHopperState);
         }
     }
 
     @Override
     public void end(boolean interrupted) {
-        intakeSubsystem.setState(IntakeSubsystem.State.DEPLOYED);
+        if (this.target == Target.INTAKE || this.target == Target.SHOOT)
+            intakeSubsystem.setState(IntakeSubsystem.State.DEPLOYED);
         hopperSubsystem.setState(this.prevHopperState);
     }
 }

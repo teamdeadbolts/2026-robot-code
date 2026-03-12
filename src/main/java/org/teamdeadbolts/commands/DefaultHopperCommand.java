@@ -23,7 +23,7 @@ public class DefaultHopperCommand extends Command {
 
     @Override
     public void initialize() {
-        this.hopperSubsystem.setState(HopperSubsystem.State.HOLD);
+        // this.hopperSubsystem.setState(HopperSubsystem.State.HOLD);
     }
 
     @Override
@@ -34,8 +34,5 @@ public class DefaultHopperCommand extends Command {
 
         if (ZoneConstants.isInLowZone(robotPose.getTranslation()))
             hopperSubsystem.setState(HopperSubsystem.State.DOWN); // If inside a down zone it should drop the lid
-        else
-            hopperSubsystem.setState(
-                    HopperSubsystem.State.HOLD); // Otherwise it should hold the lid at its current position
     }
 }

@@ -47,6 +47,9 @@ public class HopperSubsystem extends StatefulSubsystem<HopperSubsystem.State> im
     private final SavedLoggedNetworkNumber rightLifterFFkS =
             SavedLoggedNetworkNumber.get("Tuning/Hopper/RightLifterFF/kS", 0.0);
 
+    private final SavedLoggedNetworkNumber lifterIZone = SavedLoggedNetworkNumber.get("Tuning/Hopper/LifterIZone", 0.0);
+    private final SavedLoggedNetworkNumber lifterMaxI = SavedLoggedNetworkNumber.get("Tuning/Hopper/LifterMaxI", 0.0);
+
     private final SavedLoggedNetworkNumber lifterTol = SavedLoggedNetworkNumber.get("Tuning/Hopper/LifterTol", 0.0);
 
     private final SavedLoggedNetworkNumber lidDownHeight =
@@ -56,7 +59,7 @@ public class HopperSubsystem extends StatefulSubsystem<HopperSubsystem.State> im
     private double holdHeight;
 
     public HopperSubsystem() {
-        this.targetState = State.HOLD;
+        this.targetState = State.DOWN;
         this.holdHeight = lidDownHeight.get();
         hopperMotorLeft.setPosition(0);
         hopperMotorRight.setPosition(0);
@@ -68,6 +71,9 @@ public class HopperSubsystem extends StatefulSubsystem<HopperSubsystem.State> im
         rightLifterControllerP.addRefreshable(this);
         rightLifterControllerI.addRefreshable(this);
         rightLifterFFkS.addRefreshable(this);
+
+        lifterIZone.addRefreshable(this);
+        lifterMaxI.addRefreshable(this);
     }
 
     @Override
@@ -80,6 +86,12 @@ public class HopperSubsystem extends StatefulSubsystem<HopperSubsystem.State> im
         rightLifterController.setP(rightLifterControllerP.get());
         rightLifterController.setI(rightLifterControllerI.get());
         rightLifterFF.setKs(rightLifterFFkS.get());
+
+        leftLifterController.setIZone(lifterIZone.get());
+        leftLifterController.setIntegratorRange(0, lifterMaxI.get());
+
+        rightLifterController.setIZone(lifterIZone.get());
+        rightLifterController.setIntegratorRange(0, lifterMaxI.get());
 
         rightLifterController.setTolerance(lifterTol.get());
         leftLifterController.setTolerance(lifterTol.get());
@@ -102,6 +114,7 @@ public class HopperSubsystem extends StatefulSubsystem<HopperSubsystem.State> im
 
     @Override
     public void periodic() {
+        Logger.recordOutput("HopperSubsystem/TargetState", targetState);
         double targetHeight =
                 switch (this.targetState) {
                     case HOLD -> holdHeight;

@@ -21,6 +21,7 @@ import org.photonvision.PhotonCamera;
 import org.photonvision.targeting.PhotonPipelineResult;
 import org.photonvision.targeting.PhotonTrackedTarget;
 import org.teamdeadbolts.constants.VisionConstants;
+import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkBoolean;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
 /**
@@ -43,6 +44,8 @@ public class PhotonVisionIO {
     private final SavedLoggedNetworkNumber testRobotRotationDeg =
             SavedLoggedNetworkNumber.get("Tuning/Vision/TestRobotRotationDeg", 0);
 
+    private final SavedLoggedNetworkBoolean enableCam;
+
     /**
      * @param camName The name of the PhotonCamera.
      * @param offset The static Transform3d from the robot's center to the camera.
@@ -50,6 +53,7 @@ public class PhotonVisionIO {
     public PhotonVisionIO(String camName, Transform3d offset) {
         this.camera = new PhotonCamera(camName);
         this.offset = offset;
+        this.enableCam = SavedLoggedNetworkBoolean.get("Tuning/Vision/Camera " + camName + "/Enable", true);
         cacheTagPoses();
     }
 
@@ -60,6 +64,7 @@ public class PhotonVisionIO {
     public PhotonVisionIO(String camName, Supplier<Transform3d> offsetSupplier) {
         this.camera = new PhotonCamera(camName);
         this.offsetSupplier = offsetSupplier;
+        this.enableCam = SavedLoggedNetworkBoolean.get("Tuning/Vision/Camera " + camName + "/Enable", true);
         cacheTagPoses();
     }
 
@@ -69,7 +74,7 @@ public class PhotonVisionIO {
         }
     }
 
-    private void findTransform() {
+    public void findTransform() {
         Pose3d robotPose = new Pose3d(
                 new Translation3d(testRobotPoseX.get(), testRobotPoseY.get(), 0),
                 new Rotation3d(0, 0, Units.degreesToRadians(testRobotRotationDeg.get())));
@@ -81,7 +86,19 @@ public class PhotonVisionIO {
             Pose3d cameraFieldPose = cameraProvidedPose.transformBy(currOffset);
             Transform3d requiredOffset = cameraFieldPose.minus(robotPose);
 
-            Logger.recordOutput("Vision/Camera " + camera.getName(), requiredOffset);
+            Logger.recordOutput(
+                    "Vision/Camera " + camera.getName() + "/x",
+                    requiredOffset.getTranslation().getX());
+            Logger.recordOutput(
+                    "Vision/Camera " + camera.getName() + "/y",
+                    requiredOffset.getTranslation().getY());
+            Logger.recordOutput("Vision/Camera " + camera.getName() + "/z", requiredOffset.getZ());
+            Logger.recordOutput(
+                    "Vision/Camera " + camera.getName() + "/yaw",
+                    requiredOffset.getRotation().getZ());
+            Logger.recordOutput(
+                    "Vision/Camera " + camera.getName() + "/pitch",
+                    requiredOffset.getRotation().getY());
         }
     }
 
@@ -122,12 +139,15 @@ public class PhotonVisionIO {
                             result.getTimestampSeconds(),
                             robotPose,
                             best.poseAmbiguity,
-                            camToTarget.getTranslation().getNorm()));
+                            camToTarget.getTranslation().getNorm(),
+                            enableCam.get()));
                 }
             }
 
             ctx.observations = poseObservations.toArray(new PoseObservation[0]);
             ctx.tagIds = tagIds.stream().mapToInt(Integer::intValue).toArray();
+
+            Logger.recordOutput("Vision/Camera " + getName() + "/Observations", ctx.observations);
         }
 
         // Performance monitoring
@@ -136,11 +156,15 @@ public class PhotonVisionIO {
         }
     }
 
+    public String getName() {
+        return camera.getName();
+    }
+
     @AutoLog
     public static class PhotonVisionIOCtx {
         public PoseObservation[] observations = new PoseObservation[0];
         public int[] tagIds = new int[0];
     }
 
-    public record PoseObservation(double timestamp, Pose3d pose, double ambiguity, double tagDist) {}
+    public record PoseObservation(double timestamp, Pose3d pose, double ambiguity, double tagDist, boolean good) {}
 }

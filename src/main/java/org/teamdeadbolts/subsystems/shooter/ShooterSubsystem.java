@@ -94,9 +94,12 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
             SavedLoggedNetworkNumber.get("Tuning/Shooter/TurretController/MaxVel", 0);
     private final SavedLoggedNetworkNumber turretMaxAccel =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/TurretController/MaxAccel", 0);
-    private final SavedLoggedNetworkNumber turretIZone = SavedLoggedNetworkNumber.get("Tuning/Shooter/TurretController/IZone", 0.0);
-    private final SavedLoggedNetworkNumber turretIMax = SavedLoggedNetworkNumber.get("Tuning/Shooter/TurretController/IMaxVolts", 3);
-    private final SavedLoggedNetworkNumber turretIMin = SavedLoggedNetworkNumber.get("Tuning/Shooter/TurretController/IMinVolts", 0);
+    private final SavedLoggedNetworkNumber turretIZone =
+            SavedLoggedNetworkNumber.get("Tuning/Shooter/TurretController/IZone", 0.0);
+    private final SavedLoggedNetworkNumber turretIMax =
+            SavedLoggedNetworkNumber.get("Tuning/Shooter/TurretController/IMaxVolts", 3);
+    private final SavedLoggedNetworkNumber turretIMin =
+            SavedLoggedNetworkNumber.get("Tuning/Shooter/TurretController/IMinVolts", 0);
 
     private final SavedLoggedNetworkNumber wheelFFS =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/WheelController/kS", 0.1);
@@ -278,6 +281,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                         .min(Comparator.comparingDouble(
                                 p -> p.getTranslation().getDistance(turretPose.getTranslation())));
 
+                targetHoodAngle = Optional.of(Units.degreesToRadians(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
                 if (targetPose.isPresent()) {
                     targetTurretPosition = Optional.of(shotCalculator.calculateLatancyOffsetTurretAngle(
                             robotPose2d, targetPose.get().toPose2d().getTranslation(), System.currentTimeMillis()));
@@ -299,6 +303,8 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                     targetWheelSpeed = Optional.of(shooterWheelSpinupSpeed.get());
                     break;
                 }
+
+                Logger.recordOutput("ShooterSubsystem/PassTargetPose", passTargetPose);
                 currentTargetTranslation = Optional.of(passTargetPose);
 
                 ShotParametersAutoLogged passShot = shotCalculator.calculateShot(
@@ -321,13 +327,22 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                         System.currentTimeMillis(),
                         0.0,
                         Units.degreesToRadians(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
+
+                Logger.recordOutput("ShooterSubsystem/ShootTargetPose", target);
+                Logger.recordOutput("ShooterSubsystem/ShootShot/BallVel", shootShot.ballVelocity);
+                Logger.recordOutput("ShooterSubsystem/ShootShot/ImpactAngle", shootShot.impactAngle);
+                Logger.recordOutput("ShooterSubsystem/ShootShot/VertTarget", shootShot.virtTarget);
+
+                targetWheelSpeed = Optional.of(shootShot.wheelSpeed);
+                targetHoodAngle = Optional.of(shootShot.hoodAngle);
+                targetTurretPosition = Optional.of(shootShot.turretAngle);
             }
             case SPINUP -> {
                 targetWheelSpeed = Optional.of(shooterWheelSpinupSpeed.get());
                 targetHoodAngle = Optional.of(Units.degreesToRadians(testHoodAngle.get()));
             }
-            case TEST -> {
-                // No more testing...
+            case TEST -> { // Slowly rotatte turret in a circle
+                targetTurretPosition = Optional.of(Units.degreesToRadians(testTurretPosition.get()));
             }
             case ZERO -> {
                 hoodMotor.setVoltage(-hoodZeroVoltage.get());

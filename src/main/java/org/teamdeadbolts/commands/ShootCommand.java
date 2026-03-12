@@ -66,7 +66,6 @@ public class ShootCommand extends Command {
             shooterSubsystem.setState(ShooterSubsystem.State.SHOOT);
             return;
         }
-
         indexerSubsystem.setState(IndexerSubsystem.State.JIGGLE);
         shooterSubsystem.setState(ShooterSubsystem.State.SPINUP);
     }
