@@ -15,7 +15,11 @@ import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import java.util.Optional;
+
+import org.teamdeadbolts.commands.DefaultHopperCommand;
+import org.teamdeadbolts.commands.DefaultShooterCommand;
 import org.teamdeadbolts.commands.DriveCommand;
+import org.teamdeadbolts.commands.IntakeCommand;
 import org.teamdeadbolts.commands.ShootCommand;
 import org.teamdeadbolts.constants.VisionConstants;
 import org.teamdeadbolts.subsystems.HopperSubsystem;
@@ -108,34 +112,16 @@ public class RobotContainer {
                 false,
                 false));
 
-        shooterSubsystem.setDefaultCommand(
-                new RunCommand(() -> shooterSubsystem.setState(ShooterSubsystem.State.OFF), shooterSubsystem));
+        shooterSubsystem.setDefaultCommand(new DefaultShooterCommand(shooterSubsystem));
         intakeSubsystem.setDefaultCommand(
                 new RunCommand(() -> intakeSubsystem.setState(IntakeSubsystem.State.OFF), intakeSubsystem));
         indexerSubsystem.setDefaultCommand(
                 new RunCommand(() -> indexerSubsystem.setState(IndexerSubsystem.State.OFF), indexerSubsystem));
-        hopperSubsystem.setDefaultCommand(
-                new RunCommand(() -> hopperSubsystem.setState(HopperSubsystem.State.HOLD), hopperSubsystem));
-        //         hopperSubsystem.setDefaultCommand(new HopperCommand(hopperSubsystem, true));
-
-        //        primaryController
-        //                .a()
-        //                .whileTrue(new RunCommand(
-        //                        () -> {
-        //                            // CtreConfigs.init();
-        //                            // shooterSubsystem.reconfigure();
-        //                        },
-        //                        swerveSubsystem));
-
-        primaryController.x().whileTrue(new RunCommand(() -> swerveSubsystem.resetGyro(), swerveSubsystem));
-
+        hopperSubsystem.setDefaultCommand(new DefaultHopperCommand(hopperSubsystem));
+   
+     
         primaryController
-                .y()
-                .whileTrue(
-                        new RunCommand(() -> shooterSubsystem.setState(ShooterSubsystem.State.TEST), shooterSubsystem));
-
-        primaryController
-                .rightTrigger(0.4)
+                .leftTrigger(0.4)
                 .whileTrue(new DriveCommand(
                         swerveSubsystem,
                         shooterSubsystem,
@@ -145,61 +131,11 @@ public class RobotContainer {
                         true,
                         true,
                         false));
-        // Fast button
-
-        primaryController
-                .a()
-                .whileTrue(new RunCommand(
-                        () -> shooterSubsystem.setState(ShooterSubsystem.State.SPINUP), shooterSubsystem));
-
-        primaryController
-                .povUp() // Down for white
-                .whileTrue(new RunCommand(
-                        () -> {
-                            shooterSubsystem.setState(ShooterSubsystem.State.TEST);
-                        },
-                        shooterSubsystem));
-
-        primaryController
-                .povDown() // up for white
-                .whileTrue(new ParallelCommandGroup(
-                        new RunCommand(
-                                () -> {
-                                    indexerSubsystem.setState(IndexerSubsystem.State.SHOOT);
-                                },
-                                indexerSubsystem),
-                        new RunCommand(
-                                () -> {
-                                    indexerSubsystem.setState(IndexerSubsystem.State.SHOOT);
-                                },
-                                intakeSubsystem)));
-
-        primaryController
-                .povLeft()
-                .whileTrue(new RunCommand(
-                        () -> {
-                            intakeSubsystem.setState(IntakeSubsystem.State.SHOOT);
-                        },
-                        intakeSubsystem));
-        primaryController
-                .povRight()
-                .whileTrue(new RunCommand(
-                        () -> {
-                            hopperSubsystem.setState(HopperSubsystem.State.UP);
-                        },
-                        hopperSubsystem));
-        primaryController
-                .rightBumper()
-                .whileTrue(new RunCommand(
-                        () -> {
-                            intakeSubsystem.setState(IntakeSubsystem.State.INTAKE);
-                        },
-                        intakeSubsystem));
-        //
         primaryController
                 .leftBumper()
                 .whileTrue(new ParallelCommandGroup(
-                        new ShootCommand(indexerSubsystem, shooterSubsystem, intakeSubsystem, hopperSubsystem),
+                        new ShootCommand(indexerSubsystem, shooterSubsystem, hopperSubsystem, false),
+                        new IntakeCommand(intakeSubsystem, hopperSubsystem, IntakeCommand.Target.SHOOT),
                         new DriveCommand(
                                 swerveSubsystem,
                                 shooterSubsystem,
@@ -210,9 +146,8 @@ public class RobotContainer {
                                 false,
                                 true)));
 
-        primaryController.b().whileTrue(new RunCommand(() -> robotState.setEstimatedPose(new Pose3d())));
     }
-    //
+    
     private void configureAuto() {
         RobotConfig config;
         try {

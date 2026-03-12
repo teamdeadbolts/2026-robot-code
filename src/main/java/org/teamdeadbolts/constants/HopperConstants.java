@@ -15,8 +15,8 @@ public class HopperConstants {
     public static final int HOPPER_RIGHT_UPPER_LIMIT_SWITCH_CHANNEL = -1;
     public static final int HOPPER_RIGHT_LOWER_LIMIT_SWITCH_CHANNEL = -1;
 
-    public static final double HOPPER_LEFT_ROTATIONS_TO_METERS = 1 / 43.3415; // Rotations/meter
-    public static final double HOPPER_RIGHT_ROTATIONS_TO_METERS = 1 / 53.019704; // Rotations/meter
+    public static final double HOPPER_LEFT_ROTATIONS_TO_METERS = 4 / 43.3415; // Rotations/meter
+    public static final double HOPPER_RIGHT_ROTATIONS_TO_METERS = (4 / 43.3415) / 1.174; // Rotations/meter
 
     public static final TalonFXConfiguration LEFT_HOPPER_MOTOR_CONFIG = new TalonFXConfiguration();
     public static final TalonFXConfiguration RIGHT_HOPPER_MOTOR_CONFIG = new TalonFXConfiguration();

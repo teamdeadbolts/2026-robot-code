@@ -47,6 +47,8 @@ public class HopperSubsystem extends StatefulSubsystem<HopperSubsystem.State> im
     private final SavedLoggedNetworkNumber rightLifterFFkS =
             SavedLoggedNetworkNumber.get("Tuning/Hopper/RightLifterFF/kS", 0.0);
 
+    private final SavedLoggedNetworkNumber lifterTol = SavedLoggedNetworkNumber.get("Tuning/Hopper/LifterTol", 0.0);
+
     private final SavedLoggedNetworkNumber lidDownHeight =
             SavedLoggedNetworkNumber.get("Tuning/Hopper/LidDownHeight", 0.0);
     private final SavedLoggedNetworkNumber lidUpHeight = SavedLoggedNetworkNumber.get("Tuning/Hopper/LidUpHeight", 0.0);
@@ -59,10 +61,7 @@ public class HopperSubsystem extends StatefulSubsystem<HopperSubsystem.State> im
         hopperMotorLeft.setPosition(0);
         hopperMotorRight.setPosition(0);
 
-        // Configure right motor to follow left motor in opposition
-        // hopperMotorRight.setControl(
-        //         new Follower(HopperConstants.HOPPER_MOTOR_LEFT_CAN_ID, MotorAlignmentValue.Aligned));
-
+        lifterTol.addRefreshable(this);
         leftLifterControllerP.addRefreshable(this);
         leftLifterControllerP.addRefreshable(this);
         leftLifterFFkS.addRefreshable(this);
@@ -82,8 +81,15 @@ public class HopperSubsystem extends StatefulSubsystem<HopperSubsystem.State> im
         rightLifterController.setI(rightLifterControllerI.get());
         rightLifterFF.setKs(rightLifterFFkS.get());
 
+        rightLifterController.setTolerance(lifterTol.get());
+        leftLifterController.setTolerance(lifterTol.get());
+
         hopperMotorLeft.getConfigurator().apply(HopperConstants.LEFT_HOPPER_MOTOR_CONFIG);
         hopperMotorRight.getConfigurator().apply(HopperConstants.RIGHT_HOPPER_MOTOR_CONFIG);
+    }
+
+    public boolean lidAtGoal() {
+        return leftLifterController.atSetpoint() && rightLifterController.atSetpoint();
     }
 
     @Override

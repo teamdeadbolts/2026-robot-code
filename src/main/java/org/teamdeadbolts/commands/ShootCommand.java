@@ -6,6 +6,7 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
 import org.teamdeadbolts.RobotState;
+import org.teamdeadbolts.constants.ZoneConstants;
 import org.teamdeadbolts.subsystems.HopperSubsystem;
 import org.teamdeadbolts.subsystems.IndexerSubsystem;
 import org.teamdeadbolts.subsystems.IntakeSubsystem;
@@ -19,7 +20,6 @@ import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 public class ShootCommand extends Command {
     private final IndexerSubsystem indexerSubsystem;
     private final ShooterSubsystem shooterSubsystem;
-    private final IntakeSubsystem intakeSubsystem;
     private final HopperSubsystem hopperSubsystem;
 
     private final SavedLoggedNetworkNumber rpmErrorScoring =
@@ -28,18 +28,23 @@ public class ShootCommand extends Command {
     private final SavedLoggedNetworkNumber rpmErrorPassing =
             SavedLoggedNetworkNumber.get("Tuning/ShootCommand/RpmTolPassing", 0);
 
-    private boolean shouldDoIntake = false;
+    private boolean fallback;
 
     public ShootCommand(
             IndexerSubsystem indexerSubsystem,
             ShooterSubsystem shooterSubsystem,
-            IntakeSubsystem intakeSubsystem,
-            HopperSubsystem hopperSubsystem) {
+            HopperSubsystem hopperSubsystem,
+            boolean fallback) {
         this.indexerSubsystem = indexerSubsystem;
         this.shooterSubsystem = shooterSubsystem;
-        this.intakeSubsystem = intakeSubsystem;
         this.hopperSubsystem = hopperSubsystem;
-        addRequirements(indexerSubsystem, shooterSubsystem);
+        this.fallback = fallback;
+        addRequirements(indexerSubsystem, shooterSubsystem, hopperSubsystem);
+    }
+
+    @Override
+    public void initialize() {
+        shooterSubsystem.setTurretFallbackMode(fallback);
     }
 
     @Override
@@ -48,12 +53,9 @@ public class ShootCommand extends Command {
                 RobotState.getInstance().getRobotPose().toPose2d().getTranslation();
         boolean passing = false;
         Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
-        // if ((alliance == Alliance.Blue && !ZoneConstants.BLUE_SCORE_ZONE.contains(robotLocaion))
-        //         || (alliance == Alliance.Red && !ZoneConstants.RED_SCORE_ZONE.contains(robotLocaion))) passing =
-        // true;
-
-        shouldDoIntake =
-                intakeSubsystem.getState() != IntakeSubsystem.State.INTAKE; // Minior race condition (should be chill?)
+        if ((alliance == Alliance.Blue && !ZoneConstants.BLUE_SCORE_ZONE.contains(robotLocaion))
+                || (alliance == Alliance.Red && !ZoneConstants.RED_SCORE_ZONE.contains(robotLocaion))) passing =
+        true;
 
         if (passing
                 && shooterSubsystem.getRPMError() <= rpmErrorPassing.get()
@@ -63,24 +65,21 @@ public class ShootCommand extends Command {
             return;
         } else if (!passing && shooterSubsystem.getRPMError() <= rpmErrorScoring.get()) {
             feedShooter();
-            shooterSubsystem.setState(ShooterSubsystem.State.SPINUP);
+            shooterSubsystem.setState(ShooterSubsystem.State.SHOOT);
             return;
         }
 
         indexerSubsystem.setState(IndexerSubsystem.State.JIGGLE);
         shooterSubsystem.setState(ShooterSubsystem.State.SPINUP);
-        // if (shouldDoIntake) intakeSubsystem.setState(IntakeSubsystem.State.OFF);
     }
 
     @Override
     public void end(boolean i) {
         indexerSubsystem.setState(IndexerSubsystem.State.OFF);
-        // shooterSubsystem.setState(ShooterSubsystem.State.APRILTAG_TRACK);
-        // if (shouldDoIntake) intakeSubsystem.setState(IntakeSubsystem.State.OFF);
+        shooterSubsystem.setState(ShooterSubsystem.State.APRILTAG_TRACK);
     }
 
     private void feedShooter() {
         indexerSubsystem.setState(IndexerSubsystem.State.SHOOT);
-        // if (shouldDoIntake) indexerSubsystem.setState(IndexerSubsystem.State.SHOOT);
     }
 }

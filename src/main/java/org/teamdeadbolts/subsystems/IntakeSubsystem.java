@@ -27,6 +27,7 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
         STOWED,
         INTAKE,
         OUTTAKE,
+        HALF_HOLD,
         DEPLOYED,
         SHOOT,
         OFF,
@@ -83,6 +84,10 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
     private final SavedLoggedNetworkNumber intakeShootFreq =
             SavedLoggedNetworkNumber.get("Tuning/Intake/Shoot/Freq", 0);
 
+    private final SavedLoggedNetworkNumber halfHoldAngle =
+            SavedLoggedNetworkNumber.get("Tuning/Intake/HalfHoldAngle", 0);
+
+
     private double currentAngle = 0;
     private double disturbanceAccumulator = 0.0;
 
@@ -94,6 +99,7 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
         armControllerP.addRefreshable(this);
         armControllerI.addRefreshable(this);
         armControllerD.addRefreshable(this);
+        armControllerTol.addRefreshable(this);
         armControllerMaxVel.addRefreshable(this);
         armControllerMaxAccel.addRefreshable(this);
         wheelIntakeVoltage.addRefreshable(this);
@@ -156,6 +162,10 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
                 targetAngle = Optional.of(Units.degreesToRadians(intakeDeployedAngle.get()));
                 wheelMotor.setVoltage(0);
             }
+            case HALF_HOLD -> {
+                targetAngle = Optional.of(Units.degreesToRadians(halfHoldAngle.get()));
+                wheelMotor.setVoltage(currentAngle);
+            }
             case SHOOT -> {
                 double time = Timer.getFPGATimestamp();
                 double freq = intakeShootFreq.get();
@@ -185,11 +195,12 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
                     MathUtil.clamp(disturbanceAccumulator, -maxObserverVolts.get(), maxObserverVolts.get());
             double totalVolts = feedforward + pidVolts + disturbanceAccumulator;
 
-            // if ((targetState == State.DEPLOYED || targetState == State.STOWED) && armController.atGoal()) {
-            //     // armMotor.setVoltage(0);
-            // } else {
-            armMotor.set(totalVolts);
-            // }
+            if (targetState != State.SHOOT && armController.atGoal()) {
+                armMotor.setVoltage(0);
+            } else {
+                armMotor.set(totalVolts);
+            }
+            Logger.recordOutput("IntakeSubsystem/AtGoal", armController.atGoal());
             Logger.recordOutput("IntakeSubsystem/SetpointPos", Units.radiansToDegrees(setpoint.position));
             Logger.recordOutput("IntakeSubsystem/SetpointVel", Units.radiansToDegrees(setpoint.velocity));
             Logger.recordOutput("IntakeSubsystem/CurrVelocity", Units.radiansToDegrees(actualVelocity));
@@ -211,5 +222,9 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
                 "Debug/Current/Intake/Arm", armMotor.getSupplyCurrent().getValueAsDouble());
         Logger.recordOutput(
                 "Debug/Current/Intake/Wheel", wheelMotor.getSupplyCurrent().getValueAsDouble());
+    }
+
+    public boolean armAtGoal() {
+        return armController.atGoal();
     }
 }

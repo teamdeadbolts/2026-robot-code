@@ -97,4 +97,18 @@ public class ZoneConstants {
     public static final Zone TOP_PASS_ZONE = new Zone();
     // The bottom passing zone (both alliances)
     public static final Zone BOTTOM_PASS_ZONE = new Zone();
+
+    /**
+     * Checks if the robot is currently within a "low zone" where the shooter must be disabled.
+     * * @param robotPosMeters The current field-relative position of the robot in meters.
+     * @return True if the robot is in a restricted zone.
+     */
+    public static boolean isInLowZone(Translation2d robotPosMeters) {
+        return ZoneConstants.BLUE_BOTTOM_TRENCH_ZONE.contains(robotPosMeters)
+                || ZoneConstants.RED_BOTTOM_TRENCH_ZONE.contains(robotPosMeters)
+                || ZoneConstants.BLUE_TOP_TRENCH_ZONE.contains(robotPosMeters)
+                || ZoneConstants.RED_TOP_TRENCH_ZONE.contains(robotPosMeters)
+                || ZoneConstants.RED_TOWER_CLEARANCE_ZONE.contains(robotPosMeters)
+                || ZoneConstants.BLUE_TOWER_CLEARANCE_ZONE.contains(robotPosMeters);
+    }
 }
