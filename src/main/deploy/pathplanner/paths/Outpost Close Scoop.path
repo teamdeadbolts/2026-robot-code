@@ -1,0 +1,66 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 5.913066479127799,
+        "y": 0.8262997755363801
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 5.957684089319031,
+        "y": 1.5309936159048498
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 5.788004970265859,
+        "y": 3.1810519910214543
+      },
+      "prevControl": {
+        "x": 5.758524297458023,
+        "y": 2.856962890625
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": null
+    }
+  ],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.3699218750000001,
+      "rotationDegrees": 94.0
+    }
+  ],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [
+    {
+      "name": "Intake",
+      "waypointRelativePos": 0,
+      "endWaypointRelativePos": null,
+      "command": null
+    }
+  ],
+  "globalConstraints": {
+    "maxVelocity": 1.0,
+    "maxAcceleration": 6.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": 84.19943355006302
+  },
+  "reversed": false,
+  "folder": "Outpost Side",
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": 92.32573299061094
+  },
+  "useDefaultConstraints": false
+}
