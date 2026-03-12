@@ -1,11 +1,11 @@
+/* The Deadbolts (C) 2026 */
 package org.teamdeadbolts.commands;
-
-import org.teamdeadbolts.RobotState;
-import org.teamdeadbolts.constants.ZoneConstants;
-import org.teamdeadbolts.subsystems.IntakeSubsystem;
 
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj2.command.Command;
+import org.teamdeadbolts.RobotState;
+import org.teamdeadbolts.constants.ZoneConstants;
+import org.teamdeadbolts.subsystems.IntakeSubsystem;
 
 public class DefaultIntakeCommand extends Command {
     private final IntakeSubsystem intakeSubsystem;
@@ -14,7 +14,7 @@ public class DefaultIntakeCommand extends Command {
 
     public DefaultIntakeCommand(IntakeSubsystem intakeSubsystem) {
         this.intakeSubsystem = intakeSubsystem;
-        
+
         addRequirements(intakeSubsystem);
     }
 
@@ -34,9 +34,9 @@ public class DefaultIntakeCommand extends Command {
     }
 
     private boolean isInUpZone(Translation2d robotPose) {
-        return ZoneConstants.BLUE_TOP_BUMP_ZONE.contains(robotPose) ||
-                ZoneConstants.BLUE_BOTTOM_BUMP_ZONE.contains(robotPose) ||
-                ZoneConstants.RED_TOP_BUMP_ZONE.contains(robotPose) ||
-                ZoneConstants.RED_BOTTOM_BUMP_ZONE.contains(robotPose);
+        return ZoneConstants.BLUE_TOP_BUMP_ZONE.contains(robotPose)
+                || ZoneConstants.BLUE_BOTTOM_BUMP_ZONE.contains(robotPose)
+                || ZoneConstants.RED_TOP_BUMP_ZONE.contains(robotPose)
+                || ZoneConstants.RED_BOTTOM_BUMP_ZONE.contains(robotPose);
     }
 }

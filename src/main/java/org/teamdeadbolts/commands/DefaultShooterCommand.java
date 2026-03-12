@@ -2,12 +2,10 @@
 package org.teamdeadbolts.commands;
 
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import org.teamdeadbolts.RobotState;
 import org.teamdeadbolts.constants.ZoneConstants;
 import org.teamdeadbolts.subsystems.shooter.ShooterSubsystem;
-import org.teamdeadbolts.utils.Zone;
 
 /**
  * The default command for the shooter, active when no other shooter commands are running.

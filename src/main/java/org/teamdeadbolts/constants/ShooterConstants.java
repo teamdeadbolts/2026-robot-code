@@ -5,9 +5,9 @@ import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
-import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
+import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.math.util.Units;
 import org.teamdeadbolts.utils.tuning.ConfigManager;
@@ -34,12 +34,12 @@ public class ShooterConstants {
     public static final double SHOOTER_SMALL_WHEEL_RADIUS_METERS = Units.inchesToMeters(1.0);
     public static final double EXIT_RADIUS_METERS = Units.inchesToMeters(4);
 
-    public static final Pose3d PASS_TOP_POSE_RED = new Pose3d();
-    public static final Pose3d PASS_TOP_POSE_BLUE = new Pose3d();
-    public static final Pose3d PASS_BOTTOM_POSE_RED = new Pose3d();
-    public static final Pose3d PASS_BOTTOM_POSE_BLUE = new Pose3d();
-    public static final Pose3d SHOOT_POSE_RED = new Pose3d();
-    public static final Pose3d SHOOT_POSE_BLUE = new Pose3d();
+    public static final Translation3d PASS_TOP_POSE_RED = new Translation3d(14.485, 6.661, 0);
+    public static final Translation3d PASS_TOP_POSE_BLUE = new Translation3d(1.746, 6.661, 0);
+    public static final Translation3d PASS_BOTTOM_POSE_RED = new Translation3d(14.485, 1.475, 0);
+    public static final Translation3d PASS_BOTTOM_POSE_BLUE = new Translation3d(1.746, 1.475, 0);
+    public static final Translation3d SHOOT_POSE_RED = new Translation3d(11.968069, 4.030247, 1.8388);
+    public static final Translation3d SHOOT_POSE_BLUE = new Translation3d(4.577, 4.030247, 1.8388);
 
     public static final Transform3d SHOOTER_OFFSET = new Transform3d(
             Units.inchesToMeters(-27.5 / 2 + 6.125),

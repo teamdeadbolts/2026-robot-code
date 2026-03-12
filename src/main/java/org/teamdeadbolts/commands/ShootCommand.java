@@ -9,7 +9,6 @@ import org.teamdeadbolts.RobotState;
 import org.teamdeadbolts.constants.ZoneConstants;
 import org.teamdeadbolts.subsystems.HopperSubsystem;
 import org.teamdeadbolts.subsystems.IndexerSubsystem;
-import org.teamdeadbolts.subsystems.IntakeSubsystem;
 import org.teamdeadbolts.subsystems.shooter.ShooterSubsystem;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
@@ -54,8 +53,7 @@ public class ShootCommand extends Command {
         boolean passing = false;
         Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
         if ((alliance == Alliance.Blue && !ZoneConstants.BLUE_SCORE_ZONE.contains(robotLocaion))
-                || (alliance == Alliance.Red && !ZoneConstants.RED_SCORE_ZONE.contains(robotLocaion))) passing =
-        true;
+                || (alliance == Alliance.Red && !ZoneConstants.RED_SCORE_ZONE.contains(robotLocaion))) passing = true;
 
         if (passing
                 && shooterSubsystem.getRPMError() <= rpmErrorPassing.get()

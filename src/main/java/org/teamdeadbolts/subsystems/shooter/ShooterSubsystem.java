@@ -17,6 +17,7 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
@@ -93,6 +94,9 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
             SavedLoggedNetworkNumber.get("Tuning/Shooter/TurretController/MaxVel", 0);
     private final SavedLoggedNetworkNumber turretMaxAccel =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/TurretController/MaxAccel", 0);
+    private final SavedLoggedNetworkNumber turretIZone = SavedLoggedNetworkNumber.get("Tuning/Shooter/TurretController/IZone", 0.0);
+    private final SavedLoggedNetworkNumber turretIMax = SavedLoggedNetworkNumber.get("Tuning/Shooter/TurretController/IMaxVolts", 3);
+    private final SavedLoggedNetworkNumber turretIMin = SavedLoggedNetworkNumber.get("Tuning/Shooter/TurretController/IMinVolts", 0);
 
     private final SavedLoggedNetworkNumber wheelFFS =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/WheelController/kS", 0.1);
@@ -142,6 +146,9 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
         turretControllerP.addRefreshable(this);
         turretControllerI.addRefreshable(this);
         turretControllerD.addRefreshable(this);
+        turretIMin.addRefreshable(this);
+        turretIMax.addRefreshable(this);
+        turretIZone.addRefreshable(this);
         turretMaxVel.addRefreshable(this);
         turretMaxAccel.addRefreshable(this);
         wheelFFS.addRefreshable(this);
@@ -155,6 +162,8 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
         hoodController.setTolerance(Units.degreesToRadians(hoodControllerTol.get()));
         turretController.setPID(turretControllerP.get(), turretControllerI.get(), turretControllerD.get());
         turretController.setConstraints(new TrapezoidProfile.Constraints(turretMaxVel.get(), turretMaxAccel.get()));
+        turretController.setIZone(turretIZone.get());
+        turretController.setIntegratorRange(turretIMin.get(), turretIMax.get());
         wheelFF.setKs(wheelFFS.get());
         wheelFF.setKv(wheelFFV.get());
         wheelFF.setKa(wheelFFA.get());
@@ -215,7 +224,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                 Units.rotationsToRadians(hoodMotor.getPosition().getValueAsDouble());
         Optional<Double> targetHoodAngle = Optional.empty();
         Optional<Double> targetTurretPosition = Optional.empty();
-        Optional<Translation2d> currentTargetTranslation = Optional.empty();
+        Optional<Translation3d> currentTargetTranslation = Optional.empty();
 
         currentWheelSpeed =
                 Units.rotationsToRadians(leftWheelMotor.getVelocity().getValueAsDouble());
@@ -276,7 +285,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                 }
             }
             case PASS -> {
-                Pose3d passTargetPose = null;
+                Translation3d passTargetPose;
                 if (ZoneConstants.TOP_PASS_ZONE.contains(robotPose.toPose2d().getTranslation())) {
                     passTargetPose = alliance == Alliance.Red
                             ? ShooterConstants.PASS_TOP_POSE_RED
@@ -290,41 +299,35 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                     targetWheelSpeed = Optional.of(shooterWheelSpinupSpeed.get());
                     break;
                 }
-                currentTargetTranslation = Optional.of(passTargetPose.toPose2d().getTranslation());
+                currentTargetTranslation = Optional.of(passTargetPose);
 
                 ShotParametersAutoLogged passShot = shotCalculator.calculateShot(
                         robotPose,
-                        passTargetPose.getTranslation(),
+                        passTargetPose,
                         System.currentTimeMillis(),
-                        0.0,
+                        1.0,
                         Units.degreesToRadians(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
                 targetHoodAngle = Optional.of(passShot.hoodAngle);
                 targetTurretPosition = Optional.of(passShot.turretAngle);
                 targetWheelSpeed = Optional.of(passShot.wheelSpeed);
             }
             case SHOOT -> {
-                // TODO
+                Translation3d target =
+                        alliance == Alliance.Blue ? ShooterConstants.SHOOT_POSE_BLUE : ShooterConstants.SHOOT_POSE_RED;
+
+                ShotParametersAutoLogged shootShot = shotCalculator.calculateShot(
+                        robotPose,
+                        target,
+                        System.currentTimeMillis(),
+                        0.0,
+                        Units.degreesToRadians(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
             }
             case SPINUP -> {
                 targetWheelSpeed = Optional.of(shooterWheelSpinupSpeed.get());
                 targetHoodAngle = Optional.of(Units.degreesToRadians(testHoodAngle.get()));
             }
             case TEST -> {
-                // ShotParametersAutoLogged shot = shotCalculator.calculateShot(
-                //         robotPose,
-                //         new Translation3d(testTargetX.get(), testTargetY.get(), testTargetZ.get()),
-                //         (double) (System.currentTimeMillis()),
-                //         0,
-                //         Units.degreesToRadians(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
-                // currentTargetTranslation = Optional.of(new Translation2d(testTargetX.get(), testTargetY.get()));
-                // targetHoodAngle = Optional.of(shot.hoodAngle);
-                // targetWheelSpeed = Optional.of(shot.wheelSpeed);
-                // Logger.recordOutput(
-                //         "ShooterSubsystem/TestTargetPose",
-                //         new Pose2d(testTargetX.get(), testTargetY.get(), new Rotation2d()));
-                targetTurretPosition = Optional.of(Units.degreesToRadians(testTurretPosition.get()));
-                // targetTurretPosition = Optional.of(shot.turretAngle);
-                // targetTurretPosition = Optional.of(Units.degreesToRadians(testTurretPosition.get()));
+                // No more testing...
             }
             case ZERO -> {
                 hoodMotor.setVoltage(-hoodZeroVoltage.get());
@@ -349,7 +352,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
             double lockedTurrentRad =
                     Units.rotationsToRadians(turretMotor.getPosition().getValueAsDouble());
             fallbackChassisTargetAngle = Optional.of(calculateChassisAngleForLockedTurret(
-                    robotPose.toPose2d(), currentTargetTranslation.get(), lockedTurrentRad));
+                    robotPose.toPose2d(), currentTargetTranslation.get().toTranslation2d(), lockedTurrentRad));
 
             targetTurretPosition = Optional.empty();
             Logger.recordOutput("ShooterSubsystem/TurretFallback", true);
@@ -447,27 +450,24 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
      * @return The optimal continuous setpoint for the PID controller (radians).
      */
     private double calculateTurretSetpoint(double currentEncoderRad, double targetRobotRelativeRad) {
-        // 1. Shift the target from the Robot Frame to the Encoder Frame
+        // Shift the target from the Robot Frame to the Encoder Frame
         double offsetRad = ShooterConstants.SHOOTER_OFFSET.getRotation().getZ();
         double targetEncoderRad = targetRobotRelativeRad - offsetRad;
 
-        // 2. Find the shortest path error using WPILib's reliable angle wrap [-pi, pi]
         double error = MathUtil.angleModulus(targetEncoderRad - currentEncoderRad);
 
-        // 3. Calculate the ideal continuous setpoint based on where the turret is right now
         double setpoint = currentEncoderRad + error;
 
-        // 4. Convert constraints to radians for comparison
         double maxLimitRad = Math.toRadians(ShooterConstants.TURRET_MAX_POSITION_DEGREES);
         double minLimitRad = Math.toRadians(ShooterConstants.TURRET_MIN_POSITION_DEGREES);
 
-        // 5. Cable chain / Hardstop limit enforcement
         if (setpoint > maxLimitRad) {
             // We overshot the positive limit. Can we reach the target by spinning the long way around?
             if (setpoint - (2 * Math.PI) >= minLimitRad) {
                 setpoint -= (2 * Math.PI);
             } else {
                 // If wrapping the long way breaks the negative limit, we clamp to the max to avoid breaking the robot
+                // (should never happend)
                 setpoint = maxLimitRad;
                 Logger.recordOutput("ShooterSubsystem/TurretLimitHit", "MAX");
             }

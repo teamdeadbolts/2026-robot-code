@@ -87,7 +87,6 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
     private final SavedLoggedNetworkNumber halfHoldAngle =
             SavedLoggedNetworkNumber.get("Tuning/Intake/HalfHoldAngle", 0);
 
-
     private double currentAngle = 0;
     private double disturbanceAccumulator = 0.0;
 

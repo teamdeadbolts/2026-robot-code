@@ -66,17 +66,15 @@ public class IndexerSubsystem extends StatefulSubsystem<IndexerSubsystem.State> 
                 floorMotor.setVoltage(0);
                 kickerMotor.setVoltage(0);
             }
-            case REVERSE -> {
-                floorMotor.setVoltage(-floorMotorShootVolts.get());
-                kickerMotor.setVoltage(-kickerMotorShootVolts.get());
-            }
-            case JIGGLE -> {
+            case REVERSE, JIGGLE -> {
                 // Sinusoidal oscillation to prevent game piece jams
                 double jiggleVolts =
                         Math.sin(2 * Math.PI * jiggleFrequency.get() * (System.currentTimeMillis() / 1000.0))
                                 * floorMotorJiggleVolts.get();
                 floorMotor.setVoltage(jiggleVolts);
-                kickerMotor.setVoltage(0);
+                // kickerMotor.setVoltage(0);
+                if (targetState == State.REVERSE) floorMotor.setVoltage(-floorMotorIntakeVolts.get());
+                else floorMotor.setVoltage(0);
             }
             case SHOOT -> {
                 floorMotor.setVoltage(floorMotorShootVolts.get());

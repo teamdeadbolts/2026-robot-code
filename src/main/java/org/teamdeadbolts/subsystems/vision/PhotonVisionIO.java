@@ -3,7 +3,10 @@ package org.teamdeadbolts.subsystems.vision;
 
 import edu.wpi.first.apriltag.AprilTag;
 import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
+import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.Tracer;
 import java.util.ArrayList;
@@ -13,10 +16,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
+import org.littletonrobotics.junction.Logger;
 import org.photonvision.PhotonCamera;
 import org.photonvision.targeting.PhotonPipelineResult;
 import org.photonvision.targeting.PhotonTrackedTarget;
 import org.teamdeadbolts.constants.VisionConstants;
+import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
 /**
  * IO implementation for PhotonVision cameras. Handles hardware communication,
@@ -30,6 +35,13 @@ public class PhotonVisionIO {
 
     private final HashSet<Integer> tagIds = new HashSet<>(8);
     private final ArrayList<PoseObservation> poseObservations = new ArrayList<>(8);
+
+    private final SavedLoggedNetworkNumber testRobotPoseX =
+            SavedLoggedNetworkNumber.get("Tuning/Vision/TestRobotPoseX", 0);
+    private final SavedLoggedNetworkNumber testRobotPoseY =
+            SavedLoggedNetworkNumber.get("Tuning/Vision/TestRobotPoseY", 0);
+    private final SavedLoggedNetworkNumber testRobotRotationDeg =
+            SavedLoggedNetworkNumber.get("Tuning/Vision/TestRobotRotationDeg", 0);
 
     /**
      * @param camName The name of the PhotonCamera.
@@ -54,6 +66,22 @@ public class PhotonVisionIO {
     private void cacheTagPoses() {
         for (AprilTag tag : VisionConstants.FIELD_LAYOUT.getTags()) {
             tagPoseCache.put(tag.ID, tag.pose);
+        }
+    }
+
+    private void findTransform() {
+        Pose3d robotPose = new Pose3d(
+                new Translation3d(testRobotPoseX.get(), testRobotPoseY.get(), 0),
+                new Rotation3d(0, 0, Units.degreesToRadians(testRobotRotationDeg.get())));
+
+        if (this.poseObservations.size() > 0) {
+            Pose3d cameraProvidedPose = this.poseObservations.get(0).pose();
+            // Calculate a Transform3d to transform the camera provided pose to the robot pose
+            Transform3d currOffset = (offsetSupplier != null) ? offsetSupplier.get() : this.offset;
+            Pose3d cameraFieldPose = cameraProvidedPose.transformBy(currOffset);
+            Transform3d requiredOffset = cameraFieldPose.minus(robotPose);
+
+            Logger.recordOutput("Vision/Camera " + camera.getName(), requiredOffset);
         }
     }
 

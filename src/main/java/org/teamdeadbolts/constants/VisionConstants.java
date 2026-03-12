@@ -3,10 +3,7 @@ package org.teamdeadbolts.constants;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
-import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
-import edu.wpi.first.math.geometry.Translation3d;
-import edu.wpi.first.math.util.Units;
 
 /**
  * Vision related constants
@@ -21,10 +18,7 @@ public class VisionConstants {
 
     // 2.1971
     // 1.7526 -.968
-    public static final Transform3d LEFT_CAM_TRANSFORM = new Transform3d(
-            new Translation3d(-0.104, 0.325 + 0.5851, 0.193),
-            new Rotation3d(0, Units.degreesToRadians(25), Math.PI / 2));
-    public static final Transform3d RIGHT_CAM_TRANSFORM = new Transform3d(
-            new Translation3d(-0.1651, -.7846 - 0.19795, 0.0),
-            new Rotation3d(0, Units.degreesToRadians(25), -Math.PI / 2));
+    public static final Transform3d LEFT_CAM_TRANSFORM = new Transform3d();
+    public static final Transform3d RIGHT_CAM_TRANSFORM = new Transform3d();
+    public static final Transform3d BACK_CAM_TRANSFORM = new Transform3d();
 }

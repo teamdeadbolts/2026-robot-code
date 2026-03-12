@@ -15,8 +15,8 @@ import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import java.util.Optional;
-
 import org.teamdeadbolts.commands.DefaultHopperCommand;
+import org.teamdeadbolts.commands.DefaultIntakeCommand;
 import org.teamdeadbolts.commands.DefaultShooterCommand;
 import org.teamdeadbolts.commands.DriveCommand;
 import org.teamdeadbolts.commands.IntakeCommand;
@@ -33,24 +33,24 @@ import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
 public class RobotContainer {
 
-    private SwerveSubsystem swerveSubsystem = new SwerveSubsystem();
-
-    // private HopperSubsystem hopperSubsystem = new HopperSubsystem();
-    private IndexerSubsystem indexerSubsystem = new IndexerSubsystem();
-    private IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
-    private ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
-    private HopperSubsystem hopperSubsystem = new HopperSubsystem();
+    private final SwerveSubsystem swerveSubsystem = new SwerveSubsystem();
+    private final IndexerSubsystem indexerSubsystem = new IndexerSubsystem();
+    private final IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
+    private final ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
+    private final HopperSubsystem hopperSubsystem = new HopperSubsystem();
 
     @SuppressWarnings("unused")
     private VisionSubsystem visionSubsystem = new VisionSubsystem(
-            swerveSubsystem, new PhotonVisionIO("Left Cam", VisionConstants.LEFT_CAM_TRANSFORM)
-            // new PhotonVisionIO("Right Cam", VisionConstants.RIGHT_CAM_TRANSFORM)
-            // new PhotonVisionIO(
-            //         "TurretCam", () ->
-            // shooterSubsystem.getTurretOffset().plus(VisionConstants.TURRET_CAM_TO_TURRET)));
-            );
+            swerveSubsystem,
+            new PhotonVisionIO("Left Cam", VisionConstants.LEFT_CAM_TRANSFORM),
+            new PhotonVisionIO("Right Cam", VisionConstants.RIGHT_CAM_TRANSFORM),
+            new PhotonVisionIO("Back Cam", VisionConstants.BACK_CAM_TRANSFORM),
+            new PhotonVisionIO(
+                    "Turret Cam", () -> shooterSubsystem.getTurretOffset().plus(VisionConstants.TURRET_CAM_TO_TURRET)));
 
     private CommandXboxController primaryController = new CommandXboxController(0);
+    private CommandXboxController secondaryController = new CommandXboxController(1);
+
 
     private RobotState robotState = RobotState.getInstance();
 
@@ -76,6 +76,81 @@ public class RobotContainer {
 
         configureAuto();
         configureBindings();
+    }
+
+    private void configureBindings() {
+        // Xbox controllers push "up" = neg valve so invert everything
+        swerveSubsystem.setDefaultCommand(new DriveCommand(
+                swerveSubsystem,
+                shooterSubsystem,
+                primaryController::getLeftY,
+                primaryController::getLeftX,
+                primaryController::getRightX,
+                true,
+                false,
+                false));
+
+        shooterSubsystem.setDefaultCommand(new DefaultShooterCommand(shooterSubsystem));
+        intakeSubsystem.setDefaultCommand(new DefaultIntakeCommand(intakeSubsystem));
+        indexerSubsystem.setDefaultCommand(
+                new RunCommand(() -> indexerSubsystem.setState(IndexerSubsystem.State.OFF), indexerSubsystem));
+        hopperSubsystem.setDefaultCommand(new DefaultHopperCommand(hopperSubsystem));
+
+        // Primary controller
+        primaryController
+                .leftTrigger(0.4)
+                .whileTrue(new DriveCommand(
+                        swerveSubsystem,
+                        shooterSubsystem,
+                        primaryController::getLeftY,
+                        primaryController::getLeftX,
+                        primaryController::getRightX,
+                        true,
+                        true,
+                        false));
+        primaryController
+                .rightTrigger()
+                .whileTrue(new ParallelCommandGroup(new DriveCommand(
+                        swerveSubsystem,
+                        shooterSubsystem,
+                        primaryController::getLeftY,
+                        primaryController::getLeftX,
+                        primaryController::getRightX,
+                        true,
+                        false,
+                        true)));
+
+        primaryController
+                .rightBumper()
+                .whileTrue(new IntakeCommand(intakeSubsystem, hopperSubsystem, IntakeCommand.Target.INTAKE));
+        primaryController
+                .leftBumper()
+                .whileTrue(new IntakeCommand(intakeSubsystem, hopperSubsystem, IntakeCommand.Target.STOW));
+    
+        // Secondary Controller
+        secondaryController.povUp().whileTrue(new RunCommand(() -> hopperSubsystem.setState(HopperSubsystem.State.UP), hopperSubsystem));
+        secondaryController.povDown().whileTrue(new RunCommand(() -> hopperSubsystem.setState(HopperSubsystem.State.DOWN), hopperSubsystem));
+        secondaryController.rightBumper().whileTrue(new RunCommand(() -> shooterSubsystem.setState(ShooterSubsystem.State.SPINUP), shooterSubsystem));
+        secondaryController.leftBumper().whileTrue(new RunCommand(() -> indexerSubsystem.setState(IndexerSubsystem.State.JIGGLE), indexerSubsystem));
+        secondaryController.a().whileTrue(new ShootCommand(indexerSubsystem, shooterSubsystem, hopperSubsystem, false));
+        secondaryController.povLeft().whileTrue(new RunCommand(() -> {
+            indexerSubsystem.setState(IndexerSubsystem.State.REVERSE);
+            intakeSubsystem.setState(IntakeSubsystem.State.OUTTAKE);
+        }, intakeSubsystem, indexerSubsystem));
+        
+    }
+
+    private void configureAuto() {
+        RobotConfig config;
+        try {
+            config = RobotConfig.fromGUISettings();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return;
+        }
+
+        RobotState state = RobotState.getInstance();
+
         new EventTrigger("Index")
                 .onTrue(new RunCommand(
                         () -> indexerSubsystem.setState(IndexerSubsystem.State.JIGGLE), indexerSubsystem));
@@ -98,66 +173,6 @@ public class RobotContainer {
                 .onTrue(new RunCommand(() -> hopperSubsystem.setState(HopperSubsystem.State.UP), hopperSubsystem));
         new EventTrigger("HopperDown")
                 .onTrue(new RunCommand(() -> hopperSubsystem.setState(HopperSubsystem.State.DOWN), hopperSubsystem));
-    }
-
-    private void configureBindings() {
-        // Xbox controllers push "up" = neg valve so invert everything
-        swerveSubsystem.setDefaultCommand(new DriveCommand(
-                swerveSubsystem,
-                shooterSubsystem,
-                primaryController::getLeftY,
-                primaryController::getLeftX,
-                primaryController::getRightX,
-                true,
-                false,
-                false));
-
-        shooterSubsystem.setDefaultCommand(new DefaultShooterCommand(shooterSubsystem));
-        intakeSubsystem.setDefaultCommand(
-                new RunCommand(() -> intakeSubsystem.setState(IntakeSubsystem.State.OFF), intakeSubsystem));
-        indexerSubsystem.setDefaultCommand(
-                new RunCommand(() -> indexerSubsystem.setState(IndexerSubsystem.State.OFF), indexerSubsystem));
-        hopperSubsystem.setDefaultCommand(new DefaultHopperCommand(hopperSubsystem));
-   
-     
-        primaryController
-                .leftTrigger(0.4)
-                .whileTrue(new DriveCommand(
-                        swerveSubsystem,
-                        shooterSubsystem,
-                        primaryController::getLeftY,
-                        primaryController::getLeftX,
-                        primaryController::getRightX,
-                        true,
-                        true,
-                        false));
-        primaryController
-                .leftBumper()
-                .whileTrue(new ParallelCommandGroup(
-                        new ShootCommand(indexerSubsystem, shooterSubsystem, hopperSubsystem, false),
-                        new IntakeCommand(intakeSubsystem, hopperSubsystem, IntakeCommand.Target.SHOOT),
-                        new DriveCommand(
-                                swerveSubsystem,
-                                shooterSubsystem,
-                                primaryController::getLeftY,
-                                primaryController::getLeftX,
-                                primaryController::getRightX,
-                                true,
-                                false,
-                                true)));
-
-    }
-    
-    private void configureAuto() {
-        RobotConfig config;
-        try {
-            config = RobotConfig.fromGUISettings();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return;
-        }
-
-        RobotState state = RobotState.getInstance();
 
         AutoBuilder.configure(
                 state.getRobotPose()::toPose2d,
@@ -176,11 +191,11 @@ public class RobotContainer {
                     return false;
                 },
                 swerveSubsystem);
+
+        autoChooser = AutoBuilder.buildAutoChooser();
     }
 
     public Command getAutonomousCommand() {
-        // return autoChooser.getSelected();
-        // return testAuto().cmd();
-        return new RunCommand(() -> {});
+        return autoChooser.getSelected();
     }
 }
