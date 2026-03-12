@@ -3,49 +3,38 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 4.39276272446362,
-        "y": 0.6901334392490661
+        "x": 3.5721546585648154,
+        "y": 4.005737702546297
       },
       "prevControl": null,
       "nextControl": {
-        "x": 7.216557291666667,
-        "y": 0.5369088541666667
+        "x": 2.859038026247511,
+        "y": 4.00867702782792
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 7.533181480293843,
-        "y": 1.2170839406483207
+        "x": 2.465239366319445,
+        "y": 4.005737702546297
       },
       "prevControl": {
-        "x": 6.424102639072766,
-        "y": 0.9887133176156593
+        "x": 2.909161600960664,
+        "y": 4.002371270354453
       },
       "nextControl": null,
       "isLocked": false,
       "linkedName": null
     }
   ],
-  "rotationTargets": [
-    {
-      "waypointRelativePos": 0.21750616776315795,
-      "rotationDegrees": -0.986055389613268
-    }
-  ],
+  "rotationTargets": [],
   "constraintZones": [],
   "pointTowardsZones": [],
   "eventMarkers": [
     {
-      "name": "Intake",
-      "waypointRelativePos": 0.37956810631229226,
-      "endWaypointRelativePos": null,
-      "command": null
-    },
-    {
-      "name": "HopperUp",
-      "waypointRelativePos": 0.45006229235880424,
+      "name": "Shoot",
+      "waypointRelativePos": 0.7670395556478407,
       "endWaypointRelativePos": null,
       "command": null
     }
@@ -59,14 +48,14 @@
     "unlimited": false
   },
   "goalEndState": {
-    "velocity": 1.4,
-    "rotation": 73.67
+    "velocity": 0,
+    "rotation": 0.0
   },
   "reversed": false,
-  "folder": "Outpost Side",
+  "folder": "Center",
   "idealStartingState": {
     "velocity": 0,
-    "rotation": 0.23506451848601895
+    "rotation": 0.0
   },
   "useDefaultConstraints": true
 }
