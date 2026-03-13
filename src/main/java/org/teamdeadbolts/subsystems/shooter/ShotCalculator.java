@@ -2,6 +2,7 @@
 package org.teamdeadbolts.subsystems.shooter;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.filter.LinearFilter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -14,6 +15,7 @@ import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.constants.ShooterConstants;
 import org.teamdeadbolts.utils.TimedExtrapolatingDoubleMap;
+import org.teamdeadbolts.utils.tuning.Refreshable;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
 /**
@@ -21,7 +23,7 @@ import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
  * to land a game piece in a target, accounting for robot motion, ball flight
  * time, air resistance, and optimal impact angle to minimize RPM.
  */
-public class ShotCalculator {
+public class ShotCalculator implements Refreshable {
     @AutoLog
     public static class ShotParameters {
         public double hoodAngle;
@@ -48,24 +50,39 @@ public class ShotCalculator {
     private static final double G = 9.81;
 
     /* --- Tuning Parameters --- */
-    private static final SavedLoggedNetworkNumber calcIterations =
+    private final SavedLoggedNetworkNumber calcIterations =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/CalcIterations", 30);
-    private static final SavedLoggedNetworkNumber minImpactAngle =
+    private final SavedLoggedNetworkNumber minImpactAngle =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/MinImpactAngleDegrees", 10);
-    private static final SavedLoggedNetworkNumber maxImpactAngle =
+    private final SavedLoggedNetworkNumber maxImpactAngle =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/MaxImpactAngleDegrees", 45);
-    private static final SavedLoggedNetworkNumber shootLatancyMs =
+    private final SavedLoggedNetworkNumber shootLatancyMs =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/ShootLatancyMs", 0);
-    private static final SavedLoggedNetworkNumber timeToKeepVel =
+    private final SavedLoggedNetworkNumber timeToKeepVel =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/TimeToKeepVelMs", 1000);
-    private static final SavedLoggedNetworkNumber airResistanceMultiplier =
+    private final SavedLoggedNetworkNumber airResistanceMultiplier =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/airResistanceMultiplier", 0.01);
+
+    private final SavedLoggedNetworkNumber linerFilter = SavedLoggedNetworkNumber.get("Tuning/Shooter/LinearFilter", 5);
 
     private final TimedExtrapolatingDoubleMap vxMap = new TimedExtrapolatingDoubleMap(timeToKeepVel.get());
     private final TimedExtrapolatingDoubleMap vyMap = new TimedExtrapolatingDoubleMap(timeToKeepVel.get());
     private final TimedExtrapolatingDoubleMap vthetaMap = new TimedExtrapolatingDoubleMap(timeToKeepVel.get());
 
-    public ShotCalculator() {}
+    private LinearFilter vxFilter = LinearFilter.movingAverage((int) linerFilter.get());
+    private LinearFilter vyFilter = LinearFilter.movingAverage((int) linerFilter.get());
+    private LinearFilter vthetaFilter = LinearFilter.movingAverage((int) linerFilter.get());
+
+    public ShotCalculator() {
+        linerFilter.addRefreshable(this);
+    }
+
+    @Override
+    public void refresh() {
+        vxFilter = LinearFilter.movingAverage((int) linerFilter.get());
+        vyFilter = LinearFilter.movingAverage((int) linerFilter.get());
+        vthetaFilter = LinearFilter.movingAverage((int) linerFilter.get());
+    }
 
     /**
      * Records robot velocity state for motion compensation.
@@ -73,9 +90,13 @@ public class ShotCalculator {
      * @param speeds Current field-relative chassis speeds.
      */
     public void updateVelocityState(double timestamp, ChassisSpeeds speeds) {
-        vxMap.put(timestamp, speeds.vxMetersPerSecond);
-        vyMap.put(timestamp, speeds.vyMetersPerSecond);
-        vthetaMap.put(timestamp, speeds.omegaRadiansPerSecond);
+        double smoothedVx = vxFilter.calculate(speeds.vxMetersPerSecond);
+        double smoothedVy = vyFilter.calculate(speeds.vyMetersPerSecond);
+        double smoothedVtheta = vthetaFilter.calculate(speeds.omegaRadiansPerSecond);
+
+        vxMap.put(timestamp, smoothedVx);
+        vyMap.put(timestamp, smoothedVy);
+        vthetaMap.put(timestamp, smoothedVtheta);
     }
 
     /**
@@ -186,7 +207,7 @@ public class ShotCalculator {
         }
 
         // Apply air resistance compensation and RPM conversion
-        shotToUse.ballVelocity *= 1 + (airResistanceMultiplier.get() * distFromPivotToTarget);
+        // shotToUse.ballVelocity *= 1 + (airResistanceMultiplier.get() * distFromPivotToTarget);
         shotToUse.wheelSpeed = shooterMPSToRPM(shotToUse.ballVelocity);
         Logger.processInputs("ShotCalc/RealShot", shotToUse);
 
@@ -238,7 +259,7 @@ public class ShotCalculator {
         return ShooterConstants.SHOOTER_RPM_TO_MPS_MAP.get(mps);
     }
 
-    private static double findLaunchAngle(Translation2d trans, double alpha, double maxAngle) {
+    private double findLaunchAngle(Translation2d trans, double alpha, double maxAngle) {
         double low = Math.PI / 2 - Math.toRadians(ShooterConstants.SHOOTER_HOOD_MAX_ANGLE_DEGREES);
         double high = Math.PI / 2 - Math.toRadians(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES);
 

@@ -22,7 +22,7 @@ public class HopperConstants {
     public static final TalonFXConfiguration RIGHT_HOPPER_MOTOR_CONFIG = new TalonFXConfiguration();
 
     private static SavedLoggedNetworkNumber lidLifterCurrentLimit =
-            SavedLoggedNetworkNumber.get("Tuning/Indexer/LidLifterCurrentLimit", 20);
+            SavedLoggedNetworkNumber.get("Tuning/Hopper/LidLifterCurrentLimit", 20);
 
     static {
         ConfigManager.getInstance().onReady(HopperConstants::init);

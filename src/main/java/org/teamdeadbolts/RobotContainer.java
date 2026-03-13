@@ -5,7 +5,6 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
-import com.pathplanner.lib.events.EventTrigger;
 import edu.wpi.first.math.geometry.*;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
@@ -140,6 +139,10 @@ public class RobotContainer {
 
         primaryController.x().whileTrue(new RunCommand(() -> swerveSubsystem.resetGyro(), swerveSubsystem));
 
+        primaryController.a().whileTrue(new RunCommand(() -> shooterSubsystem.setState(ShooterSubsystem.State.TEST), shooterSubsystem));
+                primaryController.y().whileTrue(new RunCommand(() -> { shooterSubsystem.setState(ShooterSubsystem.State.TEST); indexerSubsystem.setState(IndexerSubsystem.State.SHOOT); }, shooterSubsystem));
+
+
         // Secondary Controller
         secondaryController
                 .povUp()
@@ -182,26 +185,30 @@ public class RobotContainer {
 
         RobotState state = RobotState.getInstance();
 
-        new EventTrigger("Index")
-                .onTrue(new RunCommand(
-                        () -> indexerSubsystem.setState(IndexerSubsystem.State.JIGGLE), indexerSubsystem));
-        new EventTrigger("StopIndex")
-                .onTrue(new RunCommand(() -> indexerSubsystem.setState(IndexerSubsystem.State.OFF), indexerSubsystem));
-        new EventTrigger("Intake")
-                .onTrue(new RunCommand(() -> intakeSubsystem.setState(IntakeSubsystem.State.INTAKE), intakeSubsystem));
-        new EventTrigger("StopIntake")
-                .onTrue(new RunCommand(
-                        () -> intakeSubsystem.setState(IntakeSubsystem.State.DEPLOYED), intakeSubsystem));
-        new EventTrigger("Shoot").onTrue(new ShootCommand(indexerSubsystem, shooterSubsystem, hopperSubsystem, false));
-        new EventTrigger("SpinUp")
-                .onTrue(new RunCommand(
-                        () -> shooterSubsystem.setState(ShooterSubsystem.State.SPINUP), shooterSubsystem));
-        new EventTrigger("StopShoot")
-                .onTrue(new RunCommand(() -> shooterSubsystem.setState(ShooterSubsystem.State.OFF), shooterSubsystem));
-        new EventTrigger("HopperUp")
-                .onTrue(new RunCommand(() -> hopperSubsystem.setState(HopperSubsystem.State.UP), hopperSubsystem));
-        new EventTrigger("HopperDown")
-                .onTrue(new RunCommand(() -> hopperSubsystem.setState(HopperSubsystem.State.DOWN), hopperSubsystem));
+        // new EventTrigger("Index")
+        //         .onTrue(new RunCommand(
+        //                 () -> indexerSubsystem.setState(IndexerSubsystem.State.JIGGLE), indexerSubsystem));
+        // new EventTrigger("StopIndex")
+        //         .onTrue(new RunCommand(() -> indexerSubsystem.setState(IndexerSubsystem.State.OFF),
+        // indexerSubsystem));
+        // new EventTrigger("Intake")
+        //         .onTrue(new RunCommand(() -> intakeSubsystem.setState(IntakeSubsystem.State.INTAKE),
+        // intakeSubsystem));
+        // new EventTrigger("StopIntake")
+        //         .onTrue(new RunCommand(
+        //                 () -> intakeSubsystem.setState(IntakeSubsystem.State.DEPLOYED), intakeSubsystem));
+        // new EventTrigger("Shoot").onTrue(new ShootCommand(indexerSubsystem, shooterSubsystem, hopperSubsystem,
+        // false));
+        // new EventTrigger("SpinUp")
+        //         .onTrue(new RunCommand(
+        //                 () -> shooterSubsystem.setState(ShooterSubsystem.State.SPINUP), shooterSubsystem));
+        // new EventTrigger("StopShoot")
+        //         .onTrue(new RunCommand(() -> shooterSubsystem.setState(ShooterSubsystem.State.OFF),
+        // shooterSubsystem));
+        // new EventTrigger("HopperUp")
+        //         .onTrue(new RunCommand(() -> hopperSubsystem.setState(HopperSubsystem.State.UP), hopperSubsystem));
+        // new EventTrigger("HopperDown")
+        // .onTrue(new RunCommand(() -> hopperSubsystem.setState(HopperSubsystem.State.DOWN), hopperSubsystem));
 
         AutoBuilder.configure(
                 state.getRobotPose()::toPose2d,

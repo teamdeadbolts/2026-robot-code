@@ -21,7 +21,7 @@ public class Robot extends LoggedRobot {
         // Setup advantage kit
         Logger.recordMetadata("ProjectName", "2026 Robot");
         if (isReal()) {
-            Logger.addDataReceiver(new WPILOGWriter());
+            Logger.addDataReceiver(new WPILOGWriter("/home/lvuser/logs/advantage"));
             Logger.addDataReceiver(new NT4Publisher());
         } else {
             setUseTiming(false);

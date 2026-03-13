@@ -325,13 +325,14 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                         robotPose,
                         target,
                         System.currentTimeMillis(),
-                        0.0,
+                        0.05,
                         Units.degreesToRadians(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
 
                 Logger.recordOutput("ShooterSubsystem/ShootTargetPose", target);
                 Logger.recordOutput("ShooterSubsystem/ShootShot/BallVel", shootShot.ballVelocity);
                 Logger.recordOutput("ShooterSubsystem/ShootShot/ImpactAngle", shootShot.impactAngle);
-                Logger.recordOutput("ShooterSubsystem/ShootShot/VertTarget", shootShot.virtTarget);
+                Logger.recordOutput(
+                        "ShooterSubsystem/ShootShot/VertTarget", new Pose3d(shootShot.virtTarget, new Rotation3d()));
 
                 targetWheelSpeed = Optional.of(shootShot.wheelSpeed);
                 targetHoodAngle = Optional.of(shootShot.hoodAngle);
@@ -342,7 +343,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                 targetHoodAngle = Optional.of(Units.degreesToRadians(testHoodAngle.get()));
             }
             case TEST -> { // Slowly rotatte turret in a circle
-                targetTurretPosition = Optional.of(Units.degreesToRadians(testTurretPosition.get()));
+                targetWheelSpeed = Optional.of(ShooterConstants.SHOOTER_RPM_TO_MPS_MAP.get(testShooterMPS.get()));
             }
             case ZERO -> {
                 hoodMotor.setVoltage(-hoodZeroVoltage.get());
@@ -419,6 +420,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                     "ShooterSubsystem/NormalizedTurretSetpoint", Units.radiansToDegrees(normalizedTurretPosition));
             Logger.recordOutput("ShooterSubsystem/TargetTurretPose", targetTurretFieldPose);
             Logger.recordOutput("ShooterSubsystem/TurretPidOutput", turretPidOutput);
+            Logger.recordOutput("ShooterSubsystem/PidError", turretController.getPositionError());
 
         } else {
             turretMotor.setVoltage(0);

@@ -125,11 +125,19 @@ public class HopperSubsystem extends StatefulSubsystem<HopperSubsystem.State> im
         // Calculate control effort
         double leftPidOutput = leftLifterController.calculate(getLeftLidHeight(), targetHeight);
         double leftOutput = leftPidOutput + leftLifterFF.calculate(leftPidOutput);
-        hopperMotorLeft.setVoltage(leftOutput);
+        if (!leftLifterController.atSetpoint()) {
+            hopperMotorLeft.setVoltage(leftOutput);
+        } else {
+            hopperMotorLeft.setVoltage(0);
+        }
 
         double rightPidOutput = rightLifterController.calculate(getRightLidHeight(), targetHeight);
         double rightOutput = rightPidOutput + rightLifterFF.calculate(rightPidOutput);
-        hopperMotorRight.setVoltage(rightOutput);
+        if (!rightLifterController.atSetpoint()) {
+            hopperMotorRight.setVoltage(rightOutput);
+        } else {
+            hopperMotorRight.setVoltage(0);
+        }
 
         // Logging
         Logger.recordOutput("HopperSubsystem/TargetHeight", targetHeight);

@@ -41,9 +41,9 @@ public class IntakeCommand extends Command {
         if (this.prevHopperState != HopperSubsystem.State.UP
                 && this.target != Target.SHOOT
                 && ((target == Target.STOW && intakeSubsystem.getState() != IntakeSubsystem.State.STOWED)
-                        || target == Target.INTAKE
-                                && (intakeSubsystem.getState() != IntakeSubsystem.State.INTAKE
-                                        || intakeSubsystem.getState() != IntakeSubsystem.State.DEPLOYED))) {
+                        || (target == Target.INTAKE
+                                && intakeSubsystem.getState() != IntakeSubsystem.State.INTAKE
+                                && intakeSubsystem.getState() != IntakeSubsystem.State.DEPLOYED))) {
             hopperSubsystem.setState(HopperSubsystem.State.UP);
             hopperUp = false;
         }

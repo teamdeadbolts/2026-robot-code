@@ -55,19 +55,22 @@ public class ShootCommand extends Command {
         if ((alliance == Alliance.Blue && !ZoneConstants.BLUE_SCORE_ZONE.contains(robotLocaion))
                 || (alliance == Alliance.Red && !ZoneConstants.RED_SCORE_ZONE.contains(robotLocaion))) passing = true;
 
+        if (passing) {
+            shooterSubsystem.setState(ShooterSubsystem.State.PASS);
+        } else {
+            shooterSubsystem.setState(ShooterSubsystem.State.SHOOT);
+        }
         if (passing
                 && shooterSubsystem.getRPMError() <= rpmErrorPassing.get()
                 && hopperSubsystem.getState() == HopperSubsystem.State.DOWN) {
             feedShooter();
-            shooterSubsystem.setState(ShooterSubsystem.State.PASS);
             return;
         } else if (!passing && shooterSubsystem.getRPMError() <= rpmErrorScoring.get()) {
             feedShooter();
-            shooterSubsystem.setState(ShooterSubsystem.State.SHOOT);
             return;
         }
         indexerSubsystem.setState(IndexerSubsystem.State.JIGGLE);
-        shooterSubsystem.setState(ShooterSubsystem.State.SPINUP);
+        // shooterSubsystem.setState(ShooterSubsystem.State.SPINUP);
     }
 
     @Override

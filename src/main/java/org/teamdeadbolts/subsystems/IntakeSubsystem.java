@@ -151,7 +151,11 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
             }
             case INTAKE -> {
                 targetAngle = Optional.of(Units.degreesToRadians(intakeDeployedAngle.get()));
-                wheelMotor.setVoltage(wheelIntakeVoltage.get());
+                if (Math.abs(targetAngle.get() - currentAngle) < Math.PI / 4) {
+                    wheelMotor.setVoltage(wheelIntakeVoltage.get());
+                } else {
+                    wheelMotor.setVoltage(0);
+                }
             }
             case OUTTAKE -> {
                 targetAngle = Optional.of(Units.degreesToRadians(intakeDeployedAngle.get()));
