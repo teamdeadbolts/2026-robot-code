@@ -46,7 +46,8 @@ public class InteractiveShotVisualizer {
             double latencyMs,
             double timeToKeep,
             double airRes,
-            double linearFilter) {}
+            double linearFilter,
+            double maxRpm) {}
 
     public record SimResponse(
             List<Double> xCoords,
@@ -68,7 +69,8 @@ public class InteractiveShotVisualizer {
             double calcTurretAngle,
             double calcRpm,
             double impactAngle,
-            double ballVelocity) {}
+            double ballVelocity,
+            boolean isValid) {}
 
     @Test
     public void runInteractiveServer() throws InterruptedException {
@@ -89,7 +91,6 @@ public class InteractiveShotVisualizer {
         System.out.println("==================================================");
 
         app.get("/", ctx -> {
-            // Inject the true robot offset into the HTML before sending to the client
             String html = HTML_PAGE
                     .replace(
                             "TURRET_OFFSET_X",
@@ -187,6 +188,17 @@ public class InteractiveShotVisualizer {
                 if (simZ < 0) break;
             }
 
+            // --- DETECT INTERPOLATING MAP CLAMP ---
+            // If asking for 1.0 m/s more velocity results in the exact same RPM, we know we've
+            // hit the hard ceiling of your map, making the shot impossible.
+            double testRpm = ShotCalculator.shooterMPSToRPM(result.ballVelocity + 1.0);
+            boolean mapIsClamped = Math.abs(result.wheelSpeed - testRpm) < 0.01;
+
+            boolean valid = result.ballVelocity > 0.1
+                    && !Double.isNaN(result.ballVelocity)
+                    && !mapIsClamped
+                    && result.wheelSpeed <= req.maxRpm();
+
             SimResponse response = new SimResponse(
                     xCoords,
                     yCoords,
@@ -207,7 +219,8 @@ public class InteractiveShotVisualizer {
                     Math.toDegrees(result.turretAngle),
                     result.wheelSpeed,
                     Math.toDegrees(result.impactAngle),
-                    result.ballVelocity);
+                    result.ballVelocity,
+                    valid);
 
             ctx.json(response);
         });
@@ -258,7 +271,12 @@ public class InteractiveShotVisualizer {
                 <div class="control-group"><label>Height (Z) (m)</label><input type="number" id="tZ" step="0.1" value="2.0"></div>
                 <div class="control-group"><label>Side Width (m)</label><input type="number" id="tSize" step="0.1" value="1.0"></div>
 
+                <h3>Simulation Noise</h3>
+                <div class="control-group"><label>Velocity Jitter ± (m/s)</label><input type="number" id="velNoise" value="0.0" step="0.1"></div>
+                <div class="control-group"><label>Pose Jitter ± (m)</label><input type="number" id="poseNoise" value="0.0" step="0.05"></div>
+
                 <h3>Tuning</h3>
+                <div class="control-group"><label>Artificial RPM Limit</label><input type="number" id="maxRpm" value="6000" step="100"></div>
                 <div class="control-group"><label>Air Resistance</label><input type="number" id="airRes" value="0.01" step="0.001"></div>
                 <div class="control-group"><label>Calc Iterations</label><input type="number" id="calcIters" value="30" step="1"></div>
                 <div class="control-group"><label>Min Impact Angle (°)</label><input type="number" id="minImpact" value="50" step="1"></div>
@@ -268,6 +286,7 @@ public class InteractiveShotVisualizer {
                 <div class="control-group"><label>Linear Filter Size</label><input type="number" id="linearFilter" value="5" step="1"></div>
 
                 <div class="stats">
+                    <div>Status: <span id="outValid" style="color:#0f0;">VALID</span></div>
                     <div>Hood Angle: <span id="outHood">0.0</span>°</div>
                     <div>Turret Angle: <span id="outTurret">0.0</span>°</div>
                     <div>Wheel RPM: <span id="outRpm">0</span> RPM</div>
@@ -326,7 +345,6 @@ public class InteractiveShotVisualizer {
 
                 // --- Live Turret Pivot ---
                 const turretGroup = new THREE.Group();
-                // Dynamically injected offsets from Java
                 turretGroup.position.set(TURRET_OFFSET_X, TURRET_OFFSET_Y, TURRET_OFFSET_Z);
                 robotGroup.add(turretGroup);
 
@@ -337,7 +355,7 @@ public class InteractiveShotVisualizer {
                 turretBase.rotation.x = Math.PI / 2;
                 turretGroup.add(turretBase);
 
-                // --- Hood/Barrel Pivot for Vertical Aiming ---
+                // --- Hood/Barrel Pivot ---
                 const hoodPivot = new THREE.Group();
                 hoodPivot.position.set(0, 0, 0.05);
                 turretGroup.add(hoodPivot);
@@ -373,17 +391,11 @@ public class InteractiveShotVisualizer {
 
                 document.addEventListener('pointerlockchange', () => {
                     isPointerLocked = (document.pointerLockElement === container);
-                    const overlay = document.getElementById('overlay');
-                    if (isPointerLocked) {
-                        overlay.style.opacity = '0.3';
-                    } else {
-                        overlay.style.opacity = '1.0';
-                    }
+                    document.getElementById('overlay').style.opacity = isPointerLocked ? '0.3' : '1.0';
                 });
 
                 document.addEventListener('mousemove', (e) => {
                     if (!isPointerLocked) return;
-
                     const sensitivity = 0.003;
                     camYaw -= e.movementX * sensitivity;
                     camPitch -= e.movementY * sensitivity;
@@ -407,28 +419,29 @@ public class InteractiveShotVisualizer {
                 });
 
                 function shootBall() {
-                    if (!latestSimData) return;
-
+                    if (!latestSimData || !latestSimData.isValid) return;
                     const ballMesh = new THREE.Mesh(
                         new THREE.SphereGeometry(0.12),
                         new THREE.MeshStandardMaterial({ color: 0xffff00 })
                     );
                     scene.add(ballMesh);
-
-                    activeBalls.push({
-                        mesh: ballMesh,
-                        trajX: latestSimData.xCoords,
-                        trajY: latestSimData.yCoords,
-                        trajZ: latestSimData.zCoords,
-                        frame: 0
-                    });
+                    activeBalls.push({ mesh: ballMesh, trajX: latestSimData.xCoords, trajY: latestSimData.yCoords, trajZ: latestSimData.zCoords, frame: 0 });
                 }
 
                 // --- SERVER COMMUNICATION LOOP ---
                 setInterval(async () => {
+                    const poseNoise = parseFloat(document.getElementById('poseNoise').value);
+                    const velNoise = parseFloat(document.getElementById('velNoise').value);
+
+                    const nX = state.x + (Math.random() - 0.5) * 2 * poseNoise;
+                    const nY = state.y + (Math.random() - 0.5) * 2 * poseNoise;
+                    const nVx = state.vx + (Math.random() - 0.5) * 2 * velNoise;
+                    const nVy = state.vy + (Math.random() - 0.5) * 2 * velNoise;
+                    const nOmega = state.omega + (Math.random() - 0.5) * 2 * velNoise;
+
                     const req = {
-                        rX: state.x, rY: state.y, rZ: 0, rRot: state.rot,
-                        vX: state.vx, vY: state.vy, vOmega: state.omega,
+                        rX: nX, rY: nY, rZ: 0, rRot: state.rot,
+                        vX: nVx, vY: nVy, vOmega: nOmega,
                         tX: parseFloat(document.getElementById('tX').value),
                         tY: parseFloat(document.getElementById('tY').value),
                         tZ: parseFloat(document.getElementById('tZ').value),
@@ -439,6 +452,7 @@ public class InteractiveShotVisualizer {
                         timeToKeep: parseFloat(document.getElementById('timeToKeep').value),
                         airRes: parseFloat(document.getElementById('airRes').value),
                         linearFilter: parseFloat(document.getElementById('linearFilter').value),
+                        maxRpm: parseFloat(document.getElementById('maxRpm').value)
                     };
 
                     try {
@@ -450,11 +464,20 @@ public class InteractiveShotVisualizer {
                         document.getElementById('outRpm').innerText = latestSimData.calcRpm.toFixed(0);
                         document.getElementById('ballVelocity').innerText = latestSimData.ballVelocity.toFixed(0);
 
-                        // Horizontal Turret Aiming
+                        // Constraints Visualizer Check
+                        const validDisplay = document.getElementById('outValid');
+                        if (latestSimData.isValid) {
+                            validDisplay.innerText = "VALID";
+                            validDisplay.style.color = "#0f0";
+                            lineMat.color.setHex(0x00ffff);
+                        } else {
+                            validDisplay.innerText = "INVALID";
+                            validDisplay.style.color = "#f00";
+                            lineMat.color.setHex(0xff0000);
+                        }
+
                         turretGroup.rotation.z = latestSimData.calcTurretAngle * (Math.PI / 180);
 
-                        // Vertical Hood Aiming
-                        // Calculator sends calcHoodAngle = 90 - launchAngle
                         const launchAngleRad = (90 - latestSimData.calcHoodAngle) * (Math.PI / 180);
                         hoodPivot.rotation.y = -launchAngleRad;
 
