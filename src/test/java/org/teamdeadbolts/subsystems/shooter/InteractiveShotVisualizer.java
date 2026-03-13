@@ -29,7 +29,6 @@ public class InteractiveShotVisualizer {
     private static final SavedLoggedNetworkNumber linerFilter =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/LinearFilter", 5);
 
-    // 1. Define the Data Structures to communicate with the web UI
     public record SimRequest(
             double rX,
             double rY,
@@ -75,13 +74,11 @@ public class InteractiveShotVisualizer {
     public void runInteractiveServer() throws InterruptedException {
         System.out.println("Starting Interactive Shot Visualizer...");
 
-        // Start NetworkTables so SavedLoggedNetworkNumber works
         NetworkTableInstance inst = NetworkTableInstance.getDefault();
         inst.startServer();
 
         ShotCalculator calculator = new ShotCalculator();
 
-        // Start Web Server
         Javalin app = Javalin.create(config -> {
                     config.showJavalinBanner = false;
                 })
@@ -91,7 +88,26 @@ public class InteractiveShotVisualizer {
         System.out.println(" Server Started Open http://localhost:7070 in your browser.");
         System.out.println("==================================================");
 
-        app.get("/", ctx -> ctx.html(HTML_PAGE));
+        app.get("/", ctx -> {
+            // Inject the true robot offset into the HTML before sending to the client
+            String html = HTML_PAGE
+                    .replace(
+                            "TURRET_OFFSET_X",
+                            String.valueOf(ShooterConstants.SHOOTER_OFFSET
+                                    .getTranslation()
+                                    .getX()))
+                    .replace(
+                            "TURRET_OFFSET_Y",
+                            String.valueOf(ShooterConstants.SHOOTER_OFFSET
+                                    .getTranslation()
+                                    .getY()))
+                    .replace(
+                            "TURRET_OFFSET_Z",
+                            String.valueOf(ShooterConstants.SHOOTER_OFFSET
+                                    .getTranslation()
+                                    .getZ()));
+            ctx.html(html);
+        });
 
         app.post("/simulate", ctx -> {
             SimRequest req = ctx.bodyAsClass(SimRequest.class);
@@ -103,51 +119,42 @@ public class InteractiveShotVisualizer {
             timeToKeepVel.set(req.timeToKeep());
             airResistanceMultiplier.set(req.airRes());
 
-            // Rebuild filters if the size changed
             if (linerFilter.get() != req.linearFilter()) {
                 linerFilter.set(req.linearFilter());
                 calculator.refresh();
             }
 
-            // Wait a tiny bit for NT subscribers to update
             try {
                 Thread.sleep(5);
             } catch (InterruptedException ignored) {
             }
 
-            // Setup State - Use real runtime so filters and extrapolated maps process properly
             double currentTime = System.currentTimeMillis() / 1000.0;
             Pose3d robotPose = new Pose3d(req.rX(), req.rY(), req.rZ(), new Rotation3d(0, 0, req.rRot()));
             Translation3d targetPos = new Translation3d(req.tX(), req.tY(), req.tZ());
             ChassisSpeeds speeds = new ChassisSpeeds(req.vX(), req.vY(), req.vOmega());
 
-            // Run Exact Calculator Math
             calculator.updateVelocityState(currentTime, speeds);
             ShotCalculator.ShotParameters result =
                     calculator.calculateShot(robotPose, targetPos, currentTime, 0.0, Math.PI / 2);
 
-            // Extract Turret info from the physical setup
             Pose3d turretPose = robotPose.transformBy(ShooterConstants.SHOOTER_OFFSET);
 
             double theta = result.rawLaunchAngleRad;
             double phi = result.turretAngle + robotPose.getRotation().getZ();
 
-            // Calculate Vector components
             double u = Math.cos(theta) * Math.cos(phi);
             double v = Math.cos(theta) * Math.sin(phi);
             double w = Math.sin(theta);
 
-            // Calculate the field-relative offset of the turret
             Translation2d robotRelOffset =
                     ShooterConstants.SHOOTER_OFFSET.getTranslation().toTranslation2d();
             Translation2d fieldRelOffset = robotRelOffset.rotateBy(
                     new Rotation2d(robotPose.getRotation().getZ()));
 
-            // Calculate the true linear velocity of the turret (Chassis V + Tangential V)
             double turretVx = speeds.vxMetersPerSecond - (speeds.omegaRadiansPerSecond * fieldRelOffset.getY());
             double turretVy = speeds.vyMetersPerSecond + (speeds.omegaRadiansPerSecond * fieldRelOffset.getX());
 
-            // True environmental velocities applied to the ball
             double vx = (result.ballVelocity * u) + turretVx;
             double vy = (result.ballVelocity * v) + turretVy;
             double vz = result.ballVelocity * w;
@@ -157,7 +164,6 @@ public class InteractiveShotVisualizer {
             double y0 = turretPose.getY() + (exitRadius * v);
             double z0 = turretPose.getZ() + (exitRadius * w);
 
-            // Simulate Trajectory physically through the air
             List<Double> xCoords = new ArrayList<>();
             List<Double> yCoords = new ArrayList<>();
             List<Double> zCoords = new ArrayList<>();
@@ -181,7 +187,6 @@ public class InteractiveShotVisualizer {
                 if (simZ < 0) break;
             }
 
-            // Package it all up and send back to the web UI
             SimResponse response = new SimResponse(
                     xCoords,
                     yCoords,
@@ -212,7 +217,6 @@ public class InteractiveShotVisualizer {
         }
     }
 
-    // 4. The HTML UI embedded directly into the Java file
     private static final String HTML_PAGE = """
         <!DOCTYPE html>
         <html>
@@ -295,7 +299,6 @@ public class InteractiveShotVisualizer {
                 renderer.setSize(container.clientWidth, container.clientHeight);
                 container.appendChild(renderer.domElement);
 
-                // Lighting & Grid
                 scene.add(new THREE.AmbientLight(0xffffff, 0.6));
                 const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
                 dirLight.position.set(5, 5, 10);
@@ -309,57 +312,59 @@ public class InteractiveShotVisualizer {
                 const robotGroup = new THREE.Group();
                 scene.add(robotGroup);
 
-                // Base Chassis
                 const chassisGeo = new THREE.BoxGeometry(0.7, 0.7, 0.11);
                 const chassisMat = new THREE.MeshStandardMaterial({ color: 0x00BFFF, wireframe: false });
                 const chassis = new THREE.Mesh(chassisGeo, chassisMat);
                 chassis.position.z = 0.055;
                 robotGroup.add(chassis);
 
-                // Front Indicator
                 const frontGeo = new THREE.BoxGeometry(0.3, 0.1, 0.12);
                 const frontMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
                 const frontIndicator = new THREE.Mesh(frontGeo, frontMat);
                 frontIndicator.position.set(0.35, 0, 0.06);
                 robotGroup.add(frontIndicator);
 
-                // Live Turret Pivot & Barrel
-                const turretGeo = new THREE.CylinderGeometry(0.2, 0.2, 0.1, 16);
-                const turretMat = new THREE.MeshStandardMaterial({ color: 0x555555 });
+                // --- Live Turret Pivot ---
                 const turretGroup = new THREE.Group();
-                turretGroup.position.set(0, 0, 0.16);
+                // Dynamically injected offsets from Java
+                turretGroup.position.set(TURRET_OFFSET_X, TURRET_OFFSET_Y, TURRET_OFFSET_Z);
+                robotGroup.add(turretGroup);
 
-                const turretBase = new THREE.Mesh(turretGeo, turretMat);
+                const turretBase = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.2, 0.2, 0.1, 16),
+                    new THREE.MeshStandardMaterial({ color: 0x555555 })
+                );
                 turretBase.rotation.x = Math.PI / 2;
                 turretGroup.add(turretBase);
+
+                // --- Hood/Barrel Pivot for Vertical Aiming ---
+                const hoodPivot = new THREE.Group();
+                hoodPivot.position.set(0, 0, 0.05);
+                turretGroup.add(hoodPivot);
 
                 const barrelGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.5);
                 const barrelMat = new THREE.MeshStandardMaterial({ color: 0x888888 });
                 const barrel = new THREE.Mesh(barrelGeo, barrelMat);
                 barrel.rotation.z = -Math.PI / 2;
-                barrel.position.set(0.25, 0, 0.05);
-                turretGroup.add(barrel);
-                robotGroup.add(turretGroup);
+                barrel.position.set(0.25, 0, 0);
+                hoodPivot.add(barrel);
 
-                // Target Box
                 const targetGeo = new THREE.BoxGeometry(1, 1, 1);
                 const targetMat = new THREE.MeshStandardMaterial({ color: 0xff4444, transparent: true, opacity: 0.5 });
                 const targetBox = new THREE.Mesh(targetGeo, targetMat);
                 scene.add(targetBox);
 
-                // Virtual Target Marker
                 const virtTargetMesh = new THREE.Mesh(new THREE.SphereGeometry(0.1), new THREE.MeshBasicMaterial({ color: 0xffa500 }));
                 scene.add(virtTargetMesh);
 
-                // Ghost Trajectory Line
                 const lineMat = new THREE.LineDashedMaterial({ color: 0x00ffff, dashSize: 0.2, gapSize: 0.1 });
                 let ghostLine = new THREE.Line(new THREE.BufferGeometry(), lineMat);
                 scene.add(ghostLine);
 
                 // --- CAMERA & POINTER LOCK STATE ---
-                let camYaw = Math.PI; // Start looking from behind
-                let camPitch = 0.4; // Look slightly down
-                const camRadius = 3.0; // Pushed out to 3 meters for a wider view
+                let camYaw = Math.PI;
+                let camPitch = 0.4;
+                const camRadius = 3.0;
                 let isPointerLocked = false;
 
                 container.addEventListener('click', () => {
@@ -382,8 +387,6 @@ public class InteractiveShotVisualizer {
                     const sensitivity = 0.003;
                     camYaw -= e.movementX * sensitivity;
                     camPitch -= e.movementY * sensitivity;
-
-                    // Clamp pitch so the camera doesn't flip upside down
                     camPitch = Math.max(0.05, Math.min(Math.PI / 2 - 0.05, camPitch));
                 });
 
@@ -421,7 +424,7 @@ public class InteractiveShotVisualizer {
                     });
                 }
 
-                // --- SERVER COMMUNICATION LOOP (20Hz) ---
+                // --- SERVER COMMUNICATION LOOP ---
                 setInterval(async () => {
                     const req = {
                         rX: state.x, rY: state.y, rZ: 0, rRot: state.rot,
@@ -447,7 +450,13 @@ public class InteractiveShotVisualizer {
                         document.getElementById('outRpm').innerText = latestSimData.calcRpm.toFixed(0);
                         document.getElementById('ballVelocity').innerText = latestSimData.ballVelocity.toFixed(0);
 
+                        // Horizontal Turret Aiming
                         turretGroup.rotation.z = latestSimData.calcTurretAngle * (Math.PI / 180);
+
+                        // Vertical Hood Aiming
+                        // Calculator sends calcHoodAngle = 90 - launchAngle
+                        const launchAngleRad = (90 - latestSimData.calcHoodAngle) * (Math.PI / 180);
+                        hoodPivot.rotation.y = -launchAngleRad;
 
                         virtTargetMesh.position.set(latestSimData.virtX, latestSimData.virtY, latestSimData.virtZ);
 
@@ -460,14 +469,13 @@ public class InteractiveShotVisualizer {
                     } catch (e) { console.error("Sim error", e); }
                 }, 50);
 
-                // --- MAIN GAME LOOP (60 FPS) ---
+                // --- MAIN GAME LOOP ---
                 const clock = new THREE.Clock();
 
                 function animate() {
                     requestAnimationFrame(animate);
                     const dt = clock.getDelta();
 
-                    // 1. Process Kinematic Inputs
                     const maxSpd = parseFloat(document.getElementById('maxSpeed').value);
                     const accel = parseFloat(document.getElementById('accel').value);
                     const maxOmg = parseFloat(document.getElementById('maxOmega').value);
@@ -510,22 +518,16 @@ public class InteractiveShotVisualizer {
                     robotGroup.position.set(state.x, state.y, 0);
                     robotGroup.rotation.z = state.rot;
 
-                    // 2. Classic 3rd Person Orbit Camera (Free Camera)
-                    const lookAtZ = 0.5; // Look slightly above the chassis
-
+                    const lookAtZ = 0.5;
                     const offsetX = Math.cos(camPitch) * Math.cos(camYaw) * camRadius;
                     const offsetY = Math.cos(camPitch) * Math.sin(camYaw) * camRadius;
                     const offsetZ = Math.sin(camPitch) * camRadius;
 
-                    // Apply offset relative to the ROBOT
                     camera.position.x = state.x - offsetX;
                     camera.position.y = state.y - offsetY;
                     camera.position.z = lookAtZ + offsetZ;
-
-                    // ALWAYS look directly at the ROBOT
                     camera.lookAt(state.x, state.y, lookAtZ);
 
-                    // 3. Update Environment
                     const tX = parseFloat(document.getElementById('tX').value);
                     const tY = parseFloat(document.getElementById('tY').value);
                     const tZ = parseFloat(document.getElementById('tZ').value);
@@ -534,7 +536,6 @@ public class InteractiveShotVisualizer {
                     targetBox.scale.set(tSize, tSize, tZ);
                     targetBox.position.set(tX, tY, tZ / 2);
 
-                    // 4. Update active balls
                     for (let i = activeBalls.length - 1; i >= 0; i--) {
                         let b = activeBalls[i];
                         if (b.frame < b.trajX.length) {
