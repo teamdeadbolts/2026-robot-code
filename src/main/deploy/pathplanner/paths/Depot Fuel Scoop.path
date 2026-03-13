@@ -8,8 +8,8 @@
       },
       "prevControl": null,
       "nextControl": {
-        "x": 7.936097718331087,
-        "y": 5.818031828703704
+        "x": 7.977836299189816,
+        "y": 5.5135333478009265
       },
       "isLocked": false,
       "linkedName": null
@@ -20,8 +20,8 @@
         "y": 4.702652777777778
       },
       "prevControl": {
-        "x": 7.878370732060185,
-        "y": 5.39878052662037
+        "x": 7.931580873842593,
+        "y": 5.014434027777778
       },
       "nextControl": null,
       "isLocked": false,
@@ -40,21 +40,21 @@
     }
   ],
   "globalConstraints": {
-    "maxVelocity": 0.4,
-    "maxAcceleration": 3.0,
-    "maxAngularVelocity": 540.0,
+    "maxVelocity": 0.8,
+    "maxAcceleration": 2.0,
+    "maxAngularVelocity": 410.0,
     "maxAngularAcceleration": 720.0,
     "nominalVoltage": 12.0,
     "unlimited": false
   },
   "goalEndState": {
-    "velocity": 1.0,
-    "rotation": -96.57355596842575
+    "velocity": 0.8,
+    "rotation": -106.39710305808859
   },
   "reversed": false,
   "folder": "Depot Side",
   "idealStartingState": {
-    "velocity": 1.0,
+    "velocity": 0.8,
     "rotation": -76.8886630152505
   },
   "useDefaultConstraints": false

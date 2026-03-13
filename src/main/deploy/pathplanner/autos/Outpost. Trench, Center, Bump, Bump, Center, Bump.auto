@@ -7,19 +7,19 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Depot Trench to Center"
+            "pathName": "Outpost Trench to Center"
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "Depot Fuel Scoop"
+            "pathName": "Outpost Fuel Scoop"
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "Depot Center to Zone"
+            "pathName": "Outpost Center to Zone"
           }
         },
         {
@@ -31,25 +31,25 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Depot Bump to Center"
+            "pathName": "Outpost Bump to Center"
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "Depot Fuel Scoop"
+            "pathName": "Outpost Fuel Scoop"
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "Depot Center to Zone"
+            "pathName": "Outpost Center to Zone"
           }
         }
       ]
     }
   },
   "resetOdom": true,
-  "folder": "Depot",
+  "folder": "Outpost",
   "choreoAuto": false
 }
