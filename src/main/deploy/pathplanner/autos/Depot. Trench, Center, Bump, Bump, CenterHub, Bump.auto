@@ -31,19 +31,19 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Depot Bump to Center"
+            "pathName": "Depot Bump to CenterHub"
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "Depot Fuel Scoop"
+            "pathName": "Depot Close Pass"
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "Depot Center to Zone"
+            "pathName": "Depot CenterHub to Bump"
           }
         }
       ]

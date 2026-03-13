@@ -3,38 +3,55 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 3.4517593315972226,
-        "y": 4.005737702546297
+        "x": 5.874428240740741,
+        "y": 3.933500506365741
       },
       "prevControl": null,
       "nextControl": {
-        "x": 2.738642699279918,
-        "y": 4.00867702782792
+        "x": 6.308441912615741,
+        "y": 5.430404803240741
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 2.030897641782408,
-        "y": 4.005737702546297
+        "x": 3.486467303240741,
+        "y": 5.508940610532408
       },
       "prevControl": {
-        "x": 2.474819876423627,
-        "y": 4.002371270354453
+        "x": 5.788347222222223,
+        "y": 5.325821614583333
       },
       "nextControl": null,
       "isLocked": false,
       "linkedName": null
     }
   ],
-  "rotationTargets": [],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.32806332236842084,
+      "rotationDegrees": -56.96002073309509
+    }
+  ],
   "constraintZones": [],
   "pointTowardsZones": [],
   "eventMarkers": [
     {
+      "name": "StopIntake",
+      "waypointRelativePos": 0.15828747923588052,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
+      "name": "SpinUp",
+      "waypointRelativePos": 0.1961041320598006,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
       "name": "Shoot",
-      "waypointRelativePos": 0.7670395556478407,
+      "waypointRelativePos": 0.9782366071428573,
       "endWaypointRelativePos": null,
       "command": null
     }
@@ -49,13 +66,13 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": 0.0
+    "rotation": -65.2239817227378
   },
   "reversed": false,
-  "folder": "Center",
+  "folder": "Depot Side",
   "idealStartingState": {
     "velocity": 0,
-    "rotation": 0.0
+    "rotation": -44.43499369398368
   },
   "useDefaultConstraints": true
 }
