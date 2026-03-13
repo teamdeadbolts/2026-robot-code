@@ -139,9 +139,18 @@ public class RobotContainer {
 
         primaryController.x().whileTrue(new RunCommand(() -> swerveSubsystem.resetGyro(), swerveSubsystem));
 
-        primaryController.a().whileTrue(new RunCommand(() -> shooterSubsystem.setState(ShooterSubsystem.State.TEST), shooterSubsystem));
-                primaryController.y().whileTrue(new RunCommand(() -> { shooterSubsystem.setState(ShooterSubsystem.State.TEST); indexerSubsystem.setState(IndexerSubsystem.State.SHOOT); }, shooterSubsystem));
-
+        primaryController
+                .a()
+                .whileTrue(
+                        new RunCommand(() -> shooterSubsystem.setState(ShooterSubsystem.State.TEST), shooterSubsystem));
+        primaryController
+                .y()
+                .whileTrue(new RunCommand(
+                        () -> {
+                            shooterSubsystem.setState(ShooterSubsystem.State.TEST);
+                            indexerSubsystem.setState(IndexerSubsystem.State.SHOOT);
+                        },
+                        shooterSubsystem));
 
         // Secondary Controller
         secondaryController

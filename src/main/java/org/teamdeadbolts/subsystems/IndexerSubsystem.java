@@ -40,13 +40,6 @@ public class IndexerSubsystem extends StatefulSubsystem<IndexerSubsystem.State> 
 
     public IndexerSubsystem() {
         this.targetState = State.OFF;
-
-        // Register tuning parameters for real-time updates
-        floorMotorIntakeVolts.addRefreshable(this);
-        floorMotorShootVolts.addRefreshable(this);
-        floorMotorJiggleVolts.addRefreshable(this);
-        kickerMotorShootVolts.addRefreshable(this);
-        jiggleFrequency.addRefreshable(this);
     }
 
     @Override

@@ -26,6 +26,8 @@ public class InteractiveShotVisualizer {
             SavedLoggedNetworkNumber.get("Tuning/Shooter/TimeToKeepVelMs", 1000);
     private static final SavedLoggedNetworkNumber airResistanceMultiplier =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/airResistanceMultiplier", 0.01);
+    private static final SavedLoggedNetworkNumber linerFilter =
+            SavedLoggedNetworkNumber.get("Tuning/Shooter/LinearFilter", 5);
 
     // 1. Define the Data Structures to communicate with the web UI
     public record SimRequest(
@@ -44,7 +46,8 @@ public class InteractiveShotVisualizer {
             double maxImpact,
             double latencyMs,
             double timeToKeep,
-            double airRes) {}
+            double airRes,
+            double linearFilter) {}
 
     public record SimResponse(
             List<Double> xCoords,
@@ -100,7 +103,11 @@ public class InteractiveShotVisualizer {
             timeToKeepVel.set(req.timeToKeep());
             airResistanceMultiplier.set(req.airRes());
 
-            // Wait a tiny bit for NT subscribers to update
+            // Rebuild filters if the size changed
+            if (linerFilter.get() != req.linearFilter()) {
+                linerFilter.set(req.linearFilter());
+                calculator.refresh();
+            }
 
             // Wait a tiny bit for NT subscribers to update
             try {
@@ -108,22 +115,19 @@ public class InteractiveShotVisualizer {
             } catch (InterruptedException ignored) {
             }
 
-            // Setup State
-            double simulationTime = 1.0;
+            // Setup State - Use real runtime so filters and extrapolated maps process properly
+            double currentTime = System.currentTimeMillis() / 1000.0;
             Pose3d robotPose = new Pose3d(req.rX(), req.rY(), req.rZ(), new Rotation3d(0, 0, req.rRot()));
             Translation3d targetPos = new Translation3d(req.tX(), req.tY(), req.tZ());
             ChassisSpeeds speeds = new ChassisSpeeds(req.vX(), req.vY(), req.vOmega());
 
             // Run Exact Calculator Math
-            calculator.updateVelocityState(simulationTime, speeds);
+            calculator.updateVelocityState(currentTime, speeds);
             ShotCalculator.ShotParameters result =
-                    calculator.calculateShot(robotPose, targetPos, simulationTime, 0.0, Math.PI / 2);
+                    calculator.calculateShot(robotPose, targetPos, currentTime, 0.0, Math.PI / 2);
 
-            // Extract Turret info
+            // Extract Turret info from the physical setup
             Pose3d turretPose = robotPose.transformBy(ShooterConstants.SHOOTER_OFFSET);
-            double distFromPivot =
-                    turretPose.getTranslation().toTranslation2d().getDistance(targetPos.toTranslation2d());
-            double pureV0 = result.ballVelocity / (1 + (req.airRes() * distFromPivot));
 
             double theta = result.rawLaunchAngleRad;
             double phi = result.turretAngle + robotPose.getRotation().getZ();
@@ -144,30 +148,37 @@ public class InteractiveShotVisualizer {
             double turretVy = speeds.vyMetersPerSecond + (speeds.omegaRadiansPerSecond * fieldRelOffset.getX());
 
             // True environmental velocities applied to the ball
-            double vx = (pureV0 * u) + turretVx;
-            double vy = (pureV0 * v) + turretVy;
-            double vz = pureV0 * w;
+            double vx = (result.ballVelocity * u) + turretVx;
+            double vy = (result.ballVelocity * v) + turretVy;
+            double vz = result.ballVelocity * w;
 
             double exitRadius = ShooterConstants.EXIT_RADIUS_METERS;
             double x0 = turretPose.getX() + (exitRadius * u);
             double y0 = turretPose.getY() + (exitRadius * v);
             double z0 = turretPose.getZ() + (exitRadius * w);
 
-            // Simulate Trajectory
+            // Simulate Trajectory physically through the air
             List<Double> xCoords = new ArrayList<>();
             List<Double> yCoords = new ArrayList<>();
             List<Double> zCoords = new ArrayList<>();
             double g = 9.81;
 
-            for (double t = 0; t <= 3.0; t += 0.02) {
-                double x = x0 + (vx * t);
-                double y = y0 + (vy * t);
-                double z = z0 + (vz * t) - (0.5 * g * Math.pow(t, 2));
+            double simX = x0;
+            double simY = y0;
+            double simZ = z0;
+            double dt = 0.02;
 
-                xCoords.add(x);
-                yCoords.add(y);
-                zCoords.add(z);
-                if (z < 0) break;
+            for (double t = 0; t <= 3.0; t += dt) {
+                xCoords.add(simX);
+                yCoords.add(simY);
+                zCoords.add(simZ);
+
+                simX += vx * dt;
+                simY += vy * dt;
+                simZ += vz * dt;
+                vz -= g * dt;
+
+                if (simZ < 0) break;
             }
 
             // Package it all up and send back to the web UI
@@ -207,128 +218,344 @@ public class InteractiveShotVisualizer {
         <html>
         <head>
             <meta charset="UTF-8">
-            <title>Interactive Shot Calculator</title>
-            <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+            <title>Three.js Shot Visualizer</title>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
             <style>
-                body { margin: 0; display: flex; font-family: sans-serif; background: #111; color: #ddd; }
-                #sidebar { width: 350px; padding: 20px; background: #222; height: 100vh; overflow-y: auto; box-sizing: border-box;}
-                #plot { flex-grow: 1; height: 100vh; }
-                .control-group { margin-bottom: 15px; }
+                body { margin: 0; display: flex; font-family: sans-serif; background: #111; color: #ddd; overflow: hidden; }
+                #sidebar { width: 350px; padding: 20px; background: #222; height: 100vh; overflow-y: auto; box-sizing: border-box; z-index: 10; border-right: 2px solid #444;}
+                #canvas-container { flex-grow: 1; height: 100vh; position: relative; }
+                .control-group { margin-bottom: 12px; }
                 .control-group label { display: block; font-size: 12px; margin-bottom: 5px; color: #aaa;}
-
-                /* Styling for the new number inputs */
-                .control-group input[type="number"] {
-                    width: 100%; padding: 5px; box-sizing: border-box;
-                    background: #333; color: cyan; border: 1px solid #555;
-                    border-radius: 4px; font-weight: bold;
-                }
-
+                .control-group input[type="number"] { width: 100%; padding: 5px; box-sizing: border-box; background: #333; color: cyan; border: 1px solid #555; border-radius: 4px; font-weight: bold; }
                 .val-display { float: right; color: cyan; font-weight: bold; }
-                h3 { margin-top: 0; border-bottom: 1px solid #444; padding-bottom: 5px; }
+                h3 { margin-top: 0; border-bottom: 1px solid #444; padding-bottom: 5px; font-size: 16px; color: #fff;}
                 .stats { background: #000; padding: 10px; border-radius: 5px; border: 1px solid #333; margin-top: 20px; }
                 .stats div { margin-bottom: 5px; font-size: 14px; }
                 .stats span { color: #0f0; font-weight: bold; }
+                #overlay { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.8); padding: 15px; border-radius: 5px; pointer-events: none; color: white; border: 1px solid #555;}
+                .key { display: inline-block; background: #eee; color: #000; padding: 2px 6px; border-radius: 3px; font-weight: bold; margin: 2px;}
             </style>
         </head>
         <body>
             <div id="sidebar">
-                <h3>Robot Pose</h3>
-                <div class="control-group"><label>X Position (m) <span id="rXVal" class="val-display">0</span></label><input type="number" id="rX" min="-5" max="5" step="0.1" value="0" oninput="updateUI()"></div>
-                <div class="control-group"><label>Y Position (m) <span id="rYVal" class="val-display">-0.5</span></label><input type="number" id="rY" min="-5" max="5" step="0.1" value="0.0" oninput="updateUI()"></div>
-                <div class="control-group"><label>Rotation (rad) <span id="rRotVal" class="val-display">0</span></label><input type="number" id="rRot" min="-3.14" max="3.14" step="0.05" value="0" oninput="updateUI()"></div>
+                <h3>Robot Pose (Live)</h3>
+                <div class="control-group"><label>X Pos (m) <span id="rXVal" class="val-display">0</span></label><input type="number" id="rX" value="0" disabled></div>
+                <div class="control-group"><label>Y Pos (m) <span id="rYVal" class="val-display">0</span></label><input type="number" id="rY" value="0" disabled></div>
+                <div class="control-group"><label>Rot (rad) <span id="rRotVal" class="val-display">0</span></label><input type="number" id="rRot" value="0" disabled></div>
 
-                <h3>Robot Speeds</h3>
-                <div class="control-group"><label>Vx (m/s) <span id="vXVal" class="val-display">0</span></label><input type="number" id="vX" min="-5" max="5" step="0.1" value="0" oninput="updateUI()"></div>
-                <div class="control-group"><label>Vy (m/s) <span id="vYVal" class="val-display">0</span></label><input type="number" id="vY" min="-5" max="5" step="0.1" value="0" oninput="updateUI()"></div>
-                <div class="control-group"><label>Omega (rad/s) <span id="vOmegaVal" class="val-display">0</span></label><input type="number" id="vOmega" min="-3.14" max="3.14" step="0.1" value="0" oninput="updateUI()"></div>
+                <h3>Drive Kinematics</h3>
+                <div class="control-group"><label>Max Speed (m/s)</label><input type="number" id="maxSpeed" value="4.0" step="0.5"></div>
+                <div class="control-group"><label>Acceleration (m/s²)</label><input type="number" id="accel" value="8.0" step="0.5"></div>
+                <div class="control-group"><label>Max Rot Speed (rad/s)</label><input type="number" id="maxOmega" value="3.14" step="0.5"></div>
 
-                <h3>Target Position</h3>
-                <div class="control-group"><label>Target X (m) <span id="tXVal" class="val-display">3.0</span></label><input type="number" id="tX" min="-10" max="10" step="0.1" value="1.0" oninput="updateUI()"></div>
-                <div class="control-group"><label>Target Y (m) <span id="tYVal" class="val-display">5.0</span></label><input type="number" id="tY" min="-10" max="10" step="0.1" value="1.0" oninput="updateUI()"></div>
-                <div class="control-group"><label>Target Z (m) <span id="tZVal" class="val-display">2.0</span></label><input type="number" id="tZ" min="0" max="4" step="0.1" value="1.8288" oninput="updateUI()"></div>
+                <h3>Target Dimensions</h3>
+                <div class="control-group"><label>Center X (m)</label><input type="number" id="tX" step="0.1" value="3.0"></div>
+                <div class="control-group"><label>Center Y (m)</label><input type="number" id="tY" step="0.1" value="0.0"></div>
+                <div class="control-group"><label>Height (Z) (m)</label><input type="number" id="tZ" step="0.1" value="2.0"></div>
+                <div class="control-group"><label>Side Width (m)</label><input type="number" id="tSize" step="0.1" value="1.0"></div>
 
-                <h3>Tuning & NetworkTables</h3>
-                <div class="control-group"><label>Calc Iterations</label><input type="number" id="calcIters" value="30" step="1" onchange="runSimulation()"></div>
-                <div class="control-group"><label>Min Impact Angle (°)</label><input type="number" id="minImpact" value="50" step="1" onchange="runSimulation()"></div>
-                <div class="control-group"><label>Max Impact Angle (°)</label><input type="number" id="maxImpact" value="90" step="1" onchange="runSimulation()"></div>
-                <div class="control-group"><label>Shoot Latency (ms)</label><input type="number" id="latencyMs" value="0" step="1" onchange="runSimulation()"></div>
-                <div class="control-group"><label>Time to Keep Vel (ms)</label><input type="number" id="timeToKeep" value="1000" step="100" onchange="runSimulation()"></div>
-                <div class="control-group"><label>Air Resistance Multiplier</label><input type="number" id="airRes" value="0.01" step="0.001" onchange="runSimulation()"></div>
+                <h3>Tuning</h3>
+                <div class="control-group"><label>Air Resistance</label><input type="number" id="airRes" value="0.01" step="0.001"></div>
+                <div class="control-group"><label>Calc Iterations</label><input type="number" id="calcIters" value="30" step="1"></div>
+                <div class="control-group"><label>Min Impact Angle (°)</label><input type="number" id="minImpact" value="50" step="1"></div>
+                <div class="control-group"><label>Max Impact Angle (°)</label><input type="number" id="maxImpact" value="90" step="1"></div>
+                <div class="control-group"><label>Shoot Latency (ms)</label><input type="number" id="latencyMs" value="0" step="1"></div>
+                <div class="control-group"><label>Time to Keep Vel (ms)</label><input type="number" id="timeToKeep" value="1000" step="100"></div>
+                <div class="control-group"><label>Linear Filter Size</label><input type="number" id="linearFilter" value="5" step="1"></div>
 
                 <div class="stats">
                     <div>Hood Angle: <span id="outHood">0.0</span>°</div>
                     <div>Turret Angle: <span id="outTurret">0.0</span>°</div>
                     <div>Wheel RPM: <span id="outRpm">0</span> RPM</div>
-                    <div>Ball Velocity: <span id="ballVelocity">0</span> m/s</div>
-                    <div>Impact Angle: <span id="impactAngle">0.0</span>°</div>
+                    <div>Ball Vel: <span id="ballVelocity">0</span> m/s</div>
                 </div>
             </div>
 
-            <div id="plot"></div>
+            <div id="canvas-container">
+                <div id="overlay">
+                    <b style="color: #00BFFF; font-size: 16px;">Click 3D area to lock mouse!</b><br><br>
+                    <span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> - Field Relative Drive<br>
+                    <span class="key">Q</span><span class="key">E</span> - Rotate Robot<br>
+                    <span class="key">MOUSE</span> - Free Orbit Camera<br>
+                    <span class="key">SPACE</span> - Shoot Ball<br>
+                    <span class="key">ESC</span> - Unlock Mouse
+                </div>
+            </div>
 
             <script>
-                const layout = {
-                    title: 'Live Shot Trajectory',
-                    scene: { aspectmode: 'data', xaxis: {title: 'X'}, yaxis: {title: 'Y'}, zaxis: {title: 'Z'} },
-                    paper_bgcolor: '#111', font: {color: 'white'}
-                };
-                Plotly.newPlot('plot', [], layout);
+                // --- THREE.JS SETUP ---
+                const container = document.getElementById('canvas-container');
+                const scene = new THREE.Scene();
+                scene.background = new THREE.Color('#111111');
 
-                function updateUI() {
-                    ['rX','rY','rRot','vX','vY','vOmega','tX','tY','tZ'].forEach(id => {
-                        document.getElementById(id+'Val').innerText = document.getElementById(id).value;
+                THREE.Object3D.DefaultUp.set(0, 0, 1);
+                const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 100);
+
+                const renderer = new THREE.WebGLRenderer({ antialias: true });
+                renderer.setSize(container.clientWidth, container.clientHeight);
+                container.appendChild(renderer.domElement);
+
+                // Lighting & Grid
+                scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+                const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+                dirLight.position.set(5, 5, 10);
+                scene.add(dirLight);
+
+                const grid = new THREE.GridHelper(30, 30, 0x444444, 0x222222);
+                grid.rotation.x = Math.PI / 2;
+                scene.add(grid);
+
+                // --- ROBOT & ENVIRONMENT MESHES ---
+                const robotGroup = new THREE.Group();
+                scene.add(robotGroup);
+
+                // Base Chassis
+                const chassisGeo = new THREE.BoxGeometry(0.7, 0.7, 0.11);
+                const chassisMat = new THREE.MeshStandardMaterial({ color: 0x00BFFF, wireframe: false });
+                const chassis = new THREE.Mesh(chassisGeo, chassisMat);
+                chassis.position.z = 0.055;
+                robotGroup.add(chassis);
+
+                // Front Indicator
+                const frontGeo = new THREE.BoxGeometry(0.3, 0.1, 0.12);
+                const frontMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+                const frontIndicator = new THREE.Mesh(frontGeo, frontMat);
+                frontIndicator.position.set(0.35, 0, 0.06);
+                robotGroup.add(frontIndicator);
+
+                // Live Turret Pivot & Barrel
+                const turretGeo = new THREE.CylinderGeometry(0.2, 0.2, 0.1, 16);
+                const turretMat = new THREE.MeshStandardMaterial({ color: 0x555555 });
+                const turretGroup = new THREE.Group();
+                turretGroup.position.set(0, 0, 0.16);
+
+                const turretBase = new THREE.Mesh(turretGeo, turretMat);
+                turretBase.rotation.x = Math.PI / 2;
+                turretGroup.add(turretBase);
+
+                const barrelGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.5);
+                const barrelMat = new THREE.MeshStandardMaterial({ color: 0x888888 });
+                const barrel = new THREE.Mesh(barrelGeo, barrelMat);
+                barrel.rotation.z = -Math.PI / 2;
+                barrel.position.set(0.25, 0, 0.05);
+                turretGroup.add(barrel);
+                robotGroup.add(turretGroup);
+
+                // Target Box
+                const targetGeo = new THREE.BoxGeometry(1, 1, 1);
+                const targetMat = new THREE.MeshStandardMaterial({ color: 0xff4444, transparent: true, opacity: 0.5 });
+                const targetBox = new THREE.Mesh(targetGeo, targetMat);
+                scene.add(targetBox);
+
+                // Virtual Target Marker
+                const virtTargetMesh = new THREE.Mesh(new THREE.SphereGeometry(0.1), new THREE.MeshBasicMaterial({ color: 0xffa500 }));
+                scene.add(virtTargetMesh);
+
+                // Ghost Trajectory Line
+                const lineMat = new THREE.LineDashedMaterial({ color: 0x00ffff, dashSize: 0.2, gapSize: 0.1 });
+                let ghostLine = new THREE.Line(new THREE.BufferGeometry(), lineMat);
+                scene.add(ghostLine);
+
+                // --- CAMERA & POINTER LOCK STATE ---
+                let camYaw = Math.PI; // Start looking from behind
+                let camPitch = 0.4; // Look slightly down
+                const camRadius = 3.0; // Pushed out to 3 meters for a wider view
+                let isPointerLocked = false;
+
+                container.addEventListener('click', () => {
+                    container.requestPointerLock();
+                });
+
+                document.addEventListener('pointerlockchange', () => {
+                    isPointerLocked = (document.pointerLockElement === container);
+                    const overlay = document.getElementById('overlay');
+                    if (isPointerLocked) {
+                        overlay.style.opacity = '0.3';
+                    } else {
+                        overlay.style.opacity = '1.0';
+                    }
+                });
+
+                document.addEventListener('mousemove', (e) => {
+                    if (!isPointerLocked) return;
+
+                    const sensitivity = 0.003;
+                    camYaw -= e.movementX * sensitivity;
+                    camPitch -= e.movementY * sensitivity;
+
+                    // Clamp pitch so the camera doesn't flip upside down
+                    camPitch = Math.max(0.05, Math.min(Math.PI / 2 - 0.05, camPitch));
+                });
+
+                // --- KINEMATICS & STATE ---
+                let state = { x: -4, y: 0, rot: 0, vx: 0, vy: 0, omega: 0 };
+                const keys = { w: false, a: false, s: false, d: false, q: false, e: false, space: false };
+                let latestSimData = null;
+                const activeBalls = [];
+
+                window.addEventListener('keydown', (e) => {
+                    const k = e.key.toLowerCase();
+                    if(keys.hasOwnProperty(k)) keys[k] = true;
+                    if(e.code === 'Space') shootBall();
+                });
+                window.addEventListener('keyup', (e) => {
+                    const k = e.key.toLowerCase();
+                    if(keys.hasOwnProperty(k)) keys[k] = false;
+                });
+
+                function shootBall() {
+                    if (!latestSimData) return;
+
+                    const ballMesh = new THREE.Mesh(
+                        new THREE.SphereGeometry(0.12),
+                        new THREE.MeshStandardMaterial({ color: 0xffff00 })
+                    );
+                    scene.add(ballMesh);
+
+                    activeBalls.push({
+                        mesh: ballMesh,
+                        trajX: latestSimData.xCoords,
+                        trajY: latestSimData.yCoords,
+                        trajZ: latestSimData.zCoords,
+                        frame: 0
                     });
-                    runSimulation();
                 }
 
-                async function runSimulation() {
+                // --- SERVER COMMUNICATION LOOP (20Hz) ---
+                setInterval(async () => {
                     const req = {
-                        rX: parseFloat(document.getElementById('rX').value),
-                        rY: parseFloat(document.getElementById('rY').value),
-                        rZ: 0,
-                        rRot: parseFloat(document.getElementById('rRot').value),
+                        rX: state.x, rY: state.y, rZ: 0, rRot: state.rot,
+                        vX: state.vx, vY: state.vy, vOmega: state.omega,
                         tX: parseFloat(document.getElementById('tX').value),
                         tY: parseFloat(document.getElementById('tY').value),
                         tZ: parseFloat(document.getElementById('tZ').value),
-                        vX: parseFloat(document.getElementById('vX').value),
-                        vY: parseFloat(document.getElementById('vY').value),
-                        vOmega: parseFloat(document.getElementById('vOmega').value),
-
-                        // Parse the new text boxes
                         calcIters: parseFloat(document.getElementById('calcIters').value),
                         minImpact: parseFloat(document.getElementById('minImpact').value),
                         maxImpact: parseFloat(document.getElementById('maxImpact').value),
                         latencyMs: parseFloat(document.getElementById('latencyMs').value),
                         timeToKeep: parseFloat(document.getElementById('timeToKeep').value),
                         airRes: parseFloat(document.getElementById('airRes').value),
+                        linearFilter: parseFloat(document.getElementById('linearFilter').value),
                     };
 
-                    const res = await fetch('/simulate', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify(req)
-                    });
+                    try {
+                        const res = await fetch('/simulate', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(req) });
+                        latestSimData = await res.json();
 
-                    const data = await res.json();
+                        document.getElementById('outHood').innerText = latestSimData.calcHoodAngle.toFixed(2);
+                        document.getElementById('outTurret').innerText = latestSimData.calcTurretAngle.toFixed(2);
+                        document.getElementById('outRpm').innerText = latestSimData.calcRpm.toFixed(0);
+                        document.getElementById('ballVelocity').innerText = latestSimData.ballVelocity.toFixed(0);
 
-                    document.getElementById('outHood').innerText = data.calcHoodAngle.toFixed(2);
-                    document.getElementById('outTurret').innerText = data.calcTurretAngle.toFixed(2);
-                    document.getElementById('outRpm').innerText = data.calcRpm.toFixed(0);
-                    document.getElementById('impactAngle').innerText = data.impactAngle.toFixed(2);
-                    document.getElementById('ballVelocity').innerText = data.ballVelocity.toFixed(0);
+                        turretGroup.rotation.z = latestSimData.calcTurretAngle * (Math.PI / 180);
 
-                    const traces = [
-                        { x: data.xCoords, y: data.yCoords, z: data.zCoords, mode: 'lines', type: 'scatter3d', name: 'Ball Path', line: {width: 6, color: 'cyan'} },
-                        { x: [data.startX], y: [data.startY], z: [data.startZ], mode: 'markers', type: 'scatter3d', name: 'Turret Start', marker: {size: 8, color: 'green'} },
-                        { x: [data.targetX], y: [data.targetY], z: [data.targetZ], mode: 'markers', type: 'scatter3d', name: 'Actual Target', marker: {size: 8, color: 'red'} },
-                        { x: [data.virtX], y: [data.virtY], z: [data.virtZ], mode: 'markers', type: 'scatter3d', name: 'Virtual Target', marker: {size: 6, color: 'onumber', symbol: 'cross'} },
-                        { type: 'cone', x: [data.startX], y: [data.startY], z: [data.startZ], u: [data.aimU], v: [data.aimV], w: [data.aimW], sizemode: 'absolute', sizeref: 0.6, anchor: 'tail', showscale: false, colorscale: [[0, 'yellow'], [1, 'yellow']], name: 'Turret Aim' }
-                    ];
+                        virtTargetMesh.position.set(latestSimData.virtX, latestSimData.virtY, latestSimData.virtZ);
 
-                    Plotly.react('plot', traces, layout);
+                        const pts = [];
+                        for(let i=0; i<latestSimData.xCoords.length; i++){
+                            pts.push(new THREE.Vector3(latestSimData.xCoords[i], latestSimData.yCoords[i], latestSimData.zCoords[i]));
+                        }
+                        ghostLine.geometry.setFromPoints(pts);
+                        ghostLine.computeLineDistances();
+                    } catch (e) { console.error("Sim error", e); }
+                }, 50);
+
+                // --- MAIN GAME LOOP (60 FPS) ---
+                const clock = new THREE.Clock();
+
+                function animate() {
+                    requestAnimationFrame(animate);
+                    const dt = clock.getDelta();
+
+                    // 1. Process Kinematic Inputs
+                    const maxSpd = parseFloat(document.getElementById('maxSpeed').value);
+                    const accel = parseFloat(document.getElementById('accel').value);
+                    const maxOmg = parseFloat(document.getElementById('maxOmega').value);
+
+                    let inputX = (keys.w ? 1 : 0) - (keys.s ? 1 : 0);
+                    let inputY = (keys.a ? 1 : 0) - (keys.d ? 1 : 0);
+
+                    if(inputX !== 0 || inputY !== 0) {
+                        const len = Math.sqrt(inputX*inputX + inputY*inputY);
+                        inputX /= len; inputY /= len;
+                    }
+
+                    const targetVx = inputX * maxSpd;
+                    const targetVy = inputY * maxSpd;
+
+                    const moveTowards = (current, target, step) => {
+                        if (current < target) return Math.min(current + step, target);
+                        if (current > target) return Math.max(current - step, target);
+                        return current;
+                    };
+
+                    state.vx = moveTowards(state.vx, targetVx, accel * dt);
+                    state.vy = moveTowards(state.vy, targetVy, accel * dt);
+
+                    let inputRot = (keys.q ? 1 : 0) - (keys.e ? 1 : 0);
+                    const targetOmega = inputRot * maxOmg;
+                    state.omega = moveTowards(state.omega, targetOmega, accel * 1.5 * dt);
+
+                    state.x += state.vx * dt;
+                    state.y += state.vy * dt;
+                    state.rot += state.omega * dt;
+
+                    document.getElementById('rX').value = state.x.toFixed(2);
+                    document.getElementById('rXVal').innerText = state.x.toFixed(2);
+                    document.getElementById('rY').value = state.y.toFixed(2);
+                    document.getElementById('rYVal').innerText = state.y.toFixed(2);
+                    document.getElementById('rRot').value = state.rot.toFixed(2);
+                    document.getElementById('rRotVal').innerText = state.rot.toFixed(2);
+
+                    robotGroup.position.set(state.x, state.y, 0);
+                    robotGroup.rotation.z = state.rot;
+
+                    // 2. Classic 3rd Person Orbit Camera (Free Camera)
+                    const lookAtZ = 0.5; // Look slightly above the chassis
+
+                    const offsetX = Math.cos(camPitch) * Math.cos(camYaw) * camRadius;
+                    const offsetY = Math.cos(camPitch) * Math.sin(camYaw) * camRadius;
+                    const offsetZ = Math.sin(camPitch) * camRadius;
+
+                    // Apply offset relative to the ROBOT
+                    camera.position.x = state.x - offsetX;
+                    camera.position.y = state.y - offsetY;
+                    camera.position.z = lookAtZ + offsetZ;
+
+                    // ALWAYS look directly at the ROBOT
+                    camera.lookAt(state.x, state.y, lookAtZ);
+
+                    // 3. Update Environment
+                    const tX = parseFloat(document.getElementById('tX').value);
+                    const tY = parseFloat(document.getElementById('tY').value);
+                    const tZ = parseFloat(document.getElementById('tZ').value);
+                    const tSize = parseFloat(document.getElementById('tSize').value);
+
+                    targetBox.scale.set(tSize, tSize, tZ);
+                    targetBox.position.set(tX, tY, tZ / 2);
+
+                    // 4. Update active balls
+                    for (let i = activeBalls.length - 1; i >= 0; i--) {
+                        let b = activeBalls[i];
+                        if (b.frame < b.trajX.length) {
+                            b.mesh.position.set(b.trajX[b.frame], b.trajY[b.frame], b.trajZ[b.frame]);
+                            b.frame++;
+                        } else {
+                            scene.remove(b.mesh);
+                            activeBalls.splice(i, 1);
+                        }
+                    }
+
+                    renderer.render(scene, camera);
                 }
 
-                updateUI();
+                window.addEventListener('resize', () => {
+                    camera.aspect = container.clientWidth / container.clientHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(container.clientWidth, container.clientHeight);
+                });
+
+                animate();
             </script>
         </body>
         </html>
