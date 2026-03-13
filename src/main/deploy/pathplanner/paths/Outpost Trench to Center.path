@@ -39,27 +39,27 @@
   "eventMarkers": [
     {
       "name": "Intake",
-      "waypointRelativePos": 0.37956810631229226,
+      "waypointRelativePos": 0.1903291112956811,
       "endWaypointRelativePos": null,
       "command": null
     },
     {
       "name": "HopperUp",
-      "waypointRelativePos": 0.45006229235880424,
+      "waypointRelativePos": 0.4225368563122924,
       "endWaypointRelativePos": null,
       "command": null
     }
   ],
   "globalConstraints": {
-    "maxVelocity": 2.0,
-    "maxAcceleration": 6.0,
-    "maxAngularVelocity": 540.0,
+    "maxVelocity": 5.0,
+    "maxAcceleration": 5.0,
+    "maxAngularVelocity": 410.0,
     "maxAngularAcceleration": 720.0,
     "nominalVoltage": 12.0,
     "unlimited": false
   },
   "goalEndState": {
-    "velocity": 0.4,
+    "velocity": 2.0,
     "rotation": 73.67
   },
   "reversed": false,
@@ -68,5 +68,5 @@
     "velocity": 0,
     "rotation": 0.23506451848601895
   },
-  "useDefaultConstraints": false
+  "useDefaultConstraints": true
 }
