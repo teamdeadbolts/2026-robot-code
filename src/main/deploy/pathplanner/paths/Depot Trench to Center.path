@@ -8,8 +8,8 @@
       },
       "prevControl": null,
       "nextControl": {
-        "x": 7.113220703125,
-        "y": 7.392422164351851
+        "x": 7.129164062499999,
+        "y": 7.5739665075231475
       },
       "isLocked": false,
       "linkedName": null
@@ -39,27 +39,27 @@
   "eventMarkers": [
     {
       "name": "Intake",
-      "waypointRelativePos": 0.4436124377076414,
+      "waypointRelativePos": 0.15911804401993349,
       "endWaypointRelativePos": null,
       "command": null
     },
     {
       "name": "HopperUp",
-      "waypointRelativePos": 0.7218256852159466,
+      "waypointRelativePos": 0.47686098421926876,
       "endWaypointRelativePos": null,
       "command": null
     }
   ],
   "globalConstraints": {
-    "maxVelocity": 4.0,
-    "maxAcceleration": 4.0,
+    "maxVelocity": 5.0,
+    "maxAcceleration": 5.0,
     "maxAngularVelocity": 410.0,
     "maxAngularAcceleration": 720.0,
     "nominalVoltage": 12.0,
     "unlimited": false
   },
   "goalEndState": {
-    "velocity": 0.9,
+    "velocity": 2.0,
     "rotation": -80.31238318687382
   },
   "reversed": false,
@@ -68,5 +68,5 @@
     "velocity": 0.0,
     "rotation": -0.6106264966821708
   },
-  "useDefaultConstraints": false
+  "useDefaultConstraints": true
 }
