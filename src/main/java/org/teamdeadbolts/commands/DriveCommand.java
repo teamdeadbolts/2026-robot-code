@@ -115,9 +115,10 @@ public class DriveCommand extends Command implements Refreshable {
             sidewaysMps = sidewaysPercent * maxRobotSpeed.get() * slowDrivePercent.get();
             rotationRps = rotationPercent * Units.degreesToRadians(maxRobotAnglarSpeed.get()) * slowDrivePercent.get();
         } else {
-            forwardMps = forwardPercent * maxRobotSpeed.get() * slowDrivePercent.get();
-            sidewaysMps = sidewaysPercent * maxRobotSpeed.get() * slowDrivePercent.get();
-            rotationRps = rotationPercent * Units.degreesToRadians(maxRobotAnglarSpeed.get()) * slowDrivePercent.get();
+            forwardMps = forwardPercent * maxRobotSpeed.get() * defaultDrivePercent.get();
+            sidewaysMps = sidewaysPercent * maxRobotSpeed.get() * defaultDrivePercent.get();
+            rotationRps =
+                    rotationPercent * Units.degreesToRadians(maxRobotAnglarSpeed.get()) * defaultDrivePercent.get();
         }
 
         if (ZoneConstants.RED_TOP_BUMP_ZONE.contains(robotTrans)

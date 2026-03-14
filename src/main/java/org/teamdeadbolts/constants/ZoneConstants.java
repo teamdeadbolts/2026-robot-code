@@ -97,13 +97,13 @@ public class ZoneConstants {
     public static final Zone TOP_PASS_ZONE = new Zone(
             new Translation2d(0, 8.1),
             new Translation2d(16.5, 8.1),
-            new Translation2d(16.5, 4.7),
-            new Translation2d(0, 4.7));
+            new Translation2d(16.5, 4.055),
+            new Translation2d(0, 4.055));
     // The bottom passing zone (both alliances)
     public static final Zone BOTTOM_PASS_ZONE = new Zone(
             new Translation2d(0, 0),
-            new Translation2d(0, 3.38),
-            new Translation2d(16.5, 3.38),
+            new Translation2d(0, 4.055),
+            new Translation2d(16.5, 4.055),
             new Translation2d(16.5, 0));
 
     /**

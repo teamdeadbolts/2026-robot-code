@@ -34,6 +34,8 @@ public class ShotCalculator implements Refreshable {
         public double ballVelocity;
         public double rawLaunchAngleRad;
 
+        public boolean isPossible;
+
         public Translation3d virtTarget;
 
         @Override
@@ -109,29 +111,54 @@ public class ShotCalculator implements Refreshable {
      * @param tolerance Distance threshold for updating target aim.
      * @return Calculated shot parameters.
      */
+    /**
+     * Calculates shot parameters based on target position and robot motion.
+     * Uses iterative solving to compensate for target movement during flight time.
+     *
+     * @param robotPose Current field-relative robot pose.
+     * @param target Field-relative 3D target coordinates.
+     * @param currentTime Current timestamp.
+     * @param tolerance Distance threshold for updating target aim.
+     * @return Calculated shot parameters.
+     */
     public ShotParametersAutoLogged calculateShot(
             Pose3d robotPose, Translation3d target, double currentTime, double tolerance, double maxAngle) {
 
-        Pose3d fieldRelTurret = robotPose.transformBy(ShooterConstants.SHOOTER_OFFSET);
-        Translation2d turretPos2d = fieldRelTurret.getTranslation().toTranslation2d();
-
-        // Predict robot velocity at shot release
-        double latencySec = shootLatancyMs.get() / 1000;
+        // 1. Predict robot velocities at shot release
+        double latencySec = shootLatancyMs.get() / 1000.0;
         double pVx = vxMap.get(currentTime + latencySec);
         double pVy = vyMap.get(currentTime + latencySec);
         double pVtheta = vthetaMap.get(currentTime + latencySec);
 
-        Rotation2d robotAngle = robotPose.toPose2d().getRotation();
+        // 2. Predict the robot's pose at the exact moment the ball leaves the shooter
+        Pose2d currentPose2d = robotPose.toPose2d();
+        Pose2d predictedPose2d = new Pose2d(
+                currentPose2d.getX() + (pVx * latencySec),
+                currentPose2d.getY() + (pVy * latencySec),
+                new Rotation2d(currentPose2d.getRotation().getRadians() + (pVtheta * latencySec)));
+
+        // Elevate back to 3D for turret math
+        Pose3d predictedRobotPose = new Pose3d(
+                predictedPose2d.getX(),
+                predictedPose2d.getY(),
+                robotPose.getZ(),
+                new edu.wpi.first.math.geometry.Rotation3d(
+                        0, 0, predictedPose2d.getRotation().getRadians()));
+
+        // 3. Calculate turret geometry based on the PREDICTED pose
+        Pose3d fieldRelTurret = predictedRobotPose.transformBy(ShooterConstants.SHOOTER_OFFSET);
+        Translation2d turretPos2d = fieldRelTurret.getTranslation().toTranslation2d();
+
+        Rotation2d robotAngle = predictedPose2d.getRotation();
         Translation2d robotRelOffset =
                 ShooterConstants.SHOOTER_OFFSET.getTranslation().toTranslation2d();
         Translation2d fieldRelOffset = robotRelOffset.rotateBy(robotAngle);
 
+        // Calculate turret velocity at the predicted moment
+        // Note: Cross product of omega and radius for tangential velocity
         double tVx = pVx - (pVtheta * fieldRelOffset.getY());
-        double tVy = pVy
-                + (pVtheta
-                        * fieldRelOffset
-                                .getX()); // Could need to be a subtraction. Very well might be subtraction. We should
-        // check
+        double tVy = pVy + (pVtheta * fieldRelOffset.getX());
+
         Translation2d turretVel = new Translation2d(tVx, tVy);
 
         Translation2d virtTarget2d = target.toTranslation2d();
@@ -146,7 +173,7 @@ public class ShotCalculator implements Refreshable {
         double distFromPivotToTarget = 0.0;
         double heightFromPivotToTarget = targetZ - fieldRelTurret.getZ();
 
-        // Iteratively solve for flight time, target lead, and optimal impact angle
+        // 4. Iteratively solve for flight time, target lead, and optimal impact angle
         for (int i = 0; i < (int) calcIterations.get(); i++) {
             distFromPivotToTarget = turretPos2d.getDistance(virtTarget2d);
             Translation2d relVirtTarget = new Translation2d(distFromPivotToTarget, heightFromPivotToTarget);
@@ -170,15 +197,18 @@ public class ShotCalculator implements Refreshable {
             ballVelocity = calculateVel(hoodAngle, relVirtTarget);
 
             double v0x = ballVelocity * Math.cos(hoodAngle);
-            double flightTime = (distFromPivotToTarget / v0x) * 1000;
-            double totalTime = flightTime + shootLatancyMs.get();
 
-            virtTarget2d = target.toTranslation2d().minus(turretVel.times(totalTime / 1000));
+            // Only shift the virtual target by the FLIGHT time, because we already handled latency by moving the robot
+            double flightTimeSec = (distFromPivotToTarget / v0x);
+
+            virtTarget2d = target.toTranslation2d().minus(turretVel.times(flightTimeSec));
+
             Logger.recordOutput("ShotCalc/Interation " + i + "/hoodAngle", Units.degreesToRadians(hoodAngle));
             Logger.recordOutput("ShotCalc/Interation " + i + "/impactAngleRad", impactAngle);
         }
 
-        double turretAngle = calculateFieldRelativeTurret(robotPose.toPose2d(), virtTarget2d);
+        // Use the predicted pose to calculate the final turret angle
+        double turretAngle = calculateFieldRelativeTurret(predictedPose2d, virtTarget2d);
 
         ShotParametersAutoLogged rawShot = new ShotParametersAutoLogged();
         rawShot.hoodAngle = Math.PI / 2 - hoodAngle;
@@ -206,10 +236,10 @@ public class ShotCalculator implements Refreshable {
             lastAcceptedVirtTarget2d = virtTarget2d;
         }
 
-        // Apply air resistance compensation and RPM conversion
-        // shotToUse.ballVelocity *= 1 + (airResistanceMultiplier.get() * distFromPivotToTarget);
         shotToUse.wheelSpeed = shooterMPSToRPM(shotToUse.ballVelocity);
         Logger.processInputs("ShotCalc/RealShot", shotToUse);
+
+        shotToUse.isPossible = ShooterConstants.SHOOTER_MPS_TO_RPM_MAP.get(9999.0) > shotToUse.wheelSpeed;
 
         return shotToUse;
     }
@@ -256,7 +286,7 @@ public class ShotCalculator implements Refreshable {
     }
 
     public static double shooterMPSToRPM(double mps) {
-        return ShooterConstants.SHOOTER_RPM_TO_MPS_MAP.get(mps);
+        return ShooterConstants.SHOOTER_MPS_TO_RPM_MAP.get(mps);
     }
 
     private double findLaunchAngle(Translation2d trans, double alpha, double maxAngle) {

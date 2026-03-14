@@ -6,11 +6,13 @@ import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.Tracer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import java.util.ArrayList;
+import java.util.HashMap;
 import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.RobotState;
 import org.teamdeadbolts.constants.VisionConstants;
 import org.teamdeadbolts.subsystems.drive.SwerveSubsystem;
 import org.teamdeadbolts.subsystems.vision.PhotonVisionIO.PoseObservation;
+import org.teamdeadbolts.utils.tuning.Refreshable;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkBoolean;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
@@ -19,7 +21,7 @@ import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
  * Fuses camera observations with the field layout to provide pose estimates
  * to the {@link RobotState}.
  */
-public class VisionSubsystem extends SubsystemBase {
+public class VisionSubsystem extends SubsystemBase implements Refreshable {
 
     private final PhotonVisionIOCtxAutoLogged[] ctxs;
     private final PhotonVisionIO[] ios;
@@ -34,6 +36,7 @@ public class VisionSubsystem extends SubsystemBase {
 
     private final ArrayList<Pose3d> tagPoses = new ArrayList<>();
     private final ArrayList<Pose3d> robotPoses = new ArrayList<>();
+    private final HashMap<PhotonVisionIO, SavedLoggedNetworkBoolean> cameraToggles = new HashMap<>();
     private int loopCount = 0;
 
     public VisionSubsystem(SwerveSubsystem swerveSubsystem, PhotonVisionIO... ios) {
@@ -42,6 +45,20 @@ public class VisionSubsystem extends SubsystemBase {
         for (int i = 0; i < ios.length; i++) {
             this.ctxs[i] = new PhotonVisionIOCtxAutoLogged();
         }
+
+        for (PhotonVisionIO io : this.ios) {
+            SavedLoggedNetworkBoolean bool =
+                    SavedLoggedNetworkBoolean.get("Tuning/Vision/Camera " + io.getName() + "/Enable", true);
+            this.cameraToggles.put(io, bool);
+            bool.addRefreshable(this);
+        }
+    }
+
+    @Override
+    public void refresh() {
+        this.cameraToggles.forEach((io, bool) -> {
+            io.setHardDisabled(!bool.get());
+        });
     }
 
     public PhotonVisionIO[] getCameras() {

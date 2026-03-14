@@ -136,7 +136,6 @@ public class SystemsTestCommand extends Command {
         } catch (Exception ignored) {
         }
 
-        hopperSubsystem.setState(HopperSubsystem.State.HOLD);
         intakeSubsystem.setState(IntakeSubsystem.State.STOWED);
         indexerSubsystem.setState(IndexerSubsystem.State.OFF);
         shooterSubsystem.setState(ShooterSubsystem.State.OFF);

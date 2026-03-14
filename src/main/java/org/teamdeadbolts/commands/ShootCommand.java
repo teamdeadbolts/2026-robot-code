@@ -2,6 +2,7 @@
 package org.teamdeadbolts.commands;
 
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -21,11 +22,11 @@ public class ShootCommand extends Command {
     private final ShooterSubsystem shooterSubsystem;
     private final HopperSubsystem hopperSubsystem;
 
-    private final SavedLoggedNetworkNumber rpmErrorScoring =
-            SavedLoggedNetworkNumber.get("Tuning/ShootCommand/RpmTolScoring", 200);
+    private final SavedLoggedNetworkNumber wheelRpmError =
+            SavedLoggedNetworkNumber.get("Tuning/ShootCommand/WheelRpmError", 200);
 
-    private final SavedLoggedNetworkNumber rpmErrorPassing =
-            SavedLoggedNetworkNumber.get("Tuning/ShootCommand/RpmTolPassing", 0);
+    private final SavedLoggedNetworkNumber turretPositionError =
+            SavedLoggedNetworkNumber.get("Tuning/ShootCommand/TurretPositionError", 6);
 
     private boolean fallback;
 
@@ -38,7 +39,7 @@ public class ShootCommand extends Command {
         this.shooterSubsystem = shooterSubsystem;
         this.hopperSubsystem = hopperSubsystem;
         this.fallback = fallback;
-        addRequirements(indexerSubsystem, shooterSubsystem, hopperSubsystem);
+        addRequirements(indexerSubsystem, shooterSubsystem);
     }
 
     @Override
@@ -55,21 +56,20 @@ public class ShootCommand extends Command {
         if ((alliance == Alliance.Blue && !ZoneConstants.BLUE_SCORE_ZONE.contains(robotLocaion))
                 || (alliance == Alliance.Red && !ZoneConstants.RED_SCORE_ZONE.contains(robotLocaion))) passing = true;
 
+        shooterSubsystem.setAlternativeHoodMinAngle(hopperSubsystem.getState() == HopperSubsystem.State.UP);
+
         if (passing) {
             shooterSubsystem.setState(ShooterSubsystem.State.PASS);
         } else {
             shooterSubsystem.setState(ShooterSubsystem.State.SHOOT);
         }
-        if (passing
-                && shooterSubsystem.getRPMError() <= rpmErrorPassing.get()
-                && hopperSubsystem.getState() == HopperSubsystem.State.DOWN) {
+        if (shooterSubsystem.getRPMError() <= wheelRpmError.get()
+                && shooterSubsystem.isPossibleShot()
+                && shooterSubsystem.getTurretError() <= Units.degreesToRadians(turretPositionError.get())) {
             feedShooter();
-            return;
-        } else if (!passing && shooterSubsystem.getRPMError() <= rpmErrorScoring.get()) {
-            feedShooter();
-            return;
+        } else {
+            indexerSubsystem.setState(IndexerSubsystem.State.JIGGLE);
         }
-        indexerSubsystem.setState(IndexerSubsystem.State.JIGGLE);
         // shooterSubsystem.setState(ShooterSubsystem.State.SPINUP);
     }
 

@@ -5,6 +5,7 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
+import com.pathplanner.lib.events.EventTrigger;
 import edu.wpi.first.math.geometry.*;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
@@ -44,9 +45,9 @@ public class RobotContainer {
             swerveSubsystem,
             new PhotonVisionIO("Left Cam", VisionConstants.LEFT_CAM_TRANSFORM),
             new PhotonVisionIO("Right Cam", VisionConstants.RIGHT_CAM_TRANSFORM),
-            new PhotonVisionIO("Back Cam", VisionConstants.BACK_CAM_TRANSFORM),
-            new PhotonVisionIO(
-                    "Turret Cam", () -> shooterSubsystem.getTurretOffset().plus(VisionConstants.TURRET_CAM_TO_TURRET)));
+            new PhotonVisionIO("Back Cam", VisionConstants.BACK_CAM_TRANSFORM));
+    // new PhotonVisionIO(
+    //         "Turret Cam", () -> shooterSubsystem.g().plus(VisionConstants.TURRET_CAM_TO_TURRET)));
 
     private CommandXboxController primaryController = new CommandXboxController(0);
     private CommandXboxController secondaryController = new CommandXboxController(1);
@@ -164,13 +165,24 @@ public class RobotContainer {
                 .whileTrue(new RunCommand(
                         () -> shooterSubsystem.setState(ShooterSubsystem.State.SPINUP), shooterSubsystem));
         secondaryController
+                .leftTrigger(0.4)
+                .whileTrue(new IntakeCommand(intakeSubsystem, hopperSubsystem, IntakeCommand.Target.SHOOT));
+        secondaryController
                 .leftBumper()
                 .whileTrue(new RunCommand(
                         () -> indexerSubsystem.setState(IndexerSubsystem.State.JIGGLE), indexerSubsystem));
         secondaryController
                 .a()
                 .whileTrue(new ParallelCommandGroup(
-                        new IntakeCommand(intakeSubsystem, hopperSubsystem, IntakeCommand.Target.SHOOT),
+                        new DriveCommand(
+                                swerveSubsystem,
+                                shooterSubsystem,
+                                primaryController::getLeftY,
+                                primaryController::getLeftX,
+                                primaryController::getRightX,
+                                true,
+                                false,
+                                true),
                         new ShootCommand(indexerSubsystem, shooterSubsystem, hopperSubsystem, false)));
         secondaryController
                 .povLeft()
@@ -194,35 +206,34 @@ public class RobotContainer {
 
         RobotState state = RobotState.getInstance();
 
-        // new EventTrigger("Index")
-        //         .onTrue(new RunCommand(
-        //                 () -> indexerSubsystem.setState(IndexerSubsystem.State.JIGGLE), indexerSubsystem));
-        // new EventTrigger("StopIndex")
-        //         .onTrue(new RunCommand(() -> indexerSubsystem.setState(IndexerSubsystem.State.OFF),
-        // indexerSubsystem));
-        // new EventTrigger("Intake")
-        //         .onTrue(new RunCommand(() -> intakeSubsystem.setState(IntakeSubsystem.State.INTAKE),
-        // intakeSubsystem));
-        // new EventTrigger("StopIntake")
-        //         .onTrue(new RunCommand(
-        //                 () -> intakeSubsystem.setState(IntakeSubsystem.State.DEPLOYED), intakeSubsystem));
-        // new EventTrigger("Shoot").onTrue(new ShootCommand(indexerSubsystem, shooterSubsystem, hopperSubsystem,
-        // false));
-        // new EventTrigger("SpinUp")
-        //         .onTrue(new RunCommand(
-        //                 () -> shooterSubsystem.setState(ShooterSubsystem.State.SPINUP), shooterSubsystem));
-        // new EventTrigger("StopShoot")
-        //         .onTrue(new RunCommand(() -> shooterSubsystem.setState(ShooterSubsystem.State.OFF),
-        // shooterSubsystem));
-        // new EventTrigger("HopperUp")
-        //         .onTrue(new RunCommand(() -> hopperSubsystem.setState(HopperSubsystem.State.UP), hopperSubsystem));
-        // new EventTrigger("HopperDown")
-        // .onTrue(new RunCommand(() -> hopperSubsystem.setState(HopperSubsystem.State.DOWN), hopperSubsystem));
+        new EventTrigger("Index")
+                .onTrue(new RunCommand(
+                        () -> indexerSubsystem.setState(IndexerSubsystem.State.JIGGLE), indexerSubsystem));
+        new EventTrigger("StopIndex")
+                .onTrue(new RunCommand(() -> indexerSubsystem.setState(IndexerSubsystem.State.OFF), indexerSubsystem));
+        new EventTrigger("Intake")
+                .onTrue(new IntakeCommand(intakeSubsystem, hopperSubsystem, IntakeCommand.Target.INTAKE));
+        new EventTrigger("StopIntake")
+                .onTrue(new RunCommand(
+                        () -> intakeSubsystem.setState(IntakeSubsystem.State.DEPLOYED), intakeSubsystem));
+        new EventTrigger("Shoot")
+                .onTrue(new ParallelCommandGroup(
+                        new ShootCommand(indexerSubsystem, shooterSubsystem, hopperSubsystem, false),
+                        new IntakeCommand(intakeSubsystem, hopperSubsystem, IntakeCommand.Target.SHOOT)));
+        new EventTrigger("SpinUp")
+                .onTrue(new RunCommand(
+                        () -> shooterSubsystem.setState(ShooterSubsystem.State.SPINUP), shooterSubsystem));
+        new EventTrigger("StopShoot")
+                .onTrue(new RunCommand(() -> shooterSubsystem.setState(ShooterSubsystem.State.OFF), shooterSubsystem));
+        new EventTrigger("HopperUp")
+                .onTrue(new RunCommand(() -> hopperSubsystem.setState(HopperSubsystem.State.UP), hopperSubsystem));
+        new EventTrigger("HopperDown")
+                .onTrue(new RunCommand(() -> hopperSubsystem.setState(HopperSubsystem.State.DOWN), hopperSubsystem));
 
         AutoBuilder.configure(
-                state.getRobotPose()::toPose2d,
+                () -> state.getRobotPose().toPose2d(),
                 (pose) -> state.setEstimatedPose(new Pose3d(pose)),
-                state::getRobotRelativeRobotVelocities,
+                () -> state.getRobotRelativeRobotVelocities(),
                 (speeds, _feedforwards) -> {
                     swerveSubsystem.drive(speeds, false, false, false);
                 },

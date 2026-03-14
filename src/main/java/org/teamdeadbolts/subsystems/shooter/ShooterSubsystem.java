@@ -15,7 +15,6 @@ import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform2d;
-import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -125,13 +124,20 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
     private final SavedLoggedNetworkNumber aprilTagTrackRange =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/AprilTagTrackRange", 0);
 
+    private final SavedLoggedNetworkNumber alternativeMinHoodAngle =
+            SavedLoggedNetworkNumber.get("Tuning/Shooter/AlternativeMinHoodAngleDeg", 23);
+
     private Optional<Double> targetWheelSpeed;
+    private Optional<Double> targetTurretPosition;
     private double currentWheelSpeed;
+    private double currentTurretPosition;
     private final Zone aprilTagTrackZone = new Zone();
     private final ShotCalculator shotCalculator;
     private int systemTestCount = 0;
 
     private boolean turretFallbackMode = false;
+    private boolean alternative = false;
+    private boolean isPossibleShot = false;
     private Optional<Rotation2d> fallbackChassisTargetAngle = Optional.empty();
 
     public ShooterSubsystem() {
@@ -185,12 +191,25 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
         return (targetWheelSpeed.get() - Units.radiansPerSecondToRotationsPerMinute(currentWheelSpeed));
     }
 
+    public double getTurretError() {
+        if (targetTurretPosition.isEmpty()) return 0;
+        return (targetTurretPosition.get() - currentTurretPosition);
+    }
+
+    public boolean isPossibleShot() {
+        return isPossibleShot;
+    }
+
     public void resetTurretPosition() {
         this.turretMotor.setPosition(0);
     }
 
     public void setTurretFallbackMode(boolean enabled) {
         this.turretFallbackMode = enabled;
+    }
+
+    public void setAlternativeHoodMinAngle(boolean alternative) {
+        this.alternative = alternative;
     }
 
     public boolean isTurretFallbackMode() {
@@ -203,12 +222,12 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
 
     public Pose3d getFieldRelativeTurretPose() {
         Pose3d robotPose = RobotState.getInstance().getRobotPose();
-        return robotPose.transformBy(getTurretOffset());
-    }
 
-    public Transform3d getTurretOffset() {
-        return new Transform3d(
-                ShooterConstants.SHOOTER_OFFSET.getTranslation(), new Rotation3d(0, 0, getTurretRotation()));
+        double fieldRelativeHeading = robotPose.getRotation().getZ() + getTurretRotation();
+
+        return new Pose3d(
+                robotPose.transformBy(ShooterConstants.SHOOTER_OFFSET).getTranslation(),
+                new Rotation3d(0, 0, fieldRelativeHeading));
     }
 
     @Override
@@ -226,12 +245,12 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
         double currentHoodAngle =
                 Units.rotationsToRadians(hoodMotor.getPosition().getValueAsDouble());
         Optional<Double> targetHoodAngle = Optional.empty();
-        Optional<Double> targetTurretPosition = Optional.empty();
         Optional<Translation3d> currentTargetTranslation = Optional.empty();
 
         currentWheelSpeed =
                 Units.rotationsToRadians(leftWheelMotor.getVelocity().getValueAsDouble());
         targetWheelSpeed = Optional.empty();
+        targetTurretPosition = Optional.empty();
 
         Pose3d robotPose = RobotState.getInstance().getRobotPose();
         ChassisSpeeds robotSpeeds = RobotState.getInstance().getFieldRelativeRobotVelocities();
@@ -304,7 +323,9 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                     break;
                 }
 
-                Logger.recordOutput("ShooterSubsystem/PassTargetPose", passTargetPose);
+                Logger.recordOutput(
+                        "ShooterSubsystem/PassTargetPose",
+                        new Pose2d(passTargetPose.toTranslation2d(), new Rotation2d()));
                 currentTargetTranslation = Optional.of(passTargetPose);
 
                 ShotParametersAutoLogged passShot = shotCalculator.calculateShot(
@@ -312,10 +333,14 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                         passTargetPose,
                         System.currentTimeMillis(),
                         1.0,
-                        Units.degreesToRadians(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
+                        Units.degreesToRadians(
+                                alternative
+                                        ? alternativeMinHoodAngle.get()
+                                        : ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
                 targetHoodAngle = Optional.of(passShot.hoodAngle);
                 targetTurretPosition = Optional.of(passShot.turretAngle);
                 targetWheelSpeed = Optional.of(passShot.wheelSpeed);
+                isPossibleShot = passShot.isPossible;
             }
             case SHOOT -> {
                 Translation3d target =
@@ -326,7 +351,10 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                         target,
                         System.currentTimeMillis(),
                         0.05,
-                        Units.degreesToRadians(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
+                        Units.degreesToRadians(
+                                alternative
+                                        ? alternativeMinHoodAngle.get()
+                                        : ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
 
                 Logger.recordOutput("ShooterSubsystem/ShootTargetPose", target);
                 Logger.recordOutput("ShooterSubsystem/ShootShot/BallVel", shootShot.ballVelocity);
@@ -337,13 +365,15 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                 targetWheelSpeed = Optional.of(shootShot.wheelSpeed);
                 targetHoodAngle = Optional.of(shootShot.hoodAngle);
                 targetTurretPosition = Optional.of(shootShot.turretAngle);
+                isPossibleShot = shootShot.isPossible;
             }
             case SPINUP -> {
                 targetWheelSpeed = Optional.of(shooterWheelSpinupSpeed.get());
                 targetHoodAngle = Optional.of(Units.degreesToRadians(testHoodAngle.get()));
             }
             case TEST -> { // Slowly rotatte turret in a circle
-                targetWheelSpeed = Optional.of(ShooterConstants.SHOOTER_RPM_TO_MPS_MAP.get(testShooterMPS.get()));
+                targetWheelSpeed = Optional.of(testShooterMPS.get());
+                targetHoodAngle = Optional.of(Units.degreesToRadians(testHoodAngle.get()));
             }
             case ZERO -> {
                 hoodMotor.setVoltage(-hoodZeroVoltage.get());
@@ -399,13 +429,14 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
         }
 
         if (targetTurretPosition.isPresent()) {
-            double currentEncoderRad =
+            currentTurretPosition =
                     Units.rotationsToRadians(turretMotor.getPosition().getValueAsDouble());
 
             // Just pass the robot-relative target directly into the new method
-            double normalizedTurretPosition = calculateTurretSetpoint(currentEncoderRad, targetTurretPosition.get());
+            double normalizedTurretPosition =
+                    calculateTurretSetpoint(currentTurretPosition, targetTurretPosition.get());
 
-            double turretPidOutput = turretController.calculate(currentEncoderRad, normalizedTurretPosition);
+            double turretPidOutput = turretController.calculate(currentTurretPosition, normalizedTurretPosition);
 
             // Calculate field pose for logging
             Transform2d targetTurretTransform = new Transform2d(
@@ -445,6 +476,8 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
         Logger.recordOutput(
                 "ShooterSubsystem/RightMotorVolts",
                 rightWheelMotor.getMotorVoltage().getValueAsDouble());
+
+        Logger.recordOutput("ShooterSubsystem/UseAlternativeMinAngle", alternative);
 
         // Current
         Logger.recordOutput(

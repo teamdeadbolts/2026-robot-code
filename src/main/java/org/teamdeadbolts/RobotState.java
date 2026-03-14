@@ -11,6 +11,7 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Timer;
 import java.util.Optional;
+import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.constants.SwerveConstants;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
@@ -117,10 +118,12 @@ public class RobotState {
     }
 
     public void setRobotRelativeVelocities(ChassisSpeeds newVelocities) {
+        Logger.recordOutput("State/RobotRelativeVelocites", newVelocities);
         this.robotRelativeVelocities = newVelocities;
     }
 
     public void setFieldRelativeVelocities(ChassisSpeeds newVelocities) {
+        Logger.recordOutput("State/FieldRelativeVelocites", newVelocities);
         this.fieldRelativeVelocities = newVelocities;
     }
 

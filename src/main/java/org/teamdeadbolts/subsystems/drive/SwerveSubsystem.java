@@ -148,7 +148,7 @@ public class SwerveSubsystem extends SubsystemBase implements Refreshable {
 
     /** @return The current gyro rotation. */
     public Rotation2d getGyroRotation() {
-        return Rotation2d.fromDegrees(gyro.getYaw());
+        return Rotation2d.fromDegrees(gyro.getYaw()).unaryMinus();
     }
 
     /** @return The array of module states. */
@@ -191,8 +191,8 @@ public class SwerveSubsystem extends SubsystemBase implements Refreshable {
         ChassisSpeeds robotRelative = this.getRobotRelativeChassisSpeeds();
         double rot = getGyroRotation().getRadians();
         return new ChassisSpeeds(
-                robotRelative.vxMetersPerSecond * Math.cos(rot) - robotRelative.vyMetersPerSecond * Math.sin(rot),
-                robotRelative.vyMetersPerSecond * Math.cos(rot) + robotRelative.vxMetersPerSecond * Math.sin(rot),
+                -(robotRelative.vxMetersPerSecond * Math.cos(rot) - robotRelative.vyMetersPerSecond * Math.sin(rot)),
+                -(robotRelative.vyMetersPerSecond * Math.cos(rot) + robotRelative.vxMetersPerSecond * Math.sin(rot)),
                 robotRelative.omegaRadiansPerSecond);
     }
 

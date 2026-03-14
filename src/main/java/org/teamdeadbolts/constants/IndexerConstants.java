@@ -15,9 +15,9 @@ public class IndexerConstants {
     public static final TalonFXConfiguration INDEXER_KICKER_MOTOR_CONFIG = new TalonFXConfiguration();
 
     private static SavedLoggedNetworkNumber indexerFloorMotorCurrentLimit =
-            SavedLoggedNetworkNumber.get("Tuning/Indexer/IndexerFloorMotorCurrentLimit", 20);
+            SavedLoggedNetworkNumber.get("Tuning/Indexer/FloorMotorCurrentLimit", 20);
     private static SavedLoggedNetworkNumber indexerKickerMotorCurrentLimit =
-            SavedLoggedNetworkNumber.get("Tuning/Indexer/IndexerKickerMotorCurrentLimit", 20);
+            SavedLoggedNetworkNumber.get("Tuning/Indexer/KickerMotorCurrentLimit", 20);
 
     static {
         ConfigManager.getInstance().onReady(IndexerConstants::init);

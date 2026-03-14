@@ -17,7 +17,6 @@ import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
  */
 public class HopperSubsystem extends StatefulSubsystem<HopperSubsystem.State> implements Refreshable {
     public enum State {
-        HOLD,
         UP,
         DOWN;
     }
@@ -108,8 +107,6 @@ public class HopperSubsystem extends StatefulSubsystem<HopperSubsystem.State> im
     protected void onStateChange(State to, State from) {
         leftLifterController.reset();
         rightLifterController.reset();
-
-        if (to == State.HOLD) this.holdHeight = getLeftLidHeight();
     }
 
     @Override
@@ -117,7 +114,6 @@ public class HopperSubsystem extends StatefulSubsystem<HopperSubsystem.State> im
         Logger.recordOutput("HopperSubsystem/TargetState", targetState);
         double targetHeight =
                 switch (this.targetState) {
-                    case HOLD -> holdHeight;
                     case UP -> lidUpHeight.get();
                     case DOWN -> lidDownHeight.get();
                 };

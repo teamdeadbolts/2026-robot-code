@@ -34,10 +34,10 @@ public class ShooterConstants {
     public static final double SHOOTER_SMALL_WHEEL_RADIUS_METERS = Units.inchesToMeters(1.0);
     public static final double EXIT_RADIUS_METERS = Units.inchesToMeters(4);
 
-    public static final Translation3d PASS_TOP_POSE_RED = new Translation3d(14.485, 6.661, 0);
-    public static final Translation3d PASS_TOP_POSE_BLUE = new Translation3d(1.746, 6.661, 0);
-    public static final Translation3d PASS_BOTTOM_POSE_RED = new Translation3d(14.485, 1.475, 0);
-    public static final Translation3d PASS_BOTTOM_POSE_BLUE = new Translation3d(1.746, 1.475, 0);
+    public static final Translation3d PASS_TOP_POSE_RED = new Translation3d(14.485, 4.069, 0);
+    public static final Translation3d PASS_TOP_POSE_BLUE = new Translation3d(1.746, 4.069, 0);
+    public static final Translation3d PASS_BOTTOM_POSE_RED = new Translation3d(14.485, 4.068, 0);
+    public static final Translation3d PASS_BOTTOM_POSE_BLUE = new Translation3d(1.746, 4.068, 0);
     public static final Translation3d SHOOT_POSE_RED = new Translation3d(11.933, 4.030247, 1.8388);
     public static final Translation3d SHOOT_POSE_BLUE = new Translation3d(4.64, 4.030247, 1.8388);
 
@@ -57,7 +57,7 @@ public class ShooterConstants {
     public static final TalonFXConfiguration SHOOTER_WHEEL_MOTOR_CONFIG = new TalonFXConfiguration();
     public static final CANcoderConfiguration SHOOTER_ABS_ENCODER_CONFIG = new CANcoderConfiguration();
 
-    public static final InterpolatingDoubleTreeMap SHOOTER_RPM_TO_MPS_MAP = new InterpolatingDoubleTreeMap();
+    public static final InterpolatingDoubleTreeMap SHOOTER_MPS_TO_RPM_MAP = new InterpolatingDoubleTreeMap();
 
     private static final SavedLoggedNetworkNumber shooterTurretMotorCurrentLimit =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/ShooterTurretMotorCurrentLimit", 40);
@@ -68,13 +68,15 @@ public class ShooterConstants {
 
     static {
         ConfigManager.getInstance().onReady(ShooterConstants::init);
-        SHOOTER_RPM_TO_MPS_MAP.put(2.902, 1000.0);
-        SHOOTER_RPM_TO_MPS_MAP.put(4.151, 1500.0);
-        SHOOTER_RPM_TO_MPS_MAP.put(6.773, 2000.0);
-        SHOOTER_RPM_TO_MPS_MAP.put(7.175, 2500.0);
-        SHOOTER_RPM_TO_MPS_MAP.put(8.709, 3000.0);
-        SHOOTER_RPM_TO_MPS_MAP.put(9.562, 3500.0);
-        SHOOTER_RPM_TO_MPS_MAP.put(10.16, 4000.0);
+        SHOOTER_MPS_TO_RPM_MAP.put(3.902 + 0.5, 1000.0);
+        SHOOTER_MPS_TO_RPM_MAP.put(4.151 + 0.5, 1500.0);
+        SHOOTER_MPS_TO_RPM_MAP.put(5.773 + 0.5, 2000.0);
+        SHOOTER_MPS_TO_RPM_MAP.put(6.175 + 0.5, 2500.0);
+        SHOOTER_MPS_TO_RPM_MAP.put(7.231, 3000.0);
+        SHOOTER_MPS_TO_RPM_MAP.put(8.562, 3500.0);
+        SHOOTER_MPS_TO_RPM_MAP.put(9.16, 4000.0);
+        SHOOTER_MPS_TO_RPM_MAP.put(10.0, 4500.0);
+        SHOOTER_MPS_TO_RPM_MAP.put(10.1, 5000.0);
     }
 
     public static void init() {

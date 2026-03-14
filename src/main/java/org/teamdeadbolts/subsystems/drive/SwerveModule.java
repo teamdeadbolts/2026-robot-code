@@ -11,6 +11,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
+import edu.wpi.first.math.util.Units;
 import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.constants.SwerveConstants;
 import org.teamdeadbolts.utils.MathUtils;
@@ -220,33 +221,39 @@ public class SwerveModule implements Refreshable {
         double driveVoltage = drivePidOut + driveFFOut;
         driveMotor.setVoltage(driveVoltage);
 
-        // Logger.recordOutput("Swerve/Module " + moduleNumber + "/DrivePIDOut", drivePidOut);
-        // Logger.recordOutput("Swerve/Module " + moduleNumber + "/DriveVoltageOut", driveVoltage);
+        Logger.recordOutput(
+                "Swerve/Module" + moduleNumber + "/DriveCurrent",
+                driveMotor.getSupplyCurrent().getValueAsDouble());
+        Logger.recordOutput(
+                "Swerve/Module" + moduleNumber + "/TurnCurrent",
+                turningMotor.getSupplyCurrent().getValueAsDouble());
 
-        // Logger.recordOutput("Swerve/Module " + moduleNumber + "/DriveReportedMPS", driveMeasurement);
-        // Logger.recordOutput(
-        //         "Swerve/Module " + moduleNumber + "/DriveReportedRPS",
-        //         this.driveMotor.getVelocity().getValueAsDouble());
-        // Logger.recordOutput("Swerve/Module " + moduleNumber + "/DriveTargetMPS", this.targetSpeedMps);
+        Logger.recordOutput("Swerve/Module " + moduleNumber + "/DrivePIDOut", drivePidOut);
+        Logger.recordOutput("Swerve/Module " + moduleNumber + "/DriveVoltageOut", driveVoltage);
 
-        // Logger.recordOutput("Swerve/Module " + moduleNumber + "/DrivePIDError", dPIDController.getError());
-        // Logger.recordOutput(
-        //         "Swerve/Module " + moduleNumber + "/TurnPIDError", tProfiledPIDController.getPositionError());
+        Logger.recordOutput("Swerve/Module " + moduleNumber + "/DriveReportedMPS", driveMeasurement);
+        Logger.recordOutput(
+                "Swerve/Module " + moduleNumber + "/DriveReportedRPS",
+                this.driveMotor.getVelocity().getValueAsDouble());
+        Logger.recordOutput("Swerve/Module " + moduleNumber + "/DriveTargetMPS", this.targetSpeedMps);
 
-        // Logger.recordOutput("Swerve/Module " + moduleNumber + "/TurnPIDSetpoint",
-        // Units.radiansToDegrees(turnSetpoint));
+        Logger.recordOutput("Swerve/Module " + moduleNumber + "/DrivePIDError", dPIDController.getError());
+        Logger.recordOutput(
+                "Swerve/Module " + moduleNumber + "/TurnPIDError", tProfiledPIDController.getPositionError());
 
-        // Logger.recordOutput(
-        //         "Swerve/Module " + moduleNumber + "/TurnMeasurementDeg",
-        //         this.getRotation().getDegrees());
+        Logger.recordOutput("Swerve/Module " + moduleNumber + "/TurnPIDSetpoint", Units.radiansToDegrees(turnSetpoint));
 
-        // // Current monitoring
-        // Logger.recordOutput(
-        //         "Debug/Current/Swerve/Module " + moduleNumber + "/Drive",
-        //         driveMotor.getSupplyCurrent().getValueAsDouble());
-        // Logger.recordOutput(
-        //         "Debug/Current/Swerve/Module " + moduleNumber + "/Turn",
-        //         turningMotor.getSupplyCurrent().getValueAsDouble());
+        Logger.recordOutput(
+                "Swerve/Module " + moduleNumber + "/TurnMeasurementDeg",
+                this.getRotation().getDegrees());
+
+        // Current monitoring
+        Logger.recordOutput(
+                "Debug/Current/Swerve/Module " + moduleNumber + "/Drive",
+                driveMotor.getSupplyCurrent().getValueAsDouble());
+        Logger.recordOutput(
+                "Debug/Current/Swerve/Module " + moduleNumber + "/Turn",
+                turningMotor.getSupplyCurrent().getValueAsDouble());
     }
 
     /**

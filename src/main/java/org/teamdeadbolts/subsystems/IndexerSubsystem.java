@@ -40,6 +40,7 @@ public class IndexerSubsystem extends StatefulSubsystem<IndexerSubsystem.State> 
 
     public IndexerSubsystem() {
         this.targetState = State.OFF;
+        refresh();
     }
 
     @Override

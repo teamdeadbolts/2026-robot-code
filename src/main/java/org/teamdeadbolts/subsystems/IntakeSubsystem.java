@@ -91,7 +91,7 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
     private double disturbanceAccumulator = 0.0;
 
     public IntakeSubsystem() {
-        this.targetState = State.OFF;
+        this.targetState = State.STOWED;
         armController.enableContinuousInput(0, Math.PI * 2);
 
         // Register refreshables for real-time tuning

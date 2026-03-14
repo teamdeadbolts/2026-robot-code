@@ -25,11 +25,13 @@ public class DefaultIntakeCommand extends Command {
 
     @Override
     public void execute() {
-        if (isInUpZone(robotState.getRobotPose().toPose2d().getTranslation())) {
+        if (isInUpZone(robotState.getRobotPose().toPose2d().getTranslation())
+                && intakeSubsystem.getState() != IntakeSubsystem.State.STOWED) {
             intakeSubsystem.setState(IntakeSubsystem.State.HALF_HOLD);
             return;
         }
 
+        if (this.prevIntakeState == IntakeSubsystem.State.OUTTAKE) this.prevIntakeState = IntakeSubsystem.State.OFF;
         this.intakeSubsystem.setState(this.prevIntakeState);
     }
 

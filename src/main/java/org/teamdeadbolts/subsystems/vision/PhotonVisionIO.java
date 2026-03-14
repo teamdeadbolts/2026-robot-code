@@ -21,7 +21,6 @@ import org.photonvision.PhotonCamera;
 import org.photonvision.targeting.PhotonPipelineResult;
 import org.photonvision.targeting.PhotonTrackedTarget;
 import org.teamdeadbolts.constants.VisionConstants;
-import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkBoolean;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
 /**
@@ -44,7 +43,9 @@ public class PhotonVisionIO {
     private final SavedLoggedNetworkNumber testRobotRotationDeg =
             SavedLoggedNetworkNumber.get("Tuning/Vision/TestRobotRotationDeg", 0);
 
-    private final SavedLoggedNetworkBoolean enableCam;
+    // private final SavedLoggedNetworkBoolean enableCam;
+    private boolean hardDisabled = false;
+    private boolean enabled = true;
 
     /**
      * @param camName The name of the PhotonCamera.
@@ -53,7 +54,6 @@ public class PhotonVisionIO {
     public PhotonVisionIO(String camName, Transform3d offset) {
         this.camera = new PhotonCamera(camName);
         this.offset = offset;
-        this.enableCam = SavedLoggedNetworkBoolean.get("Tuning/Vision/Camera " + camName + "/Enable", true);
         cacheTagPoses();
     }
 
@@ -64,7 +64,6 @@ public class PhotonVisionIO {
     public PhotonVisionIO(String camName, Supplier<Transform3d> offsetSupplier) {
         this.camera = new PhotonCamera(camName);
         this.offsetSupplier = offsetSupplier;
-        this.enableCam = SavedLoggedNetworkBoolean.get("Tuning/Vision/Camera " + camName + "/Enable", true);
         cacheTagPoses();
     }
 
@@ -72,6 +71,16 @@ public class PhotonVisionIO {
         for (AprilTag tag : VisionConstants.FIELD_LAYOUT.getTags()) {
             tagPoseCache.put(tag.ID, tag.pose);
         }
+    }
+
+    // Hard for network tables/tuning
+    public void setHardDisabled(boolean disabled) {
+        this.hardDisabled = disabled;
+    }
+
+    // For code stuff
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
     }
 
     public void findTransform() {
@@ -107,52 +116,54 @@ public class PhotonVisionIO {
      * @param ctx The IO context to populate.
      */
     public void update(PhotonVisionIOCtx ctx) {
-        Tracer tracer = new Tracer();
-        long startTime = RobotController.getFPGATime();
-        Transform3d currOffset = (offsetSupplier != null) ? offsetSupplier.get() : this.offset;
+        if (!hardDisabled && enabled) {
+            Tracer tracer = new Tracer();
+            long startTime = RobotController.getFPGATime();
+            Transform3d currOffset = (offsetSupplier != null) ? offsetSupplier.get() : this.offset;
 
-        List<PhotonPipelineResult> results = camera.getAllUnreadResults();
+            List<PhotonPipelineResult> results = camera.getAllUnreadResults();
 
-        if (results.isEmpty()) {
-            ctx.observations = new PoseObservation[0];
-            ctx.tagIds = new int[0];
-        } else {
-            PhotonPipelineResult result = results.get(results.size() - 1);
-            tagIds.clear();
-            poseObservations.clear();
+            if (results.isEmpty()) {
+                ctx.observations = new PoseObservation[0];
+                ctx.tagIds = new int[0];
+            } else {
+                PhotonPipelineResult result = results.get(results.size() - 1);
+                tagIds.clear();
+                poseObservations.clear();
 
-            if (result.hasTargets()) {
-                PhotonTrackedTarget best = result.getBestTarget();
-                Pose3d tagPose = tagPoseCache.get(best.getFiducialId());
+                if (result.hasTargets()) {
+                    PhotonTrackedTarget best = result.getBestTarget();
+                    Pose3d tagPose = tagPoseCache.get(best.getFiducialId());
 
-                if (tagPose != null) {
-                    // Calculate field-relative robot pose: Robot = Target - CamToTarget - RobotToCam
-                    Transform3d fieldToTarget = new Transform3d(tagPose.getTranslation(), tagPose.getRotation());
-                    Transform3d camToTarget = best.bestCameraToTarget;
-                    Transform3d fieldToCam = fieldToTarget.plus(camToTarget.inverse());
-                    Transform3d fieldToRobot = fieldToCam.plus(currOffset.inverse());
+                    if (tagPose != null) {
+                        // Calculate field-relative robot pose: Robot = Target - CamToTarget - RobotToCam
+                        Transform3d fieldToTarget = new Transform3d(tagPose.getTranslation(), tagPose.getRotation());
+                        Transform3d camToTarget = best.bestCameraToTarget;
+                        Transform3d fieldToCam = fieldToTarget.plus(camToTarget.inverse());
+                        Transform3d fieldToRobot = fieldToCam.plus(currOffset.inverse());
 
-                    Pose3d robotPose = new Pose3d(fieldToRobot.getTranslation(), fieldToRobot.getRotation());
+                        Pose3d robotPose = new Pose3d(fieldToRobot.getTranslation(), fieldToRobot.getRotation());
 
-                    tagIds.add(best.fiducialId);
-                    poseObservations.add(new PoseObservation(
-                            result.getTimestampSeconds(),
-                            robotPose,
-                            best.poseAmbiguity,
-                            camToTarget.getTranslation().getNorm(),
-                            enableCam.get()));
+                        tagIds.add(best.fiducialId);
+                        poseObservations.add(new PoseObservation(
+                                result.getTimestampSeconds(),
+                                robotPose,
+                                best.poseAmbiguity,
+                                camToTarget.getTranslation().getNorm(),
+                                enabled && !hardDisabled));
+                    }
                 }
+
+                ctx.observations = poseObservations.toArray(new PoseObservation[0]);
+                ctx.tagIds = tagIds.stream().mapToInt(Integer::intValue).toArray();
+
+                Logger.recordOutput("Vision/Camera " + getName() + "/Observations", ctx.observations);
             }
 
-            ctx.observations = poseObservations.toArray(new PoseObservation[0]);
-            ctx.tagIds = tagIds.stream().mapToInt(Integer::intValue).toArray();
-
-            Logger.recordOutput("Vision/Camera " + getName() + "/Observations", ctx.observations);
-        }
-
-        // Performance monitoring
-        if (RobotController.getFPGATime() - startTime > 300_000) {
-            tracer.printEpochs();
+            // Performance monitoring
+            if (RobotController.getFPGATime() - startTime > 300_000) {
+                tracer.printEpochs();
+            }
         }
     }
 
