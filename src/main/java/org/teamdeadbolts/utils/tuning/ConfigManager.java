@@ -10,9 +10,11 @@ import java.io.Reader;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Manages persistent robot configuration data on the RoboRIO.
@@ -63,7 +65,7 @@ public class ConfigManager {
      * Registers a component that relies on configuration values.
      * @param t The {@link Tuneable} component to register.
      */
-    public void registerTunable(Tuneable t) {
+    public void registerTunable(Tuneable<?> t) {
         tuneables.add(t);
     }
 
@@ -110,7 +112,7 @@ public class ConfigManager {
      * * @param key The key to store.
      * @param value The value to associate with the key.
      */
-    public void set(String key, Object value) {
+    public synchronized void set(String key, Object value) {
         this.currConfig.values.put(key, value);
         this.saveCurrentVersion();
     }
@@ -173,18 +175,22 @@ public class ConfigManager {
      * Saves the current state to a versioned JSON file.
      * @param version The version number to save as.
      */
-    public void saveVersion(int version) {
-        try {
-            this.currConfig.version = version;
-            Path versionFile = configDir.resolve("v" + version + ".json");
+    public synchronized void saveVersion(int version) {
+    try {
+        this.currConfig.version = version;
+        Path versionFile = configDir.resolve("v" + version + ".json");
+        Path tempFile = configDir.resolve("v" + version + ".json.tmp");
 
-            Writer writer = Files.newBufferedWriter(versionFile);
+        try (Writer writer = Files.newBufferedWriter(tempFile)) {
             gson.toJson(this.currConfig, writer);
-            writer.flush();
-        } catch (IOException e) {
-            e.printStackTrace();
         }
+
+        Files.move(tempFile, versionFile, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+        
+    } catch (IOException e) {
+        e.printStackTrace();
     }
+}
 
     /**
      * Saves the current configuration to the existing active version file.
@@ -289,7 +295,7 @@ public class ConfigManager {
      */
     public class RobotConfig {
         public int version;
-        public HashMap<String, Object> values = new HashMap<>();
+        public ConcurrentHashMap<String, Object> values = new ConcurrentHashMap<>();
 
         @Override
         public String toString() {
