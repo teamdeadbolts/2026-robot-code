@@ -135,7 +135,7 @@ public class SwerveModule implements Refreshable {
      * @param speed The desired speed in <strong>m/s</strong>
      */
     private void setSpeed(double speed) {
-        Logger.recordOutput("Swerve/Module " + moduleNumber + "/TargetSpeed", speed);
+        Logger.recordOutput("SwerveSubsystem/Module " + moduleNumber + "/TargetSpeed", speed);
         this.targetSpeedMps = speed;
     }
 
@@ -145,9 +145,9 @@ public class SwerveModule implements Refreshable {
      * @param angle The angle as a {@link Rotation2d}
      */
     public void setAngle(Rotation2d angle) {
-        Logger.recordOutput("Swerve/Module " + moduleNumber + "/TargetAngle", angle.getDegrees());
+        Logger.recordOutput("SwerveSubsystem/Module " + moduleNumber + "/TargetAngle", angle.getDegrees());
         Logger.recordOutput(
-                "Swerve/Module " + moduleNumber + "/TargetAngleRaw", angle.getDegrees() - offset.getDegrees());
+                "SwerveSubsystem/Module " + moduleNumber + "/TargetAngleRaw", angle.getDegrees() - offset.getDegrees());
 
         this.targetAngle = angle;
     }
@@ -222,29 +222,30 @@ public class SwerveModule implements Refreshable {
         driveMotor.setVoltage(driveVoltage);
 
         Logger.recordOutput(
-                "Swerve/Module" + moduleNumber + "/DriveCurrent",
+                "SwerveSubsystem/Module" + moduleNumber + "/Drive/Current",
                 driveMotor.getSupplyCurrent().getValueAsDouble());
         Logger.recordOutput(
-                "Swerve/Module" + moduleNumber + "/TurnCurrent",
+                "SwerveSubsystem/Module" + moduleNumber + "/Turn/Current",
                 turningMotor.getSupplyCurrent().getValueAsDouble());
 
-        Logger.recordOutput("Swerve/Module " + moduleNumber + "/DrivePIDOut", drivePidOut);
-        Logger.recordOutput("Swerve/Module " + moduleNumber + "/DriveVoltageOut", driveVoltage);
+        Logger.recordOutput("SwerveSubsystem/Module " + moduleNumber + "/Drive/PIDOut", drivePidOut);
+        Logger.recordOutput("SwerveSubsystem/Module " + moduleNumber + "/Drive/VoltageOut", driveVoltage);
 
-        Logger.recordOutput("Swerve/Module " + moduleNumber + "/DriveReportedMPS", driveMeasurement);
+        Logger.recordOutput("SwerveSubsystem/Module " + moduleNumber + "/Drive/ReportedMPS", driveMeasurement);
         Logger.recordOutput(
-                "Swerve/Module " + moduleNumber + "/DriveReportedRPS",
+                "SwerveSubsystem/Module " + moduleNumber + "/Drive/ReportedRPS",
                 this.driveMotor.getVelocity().getValueAsDouble());
-        Logger.recordOutput("Swerve/Module " + moduleNumber + "/DriveTargetMPS", this.targetSpeedMps);
+        Logger.recordOutput("SwerveSubsystem/Module " + moduleNumber + "/Drive/TargetMPS", this.targetSpeedMps);
 
-        Logger.recordOutput("Swerve/Module " + moduleNumber + "/DrivePIDError", dPIDController.getError());
+        Logger.recordOutput("SwerveSubsystem/Module " + moduleNumber + "/Drive/PIDError", dPIDController.getError());
         Logger.recordOutput(
-                "Swerve/Module " + moduleNumber + "/TurnPIDError", tProfiledPIDController.getPositionError());
-
-        Logger.recordOutput("Swerve/Module " + moduleNumber + "/TurnPIDSetpoint", Units.radiansToDegrees(turnSetpoint));
+                "SwerveSubsystem/Module " + moduleNumber + "/Turn/PIDError", tProfiledPIDController.getPositionError());
 
         Logger.recordOutput(
-                "Swerve/Module " + moduleNumber + "/TurnMeasurementDeg",
+                "SwerveSubsystem/Module " + moduleNumber + "/Turn/PIDSetpoint", Units.radiansToDegrees(turnSetpoint));
+
+        Logger.recordOutput(
+                "SwerveSubsystem/Module " + moduleNumber + "/Turn/MeasurementDeg",
                 this.getRotation().getDegrees());
 
         // Current monitoring

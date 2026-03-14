@@ -108,17 +108,17 @@ public class PhotonVisionIO {
             Transform3d requiredOffset = cameraFieldPose.minus(robotPose);
 
             Logger.recordOutput(
-                    "Vision/Camera " + camera.getName() + "/x",
+                    "VisionSubsystem/Camera " + camera.getName() + "/x",
                     requiredOffset.getTranslation().getX());
             Logger.recordOutput(
-                    "Vision/Camera " + camera.getName() + "/y",
+                    "VisionSubsystem/Camera " + camera.getName() + "/y",
                     requiredOffset.getTranslation().getY());
-            Logger.recordOutput("Vision/Camera " + camera.getName() + "/z", requiredOffset.getZ());
+            Logger.recordOutput("VisionSubsystem/Camera " + camera.getName() + "/z", requiredOffset.getZ());
             Logger.recordOutput(
-                    "Vision/Camera " + camera.getName() + "/yaw",
+                    "VisionSubsystem/Camera " + camera.getName() + "/yaw",
                     requiredOffset.getRotation().getZ());
             Logger.recordOutput(
-                    "Vision/Camera " + camera.getName() + "/pitch",
+                    "VisionSubsystem/Camera " + camera.getName() + "/pitch",
                     requiredOffset.getRotation().getY());
         }
     }
@@ -178,7 +178,7 @@ public class PhotonVisionIO {
                 ctx.tagIds = tagIds.stream().mapToInt(Integer::intValue).toArray();
 
                 if (ctx.observations.length > 0) {
-                    Logger.recordOutput("Vision/Camera " + getName() + "/Observations", ctx.observations);
+                    Logger.recordOutput("VisionSubsystem/Camera " + getName() + "/Observations", ctx.observations);
                 }
             }
 

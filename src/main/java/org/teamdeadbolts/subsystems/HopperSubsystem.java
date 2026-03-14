@@ -55,11 +55,8 @@ public class HopperSubsystem extends StatefulSubsystem<HopperSubsystem.State> im
             SavedLoggedNetworkNumber.get("Tuning/Hopper/LidDownHeight", 0.0);
     private final SavedLoggedNetworkNumber lidUpHeight = SavedLoggedNetworkNumber.get("Tuning/Hopper/LidUpHeight", 0.0);
 
-    private double holdHeight;
-
     public HopperSubsystem() {
         this.targetState = State.DOWN;
-        this.holdHeight = lidDownHeight.get();
         hopperMotorLeft.setPosition(0);
         hopperMotorRight.setPosition(0);
 
@@ -137,16 +134,16 @@ public class HopperSubsystem extends StatefulSubsystem<HopperSubsystem.State> im
 
         // Logging
         Logger.recordOutput("HopperSubsystem/TargetHeight", targetHeight);
-        Logger.recordOutput("HopperSubsystem/LeftCurrentHeight", getLeftLidHeight());
-        Logger.recordOutput("HopperSubsystem/LeftOutput", leftOutput);
+        Logger.recordOutput("HopperSubsystem/Left/CurrentHeight", getLeftLidHeight());
+        Logger.recordOutput("HopperSubsystem/Left/Output", leftOutput);
         Logger.recordOutput(
-                "HopperSubsystem/LeftRawMotorPosition",
+                "HopperSubsystem/Left/RawMotorPosition",
                 hopperMotorLeft.getPosition().getValueAsDouble());
 
-        Logger.recordOutput("HopperSubsystem/RightCurrentHeight", getRightLidHeight());
-        Logger.recordOutput("HopperSubsystem/RightOutput", rightOutput);
+        Logger.recordOutput("HopperSubsystem/Right/CurrentHeight", getRightLidHeight());
+        Logger.recordOutput("HopperSubsystem/Right/Output", rightOutput);
         Logger.recordOutput(
-                "HopperSubsystem/RightRawMotorPosition",
+                "HopperSubsystem/Right/RawMotorPosition",
                 hopperMotorRight.getPosition().getValueAsDouble());
         // current
         Logger.recordOutput(

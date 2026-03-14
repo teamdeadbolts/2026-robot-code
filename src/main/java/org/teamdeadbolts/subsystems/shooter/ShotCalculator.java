@@ -202,9 +202,6 @@ public class ShotCalculator implements Refreshable {
             double flightTimeSec = (distFromPivotToTarget / v0x);
 
             virtTarget2d = target.toTranslation2d().minus(turretVel.times(flightTimeSec));
-
-            Logger.recordOutput("ShotCalc/Interation " + i + "/hoodAngle", Units.degreesToRadians(hoodAngle));
-            Logger.recordOutput("ShotCalc/Interation " + i + "/impactAngleRad", impactAngle);
         }
 
         // Use the predicted pose to calculate the final turret angle

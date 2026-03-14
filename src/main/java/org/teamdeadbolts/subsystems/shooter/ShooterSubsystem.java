@@ -355,13 +355,6 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                                 alternative
                                         ? alternativeMinHoodAngle.get()
                                         : ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
-
-                Logger.recordOutput("ShooterSubsystem/ShootTargetPose", target);
-                Logger.recordOutput("ShooterSubsystem/ShootShot/BallVel", shootShot.ballVelocity);
-                Logger.recordOutput("ShooterSubsystem/ShootShot/ImpactAngle", shootShot.impactAngle);
-                Logger.recordOutput(
-                        "ShooterSubsystem/ShootShot/VertTarget", new Pose3d(shootShot.virtTarget, new Rotation3d()));
-
                 targetWheelSpeed = Optional.of(shootShot.wheelSpeed);
                 targetHoodAngle = Optional.of(shootShot.hoodAngle);
                 targetTurretPosition = Optional.of(shootShot.turretAngle);
@@ -401,8 +394,8 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                     robotPose.toPose2d(), currentTargetTranslation.get().toTranslation2d(), lockedTurrentRad));
 
             targetTurretPosition = Optional.empty();
-            Logger.recordOutput("ShooterSubsystem/TurretFallback", true);
-            Logger.recordOutput("ShooterSybsystem/FallbackChassisTarget", fallbackChassisTargetAngle.get());
+            Logger.recordOutput("ShooterSubsystem/Fallback/Fallback", true);
+            Logger.recordOutput("ShooterSybsystem/Fallback/ChassisTarget", fallbackChassisTargetAngle.get());
         }
 
         // --- Hardware Control ---
@@ -413,8 +406,8 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                     Units.degreesToRadians(ShooterConstants.SHOOTER_HOOD_MAX_ANGLE_DEGREES));
             double pidOutput = hoodController.calculate(currentHoodAngle, targetHoodAngleClamped);
             if (!hoodController.atSetpoint()) hoodMotor.setVoltage(pidOutput);
-            Logger.recordOutput("ShooterSubsystem/TargetHoodAngle", Units.radiansToDegrees(targetHoodAngle.get()));
-            Logger.recordOutput("ShooterSubsystem/HoodOutput", pidOutput);
+            Logger.recordOutput("ShooterSubsystem/Hood/TargetHoodAngle", Units.radiansToDegrees(targetHoodAngle.get()));
+            Logger.recordOutput("ShooterSubsystem/Hood/HoodOutput", pidOutput);
         } else if (targetState != State.ZERO) {
             hoodMotor.setVoltage(0);
         }
@@ -422,8 +415,8 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
         if (targetWheelSpeed.isPresent()) {
             double wheelOutput = (getRPMError() > bangTol.get()) ? 12.0 : wheelFF.calculate(targetWheelSpeed.get());
             leftWheelMotor.setControl(new VoltageOut(wheelOutput));
-            Logger.recordOutput("ShooterSubsystem/WheelOutput", wheelOutput);
-            Logger.recordOutput("ShooterSubsystem/TargetWheelSpeed", targetWheelSpeed.get());
+            Logger.recordOutput("ShooterSubsystem/Wheel/Volts", wheelOutput);
+            Logger.recordOutput("ShooterSubsystem/Wheel/TargetSpeedRPM", targetWheelSpeed.get());
         } else {
             leftWheelMotor.setVoltage(0);
         }
@@ -448,36 +441,43 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
             turretMotor.setVoltage(turretPidOutput);
 
             Logger.recordOutput(
-                    "ShooterSubsystem/NormalizedTurretSetpoint", Units.radiansToDegrees(normalizedTurretPosition));
-            Logger.recordOutput("ShooterSubsystem/TargetTurretPose", targetTurretFieldPose);
-            Logger.recordOutput("ShooterSubsystem/TurretPidOutput", turretPidOutput);
-            Logger.recordOutput("ShooterSubsystem/PidError", turretController.getPositionError());
+                    "ShooterSubsystem/Turret/NormalizedSetpoint", Units.radiansToDegrees(normalizedTurretPosition));
+            Logger.recordOutput("ShooterSubsystem/Target/TurretPose", targetTurretFieldPose);
+            Logger.recordOutput("ShooterSubsystem/Turret/PidOutput", turretPidOutput);
+            Logger.recordOutput("ShooterSubsystem/Turret/PidError", turretController.getPositionError());
+            TrapezoidProfile.State state = turretController.getSetpoint();
+            Logger.recordOutput("ShooterSubsystem/Turret/Trapizoid/SetpointPosDeg", Units.degreesToRadians(state.position));
+            Logger.recordOutput("ShooterSubsystem/Turret/Trapizoid/SetpointVelDeg", Units.radiansToDegrees(state.velocity));
+            
+
 
         } else {
             turretMotor.setVoltage(0);
         }
-
-        Logger.recordOutput("ShooterSubsystem/CurrentHoodAngle", Units.radiansToDegrees(currentHoodAngle));
-        Logger.recordOutput("ShooterSubsystem/CurrentTurretPosition", Units.radiansToDegrees(getTurretRotation()));
+        // Hood
+        Logger.recordOutput("ShooterSubsystem/Hood/CurrentAngle", Units.radiansToDegrees(currentHoodAngle));
         Logger.recordOutput(
-                "ShooterSubsystem/CurrentWheelSpeed", Units.radiansPerSecondToRotationsPerMinute(currentWheelSpeed));
+                "ShooterSubsystem/Hood/OutAmps", hoodMotor.getSupplyCurrent().getValueAsDouble());
+        Logger.recordOutput("ShooterSubsystem/Hood/UseAlternativeMinAngle", alternative);
 
-        Logger.recordOutput("ShooterSubsystem/TurretPose", getFieldRelativeTurretPose());
-        Logger.recordOutput(
-                "ShooterSubsystem/HoodAmps", hoodMotor.getSupplyCurrent().getValueAsDouble());
+        // Turret
+        Logger.recordOutput("ShooterSubsystem/Turret/Pose", getFieldRelativeTurretPose());
+        Logger.recordOutput("ShooterSubsystem/Turret/CurrentPosition", Units.radiansToDegrees(currentTurretPosition));
 
         Logger.recordOutput(
-                "ShooterSubsystem/TurretVelocity",
+                "ShooterSubsystem/Turret/VelocityDegPerSec",
                 Units.rotationsToDegrees(turretMotor.getVelocity().getValueAsDouble()));
 
+        // Wheels
         Logger.recordOutput(
-                "ShooterSubsystem/LeftMotorVolts",
+                "ShooterSubsystem/Wheel/CurrentSpeed", Units.radiansPerSecondToRotationsPerMinute(currentWheelSpeed));
+
+        Logger.recordOutput(
+                "ShooterSubsystem/Wheel/LeftMotorVolts",
                 leftWheelMotor.getMotorVoltage().getValueAsDouble());
         Logger.recordOutput(
-                "ShooterSubsystem/RightMotorVolts",
+                "ShooterSubsystem/Wheel/RightMotorVolts",
                 rightWheelMotor.getMotorVoltage().getValueAsDouble());
-
-        Logger.recordOutput("ShooterSubsystem/UseAlternativeMinAngle", alternative);
 
         // Current
         Logger.recordOutput(
@@ -519,7 +519,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                 // If wrapping the long way breaks the negative limit, we clamp to the max to avoid breaking the robot
                 // (should never happend)
                 setpoint = maxLimitRad;
-                Logger.recordOutput("ShooterSubsystem/TurretLimitHit", "MAX");
+                Logger.recordOutput("ShooterSubsystem/Turret/LimitHit", "MAX");
             }
         } else if (setpoint < minLimitRad) {
             // We overshot the negative limit. Can we reach it by spinning the long way around?
@@ -528,15 +528,15 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
             } else {
                 // Clamped to minimum limit
                 setpoint = minLimitRad;
-                Logger.recordOutput("ShooterSubsystem/TurretLimitHit", "MIN");
+                Logger.recordOutput("ShooterSubsystem/Turret/LimitHit", "MIN");
             }
         } else {
-            Logger.recordOutput("ShooterSubsystem/TurretLimitHit", "NONE");
+            Logger.recordOutput("ShooterSubsystem/Turret/LimitHit", "NONE");
         }
 
-        Logger.recordOutput("ShooterSubsystem/RawTargetAngle", Units.radiansToDegrees(targetRobotRelativeRad));
-        Logger.recordOutput("ShooterSubsystem/TargetEncoderRad", Units.radiansToDegrees(targetEncoderRad));
-        Logger.recordOutput("ShooterSubsystem/ShortestPathError", Units.radiansToDegrees(error));
+        Logger.recordOutput("ShooterSubsystem/Turret/RawTargetAngle", Units.radiansToDegrees(targetRobotRelativeRad));
+        Logger.recordOutput("ShooterSubsystem/Turret/TargetEncoderDeg", Units.radiansToDegrees(targetEncoderRad));
+        Logger.recordOutput("ShooterSubsystem/Turret/ShortestPathError", Units.radiansToDegrees(error));
 
         return setpoint;
     }

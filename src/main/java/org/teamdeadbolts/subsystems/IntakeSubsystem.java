@@ -203,22 +203,27 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
             } else {
                 armMotor.set(totalVolts);
             }
-            Logger.recordOutput("IntakeSubsystem/AtGoal", armController.atGoal());
-            Logger.recordOutput("IntakeSubsystem/SetpointPos", Units.radiansToDegrees(setpoint.position));
-            Logger.recordOutput("IntakeSubsystem/SetpointVel", Units.radiansToDegrees(setpoint.velocity));
-            Logger.recordOutput("IntakeSubsystem/CurrVelocity", Units.radiansToDegrees(actualVelocity));
-            Logger.recordOutput("IntakeSubsystem/TargetAngle", Units.radiansToDegrees(targetAngle.get()));
+            Logger.recordOutput("IntakeSubsystem/Arm/AtGoal", armController.atGoal());
+            Logger.recordOutput("IntakeSubsystem/Arm/SetpointPos", Units.radiansToDegrees(setpoint.position));
+            Logger.recordOutput("IntakeSubsystem/Arm/SetpointVel", Units.radiansToDegrees(setpoint.velocity));
+            Logger.recordOutput("IntakeSubsystem/Arm/CurrVelocity", Units.radiansToDegrees(actualVelocity));
+            Logger.recordOutput("IntakeSubsystem/Arm/TargetAngle", Units.radiansToDegrees(targetAngle.get()));
+            TrapezoidProfile.State state = armController.getSetpoint();
+            Logger.recordOutput("IntakeSubsystem/Arm/Trapizoid/SetpointPos", Units.radiansToDegrees(state.position));
+            Logger.recordOutput("IntakeSubsystem/Arm/Trapizoid/SetpointVel", Units.radiansToDegrees(state.velocity));
 
             // Log control effort breakdown
-            Logger.recordOutput("IntakeSubsystem/Effort/PIDVolts", pidVolts);
-            Logger.recordOutput("IntakeSubsystem/Effort/FFVolts", feedforward);
-            Logger.recordOutput("IntakeSubsystem/Effort/ObserverVolts", disturbanceAccumulator);
+            Logger.recordOutput("IntakeSubsystem/Arm/Effort/PIDVolts", pidVolts);
+            Logger.recordOutput("IntakeSubsystem/Arm/Effort/FFVolts", feedforward);
+            Logger.recordOutput("IntakeSubsystem/Arm/Effort/ObserverVolts", disturbanceAccumulator);
         }
-
-        Logger.recordOutput("IntakeSubsystem/CurrentAngle", Units.radiansToDegrees(currentAngle));
         Logger.recordOutput("IntakeSubsystem/TargetState", targetState);
+        Logger.recordOutput("IntakeSubsystem/Arm/CurrentAngle", Units.radiansToDegrees(currentAngle));
         Logger.recordOutput(
-                "IntakeSubsystem/OutputVolts", armMotor.getMotorVoltage().getValueAsDouble());
+                "IntakeSubsystem/Arm/OutputVolts", armMotor.getMotorVoltage().getValueAsDouble());
+        
+        Logger.recordOutput("IntakeSubsystem/Wheels/Voltage", wheelMotor.getMotorVoltage().getValueAsDouble());
+        
 
         // Current monitoring
         Logger.recordOutput(
