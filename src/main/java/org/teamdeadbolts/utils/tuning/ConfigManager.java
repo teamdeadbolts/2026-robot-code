@@ -12,7 +12,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -176,21 +175,21 @@ public class ConfigManager {
      * @param version The version number to save as.
      */
     public synchronized void saveVersion(int version) {
-    try {
-        this.currConfig.version = version;
-        Path versionFile = configDir.resolve("v" + version + ".json");
-        Path tempFile = configDir.resolve("v" + version + ".json.tmp");
+        try {
+            this.currConfig.version = version;
+            Path versionFile = configDir.resolve("v" + version + ".json");
+            Path tempFile = configDir.resolve("v" + version + ".json.tmp");
 
-        try (Writer writer = Files.newBufferedWriter(tempFile)) {
-            gson.toJson(this.currConfig, writer);
+            try (Writer writer = Files.newBufferedWriter(tempFile)) {
+                gson.toJson(this.currConfig, writer);
+            }
+
+            Files.move(tempFile, versionFile, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-
-        Files.move(tempFile, versionFile, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-        
-    } catch (IOException e) {
-        e.printStackTrace();
     }
-}
 
     /**
      * Saves the current configuration to the existing active version file.

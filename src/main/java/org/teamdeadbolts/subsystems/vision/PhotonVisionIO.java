@@ -14,10 +14,14 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
+import org.photonvision.EstimatedRobotPose;
 import org.photonvision.PhotonCamera;
+import org.photonvision.PhotonPoseEstimator;
+import org.photonvision.PhotonPoseEstimator.PoseStrategy;
 import org.photonvision.targeting.PhotonPipelineResult;
 import org.photonvision.targeting.PhotonTrackedTarget;
 import org.teamdeadbolts.constants.VisionConstants;
@@ -29,6 +33,8 @@ import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
  */
 public class PhotonVisionIO {
     private final PhotonCamera camera;
+    private final PhotonPoseEstimator poseEstimator;
+
     private Transform3d offset = null;
     private Supplier<Transform3d> offsetSupplier = null;
     private final Map<Integer, Pose3d> tagPoseCache = new HashMap<>();
@@ -54,6 +60,9 @@ public class PhotonVisionIO {
     public PhotonVisionIO(String camName, Transform3d offset) {
         this.camera = new PhotonCamera(camName);
         this.offset = offset;
+        this.poseEstimator = new PhotonPoseEstimator(
+                VisionConstants.FIELD_LAYOUT, PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR, this.offset);
+
         cacheTagPoses();
     }
 
@@ -64,6 +73,9 @@ public class PhotonVisionIO {
     public PhotonVisionIO(String camName, Supplier<Transform3d> offsetSupplier) {
         this.camera = new PhotonCamera(camName);
         this.offsetSupplier = offsetSupplier;
+        this.poseEstimator = new PhotonPoseEstimator(
+                VisionConstants.FIELD_LAYOUT, PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR, new Transform3d());
+
         cacheTagPoses();
     }
 
@@ -119,45 +131,55 @@ public class PhotonVisionIO {
         if (!hardDisabled && enabled) {
             Tracer tracer = new Tracer();
             long startTime = RobotController.getFPGATime();
-            Transform3d currOffset = (offsetSupplier != null) ? offsetSupplier.get() : this.offset;
+
+            if (offsetSupplier != null) poseEstimator.setRobotToCameraTransform(offsetSupplier.get());
 
             List<PhotonPipelineResult> results = camera.getAllUnreadResults();
+
+            tagIds.clear();
+            poseObservations.clear();
 
             if (results.isEmpty()) {
                 ctx.observations = new PoseObservation[0];
                 ctx.tagIds = new int[0];
             } else {
                 PhotonPipelineResult result = results.get(results.size() - 1);
-                tagIds.clear();
-                poseObservations.clear();
 
-                if (result.hasTargets()) {
-                    PhotonTrackedTarget best = result.getBestTarget();
-                    Pose3d tagPose = tagPoseCache.get(best.getFiducialId());
+                Optional<EstimatedRobotPose> estPose = poseEstimator.update(result);
 
-                    if (tagPose != null) {
-                        // Calculate field-relative robot pose: Robot = Target - CamToTarget - RobotToCam
-                        Transform3d fieldToTarget = new Transform3d(tagPose.getTranslation(), tagPose.getRotation());
-                        Transform3d camToTarget = best.bestCameraToTarget;
-                        Transform3d fieldToCam = fieldToTarget.plus(camToTarget.inverse());
-                        Transform3d fieldToRobot = fieldToCam.plus(currOffset.inverse());
+                if (estPose.isPresent()) {
+                    EstimatedRobotPose pose = estPose.get();
+                    double totalDist = 0.0;
+                    double maxAmbiguity = 0.0;
 
-                        Pose3d robotPose = new Pose3d(fieldToRobot.getTranslation(), fieldToRobot.getRotation());
+                    for (PhotonTrackedTarget target : pose.targetsUsed) {
+                        tagIds.add(target.fiducialId);
+                        double distanceToTag =
+                                target.getBestCameraToTarget().getTranslation().getNorm();
+                        totalDist += distanceToTag;
 
-                        tagIds.add(best.fiducialId);
-                        poseObservations.add(new PoseObservation(
-                                result.getTimestampSeconds(),
-                                robotPose,
-                                best.poseAmbiguity,
-                                camToTarget.getTranslation().getNorm(),
-                                enabled && !hardDisabled));
+                        maxAmbiguity = Math.max(maxAmbiguity, target.poseAmbiguity);
                     }
+
+                    double avgDist = totalDist / pose.targetsUsed.size();
+
+                    double finalAmbiguity =
+                            (pose.strategy == PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR) ? 0 : maxAmbiguity;
+
+                    poseObservations.add(new PoseObservation(
+                            pose.timestampSeconds,
+                            pose.estimatedPose,
+                            finalAmbiguity,
+                            avgDist,
+                            enabled && !hardDisabled));
                 }
 
                 ctx.observations = poseObservations.toArray(new PoseObservation[0]);
                 ctx.tagIds = tagIds.stream().mapToInt(Integer::intValue).toArray();
 
-                Logger.recordOutput("Vision/Camera " + getName() + "/Observations", ctx.observations);
+                if (ctx.observations.length > 0) {
+                    Logger.recordOutput("Vision/Camera " + getName() + "/Observations", ctx.observations);
+                }
             }
 
             // Performance monitoring
