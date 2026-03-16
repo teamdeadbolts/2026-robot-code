@@ -1,0 +1,164 @@
+/* The Deadbolts (C) 2026 */
+package org.teamdeadbolts.subsystems;
+
+import com.ctre.phoenix6.CANBus;
+import com.ctre.phoenix6.hardware.TalonFX;
+import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.controller.SimpleMotorFeedforward;
+import org.littletonrobotics.junction.Logger;
+import org.teamdeadbolts.constants.HopperConstants;
+import org.teamdeadbolts.utils.StatefulSubsystem;
+import org.teamdeadbolts.utils.tuning.Refreshable;
+import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
+
+/**
+ * Manages the hopper subsystem,to position the lid (maybe we should call it lid subsystem)
+ * Uses PID control to maintain the lid at specified heights.
+ */
+public class HopperSubsystem extends StatefulSubsystem<HopperSubsystem.State> implements Refreshable {
+    public enum State {
+        UP,
+        DOWN;
+    }
+
+    private final CANBus canBus = new CANBus("*");
+    private final TalonFX hopperMotorLeft = new TalonFX(HopperConstants.HOPPER_MOTOR_LEFT_CAN_ID, canBus);
+    private final TalonFX hopperMotorRight = new TalonFX(HopperConstants.HOPPER_MOTOR_RIGHT_CAN_ID, canBus);
+
+    private final PIDController leftLifterController = new PIDController(0.0, 0.0, 0.0);
+    private final SimpleMotorFeedforward leftLifterFF = new SimpleMotorFeedforward(0, 0, 0);
+
+    private final PIDController rightLifterController = new PIDController(0.0, 0.0, 0.0);
+    private final SimpleMotorFeedforward rightLifterFF = new SimpleMotorFeedforward(0, 0, 0);
+
+    /* --- Tuning Parameters --- */
+    private final SavedLoggedNetworkNumber leftLifterControllerP =
+            SavedLoggedNetworkNumber.get("Tuning/Hopper/LeftLifterController/kP", 0.1);
+    private final SavedLoggedNetworkNumber leftLifterControllerI =
+            SavedLoggedNetworkNumber.get("Tuning/Hopper/LeftLifterController/kI", 0.1);
+    private final SavedLoggedNetworkNumber leftLifterFFkS =
+            SavedLoggedNetworkNumber.get("Tuning/Hopper/LeftLifterFF/kS", 0.0);
+
+    private final SavedLoggedNetworkNumber rightLifterControllerP =
+            SavedLoggedNetworkNumber.get("Tuning/Hopper/RightLifterController/kP", 0.1);
+    private final SavedLoggedNetworkNumber rightLifterControllerI =
+            SavedLoggedNetworkNumber.get("Tuning/Hopper/RightLifterController/kI", 0.1);
+    private final SavedLoggedNetworkNumber rightLifterFFkS =
+            SavedLoggedNetworkNumber.get("Tuning/Hopper/RightLifterFF/kS", 0.0);
+
+    private final SavedLoggedNetworkNumber lifterIZone = SavedLoggedNetworkNumber.get("Tuning/Hopper/LifterIZone", 0.0);
+    private final SavedLoggedNetworkNumber lifterMaxI = SavedLoggedNetworkNumber.get("Tuning/Hopper/LifterMaxI", 0.0);
+
+    private final SavedLoggedNetworkNumber lifterTol = SavedLoggedNetworkNumber.get("Tuning/Hopper/LifterTol", 0.0);
+
+    private final SavedLoggedNetworkNumber lidDownHeight =
+            SavedLoggedNetworkNumber.get("Tuning/Hopper/LidDownHeight", 0.0);
+    private final SavedLoggedNetworkNumber lidUpHeight = SavedLoggedNetworkNumber.get("Tuning/Hopper/LidUpHeight", 0.0);
+
+    public HopperSubsystem() {
+        this.targetState = State.DOWN;
+        hopperMotorLeft.setPosition(0);
+        hopperMotorRight.setPosition(0);
+
+        lifterTol.addRefreshable(this);
+        leftLifterControllerP.addRefreshable(this);
+        leftLifterControllerP.addRefreshable(this);
+        leftLifterFFkS.addRefreshable(this);
+        rightLifterControllerP.addRefreshable(this);
+        rightLifterControllerI.addRefreshable(this);
+        rightLifterFFkS.addRefreshable(this);
+
+        lifterIZone.addRefreshable(this);
+        lifterMaxI.addRefreshable(this);
+    }
+
+    @Override
+    public void refresh() {
+        HopperConstants.init();
+        leftLifterController.setP(leftLifterControllerP.get());
+        leftLifterController.setI(leftLifterControllerI.get());
+        leftLifterFF.setKs(leftLifterFFkS.get());
+
+        rightLifterController.setP(rightLifterControllerP.get());
+        rightLifterController.setI(rightLifterControllerI.get());
+        rightLifterFF.setKs(rightLifterFFkS.get());
+
+        leftLifterController.setIZone(lifterIZone.get());
+        leftLifterController.setIntegratorRange(0, lifterMaxI.get());
+
+        rightLifterController.setIZone(lifterIZone.get());
+        rightLifterController.setIntegratorRange(0, lifterMaxI.get());
+
+        rightLifterController.setTolerance(lifterTol.get());
+        leftLifterController.setTolerance(lifterTol.get());
+
+        hopperMotorLeft.getConfigurator().apply(HopperConstants.LEFT_HOPPER_MOTOR_CONFIG);
+        hopperMotorRight.getConfigurator().apply(HopperConstants.RIGHT_HOPPER_MOTOR_CONFIG);
+    }
+
+    public boolean lidAtGoal() {
+        return leftLifterController.atSetpoint() && rightLifterController.atSetpoint();
+    }
+
+    @Override
+    protected void onStateChange(State to, State from) {
+        leftLifterController.reset();
+        rightLifterController.reset();
+    }
+
+    @Override
+    public void periodic() {
+        Logger.recordOutput("HopperSubsystem/TargetState", targetState);
+        double targetHeight =
+                switch (this.targetState) {
+                    case UP -> lidUpHeight.get();
+                    case DOWN -> lidDownHeight.get();
+                };
+
+        // Calculate control effort
+        double leftPidOutput = leftLifterController.calculate(getLeftLidHeight(), targetHeight);
+        double leftOutput = leftPidOutput + leftLifterFF.calculate(leftPidOutput);
+        if (!leftLifterController.atSetpoint()) {
+            hopperMotorLeft.setVoltage(leftOutput);
+        } else {
+            hopperMotorLeft.setVoltage(0);
+        }
+
+        double rightPidOutput = rightLifterController.calculate(getRightLidHeight(), targetHeight);
+        double rightOutput = rightPidOutput + rightLifterFF.calculate(rightPidOutput);
+        if (!rightLifterController.atSetpoint()) {
+            hopperMotorRight.setVoltage(rightOutput);
+        } else {
+            hopperMotorRight.setVoltage(0);
+        }
+
+        // Logging
+        Logger.recordOutput("HopperSubsystem/TargetHeight", targetHeight);
+        Logger.recordOutput("HopperSubsystem/Left/CurrentHeight", getLeftLidHeight());
+        Logger.recordOutput("HopperSubsystem/Left/Output", leftOutput);
+        Logger.recordOutput(
+                "HopperSubsystem/Left/RawMotorPosition",
+                hopperMotorLeft.getPosition().getValueAsDouble());
+
+        Logger.recordOutput("HopperSubsystem/Right/CurrentHeight", getRightLidHeight());
+        Logger.recordOutput("HopperSubsystem/Right/Output", rightOutput);
+        Logger.recordOutput(
+                "HopperSubsystem/Right/RawMotorPosition",
+                hopperMotorRight.getPosition().getValueAsDouble());
+        // current
+        Logger.recordOutput(
+                "Debug/Current/Hopper/Left", hopperMotorLeft.getSupplyCurrent().getValueAsDouble());
+        Logger.recordOutput(
+                "Debug/Current/Hopper/Right",
+                hopperMotorRight.getSupplyCurrent().getValueAsDouble());
+    }
+
+    /** @return The current lid height in meters. */
+    private double getLeftLidHeight() {
+        return hopperMotorLeft.getPosition().getValueAsDouble() * HopperConstants.HOPPER_LEFT_ROTATIONS_TO_METERS;
+    }
+
+    private double getRightLidHeight() {
+        return hopperMotorRight.getPosition().getValueAsDouble() * HopperConstants.HOPPER_RIGHT_ROTATIONS_TO_METERS;
+    }
+}

@@ -1,0 +1,55 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Depot Trench to Center"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Depot Fuel Scoop"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Depot Center to Zone"
+          }
+        },
+        {
+          "type": "wait",
+          "data": {
+            "waitTime": 9.0
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Depot Bump to Center"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Depot Fuel Scoop"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Depot Center to Zone"
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": "Depot",
+  "choreoAuto": false
+}

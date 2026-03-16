@@ -1,0 +1,55 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Outpost Trench to Center"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Outpost Fuel Scoop"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Outpost Center to Zone"
+          }
+        },
+        {
+          "type": "wait",
+          "data": {
+            "waitTime": 9.0
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Outpost Bump to Center"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Outpost Fuel Scoop"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Outpost Center to Zone"
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": "Outpost",
+  "choreoAuto": false
+}
