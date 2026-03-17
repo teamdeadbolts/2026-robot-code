@@ -221,9 +221,9 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
         Logger.recordOutput("IntakeSubsystem/Arm/CurrentAngle", Units.radiansToDegrees(currentAngle));
         Logger.recordOutput(
                 "IntakeSubsystem/Arm/OutputVolts", armMotor.getMotorVoltage().getValueAsDouble());
-        
-        Logger.recordOutput("IntakeSubsystem/Wheels/Voltage", wheelMotor.getMotorVoltage().getValueAsDouble());
-        
+
+        Logger.recordOutput(
+                "IntakeSubsystem/Wheels/Voltage", wheelMotor.getMotorVoltage().getValueAsDouble());
 
         // Current monitoring
         Logger.recordOutput(

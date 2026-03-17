@@ -40,6 +40,8 @@ import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 public class SwerveSubsystem extends SubsystemBase implements Refreshable {
     private final AHRS gyro = new AHRS(NavXComType.kMXP_SPI);
     private final SwerveModule[] modules;
+    private final SwerveModuleState[] cachedModuleStates = new SwerveModuleState[4];
+    private final SwerveModulePosition[] cachedModulePositions = new SwerveModulePosition[4];
     private SlewRateLimiter slewRateLimiterTranslationalX;
     private SlewRateLimiter slewRateLimiterTranslationalY;
     private SlewRateLimiter slewRateLimiterRotaional;
@@ -85,7 +87,7 @@ public class SwerveSubsystem extends SubsystemBase implements Refreshable {
         trajHeadingController.enableContinuousInput(-Math.PI, Math.PI);
         slewRateTranslational.addRefreshable(this);
         slewRateRotaional.addRefreshable(this);
-        //        refresh();
+        // refresh();
     }
 
     @Override
@@ -102,9 +104,13 @@ public class SwerveSubsystem extends SubsystemBase implements Refreshable {
     /**
      * Commands the drivetrain to move with specific chassis speeds.
      * * @param speeds The target {@link ChassisSpeeds}.
-     * @param fieldRelative True to drive relative to the field, false for robot-relative.
-     * @param slewRates True to apply slew rate limiting for smoother motion.
-     * @param useOdometryRotation True to use odometry rotation, false to use raw gyro.
+     *
+     * @param fieldRelative       True to drive relative to the field, false for
+     *                            robot-relative.
+     * @param slewRates           True to apply slew rate limiting for smoother
+     *                            motion.
+     * @param useOdometryRotation True to use odometry rotation, false to use raw
+     *                            gyro.
      */
     public void drive(ChassisSpeeds speeds, boolean fieldRelative, boolean slewRates, boolean useOdometryRotation) {
         SwerveModuleState[] states = SwerveConstants.SWERVE_KINEMATICS.toSwerveModuleStates(calculateChassisSpeeds(
@@ -153,20 +159,18 @@ public class SwerveSubsystem extends SubsystemBase implements Refreshable {
 
     /** @return The array of module states. */
     public SwerveModuleState[] getModuleStates() {
-        SwerveModuleState[] states = new SwerveModuleState[4];
         for (SwerveModule m : this.modules) {
-            states[m.getModuleNumber()] = m.getState();
+            cachedModuleStates[m.getModuleNumber()] = m.getState();
         }
-        return states;
+        return cachedModuleStates;
     }
 
     /** @return The array of module positions. */
     public SwerveModulePosition[] getModulePositions() {
-        SwerveModulePosition[] positions = new SwerveModulePosition[4];
         for (SwerveModule m : modules) {
-            positions[m.getModuleNumber()] = m.getPosition();
+            cachedModulePositions[m.getModuleNumber()] = m.getPosition();
         }
-        return positions;
+        return cachedModulePositions;
     }
 
     public void resetModulesToAbs() {

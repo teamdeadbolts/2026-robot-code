@@ -1,12 +1,15 @@
 /* The Deadbolts (C) 2025 */
 package org.teamdeadbolts;
 
+import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator3d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
+import edu.wpi.first.math.numbers.N1;
+import edu.wpi.first.math.numbers.N4;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Timer;
@@ -33,6 +36,8 @@ public class RobotState {
     private final SavedLoggedNetworkNumber visionHeadingStdDev =
             SavedLoggedNetworkNumber.get("Tuning/PoseEstimator/VisionHeadingStdDev", 0.05);
 
+    private final Matrix<N4, N1> visionStdDevs = VecBuilder.fill(0, 0, 0, 0);
+
     private SwerveDrivePoseEstimator3d poseEstimator3d;
     private ChassisSpeeds fieldRelativeVelocities = new ChassisSpeeds();
     private ChassisSpeeds robotRelativeVelocities = new ChassisSpeeds();
@@ -51,6 +56,7 @@ public class RobotState {
 
     /**
      * Initializes the pose estimator with starting rotation and module positions.
+     *
      * @param initialRotation The gyro rotation at startup.
      * @param initalPositions The initial swerve module positions.
      */
@@ -111,6 +117,7 @@ public class RobotState {
 
     /**
      * Resets the pose estimator to a new pose.
+     *
      * @param newPose The new pose to set.
      */
     public void setEstimatedPose(Pose3d newPose) {
@@ -129,7 +136,8 @@ public class RobotState {
 
     /**
      * Updates the pose estimator with drivetrain data.
-     * @param positions Current swerve module positions.
+     *
+     * @param positions    Current swerve module positions.
      * @param gyroRotation Current gyroscope rotation.
      */
     public void updateFromSwerve(SwerveModulePosition[] positions, Rotation3d gyroRotation) {
@@ -157,16 +165,22 @@ public class RobotState {
     }
 
     /**
-     * Fuses a vision measurement into the pose estimator, scaling confidence by distance.
+     * Fuses a vision measurement into the pose estimator, scaling confidence by
+     * distance.
+     *
      * @param visionPose The pose reported by vision.
-     * @param timestamp The timestamp of the measurement.
-     * @param distance The distance from the target to scale uncertainty.
+     * @param timestamp  The timestamp of the measurement.
+     * @param distance   The distance from the target to scale uncertainty.
      */
     public void addVisionMeasurement(Pose3d visionPose, double timestamp, double distance) {
         double transStdDev = visionTransStdDev.get() * distance;
         double headingStdDev = visionHeadingStdDev.get() * distance;
 
-        poseEstimator3d.addVisionMeasurement(
-                visionPose, timestamp, VecBuilder.fill(transStdDev, transStdDev, transStdDev, headingStdDev));
+        visionStdDevs.set(0, 0, transStdDev);
+        visionStdDevs.set(1, 0, transStdDev);
+        visionStdDevs.set(2, 0, transStdDev);
+        visionStdDevs.set(3, 0, headingStdDev);
+
+        poseEstimator3d.addVisionMeasurement(visionPose, timestamp, visionStdDevs);
     }
 }

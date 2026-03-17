@@ -22,10 +22,7 @@ import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
-import java.util.Comparator;
-import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.RobotState;
 import org.teamdeadbolts.constants.ShooterConstants;
@@ -37,7 +34,8 @@ import org.teamdeadbolts.utils.tuning.Refreshable;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
 /**
- * Manages the multi-DOF shooter subsystem, including turret rotation, hood elevation,
+ * Manages the multi-DOF shooter subsystem, including turret rotation, hood
+ * elevation,
  * and dual-wheel flywheel speed control. Provides automated targeting based on
  * AprilTag tracking and field zones.
  */
@@ -291,20 +289,26 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                 Logger.recordOutput("ShooterSubsystem/AprilTagTrack/RangeForward", forwardLegFieldRel);
                 Logger.recordOutput("ShooterSubsystem/AprilTagTrack/RangeSide", sideLegFieldRel);
 
-                List<Pose3d> filteredTagPoses = VisionConstants.FIELD_LAYOUT.getTags().stream()
-                        .map(t -> t.pose)
-                        .filter(p -> aprilTagTrackZone.contains(p.toPose2d().getTranslation()))
-                        .collect(Collectors.toList());
+                Pose3d targetPose = null;
+                double minDistance = Double.MAX_VALUE;
+                Translation3d turretTrans = turretPose.getTranslation();
 
-                Optional<Pose3d> targetPose = filteredTagPoses.stream()
-                        .min(Comparator.comparingDouble(
-                                p -> p.getTranslation().getDistance(turretPose.getTranslation())));
+                for (edu.wpi.first.apriltag.AprilTag tag : VisionConstants.FIELD_LAYOUT.getTags()) {
+                    Translation2d tagTrans2d = tag.pose.getTranslation().toTranslation2d();
+                    if (aprilTagTrackZone.contains(tagTrans2d)) {
+                        double dist = tag.pose.getTranslation().getDistance(turretTrans);
+                        if (dist < minDistance) {
+                            minDistance = dist;
+                            targetPose = tag.pose;
+                        }
+                    }
+                }
 
                 targetHoodAngle = Optional.of(Units.degreesToRadians(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
-                if (targetPose.isPresent()) {
+                if (targetPose != null) {
                     targetTurretPosition = Optional.of(shotCalculator.calculateLatancyOffsetTurretAngle(
-                            robotPose2d, targetPose.get().toPose2d().getTranslation(), System.currentTimeMillis()));
-                    Logger.recordOutput("ShooterSubsystem/AprilTagTrack/TargetTagPose", targetPose.get());
+                            robotPose2d, targetPose.toPose2d().getTranslation(), System.currentTimeMillis()));
+                    Logger.recordOutput("ShooterSubsystem/AprilTagTrack/TargetTagPose", targetPose);
                 }
             }
             case PASS -> {
@@ -446,10 +450,10 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
             Logger.recordOutput("ShooterSubsystem/Turret/PidOutput", turretPidOutput);
             Logger.recordOutput("ShooterSubsystem/Turret/PidError", turretController.getPositionError());
             TrapezoidProfile.State state = turretController.getSetpoint();
-            Logger.recordOutput("ShooterSubsystem/Turret/Trapizoid/SetpointPosDeg", Units.degreesToRadians(state.position));
-            Logger.recordOutput("ShooterSubsystem/Turret/Trapizoid/SetpointVelDeg", Units.radiansToDegrees(state.velocity));
-            
-
+            Logger.recordOutput(
+                    "ShooterSubsystem/Turret/Trapizoid/SetpointPosDeg", Units.degreesToRadians(state.position));
+            Logger.recordOutput(
+                    "ShooterSubsystem/Turret/Trapizoid/SetpointVelDeg", Units.radiansToDegrees(state.velocity));
 
         } else {
             turretMotor.setVoltage(0);
@@ -493,10 +497,14 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
     }
 
     /**
-     * Calculates the continuous encoder setpoint for the turret, choosing the shortest path
+     * Calculates the continuous encoder setpoint for the turret, choosing the
+     * shortest path
      * to the target while respecting physical cable chain limits.
-     * * @param currentEncoderRad The raw, un-wrapped current position of the turret encoder (radians).
-     * @param targetRobotRelativeRad The desired angle relative to the front of the robot (radians).
+     * * @param currentEncoderRad The raw, un-wrapped current position of the turret
+     * encoder (radians).
+     *
+     * @param targetRobotRelativeRad The desired angle relative to the front of the
+     *                               robot (radians).
      * @return The optimal continuous setpoint for the PID controller (radians).
      */
     private double calculateTurretSetpoint(double currentEncoderRad, double targetRobotRelativeRad) {
@@ -512,17 +520,20 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
         double minLimitRad = Math.toRadians(ShooterConstants.TURRET_MIN_POSITION_DEGREES);
 
         if (setpoint > maxLimitRad) {
-            // We overshot the positive limit. Can we reach the target by spinning the long way around?
+            // We overshot the positive limit. Can we reach the target by spinning the long
+            // way around?
             if (setpoint - (2 * Math.PI) >= minLimitRad) {
                 setpoint -= (2 * Math.PI);
             } else {
-                // If wrapping the long way breaks the negative limit, we clamp to the max to avoid breaking the robot
+                // If wrapping the long way breaks the negative limit, we clamp to the max to
+                // avoid breaking the robot
                 // (should never happend)
                 setpoint = maxLimitRad;
                 Logger.recordOutput("ShooterSubsystem/Turret/LimitHit", "MAX");
             }
         } else if (setpoint < minLimitRad) {
-            // We overshot the negative limit. Can we reach it by spinning the long way around?
+            // We overshot the negative limit. Can we reach it by spinning the long way
+            // around?
             if (setpoint + (2 * Math.PI) <= maxLimitRad) {
                 setpoint += (2 * Math.PI);
             } else {
