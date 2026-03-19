@@ -64,6 +64,8 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
             SavedLoggedNetworkNumber.get("Tuning/Intake/WheelIntakeVoltage", 6.0);
     private final SavedLoggedNetworkNumber wheelShootVoltage =
             SavedLoggedNetworkNumber.get("Tuning/Intake/Shoot/WheelVoltage", 0.0);
+    private final SavedLoggedNetworkNumber intakeWheelStartTol =
+            SavedLoggedNetworkNumber.get("Tuning/Intake/Wheel/StartWheelTol", 30);
 
     private final SavedLoggedNetworkNumber armOffsetDeg = SavedLoggedNetworkNumber.get("Tuning/Intake/ArmOffsetDeg", 0);
 
@@ -151,7 +153,9 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
             }
             case INTAKE -> {
                 targetAngle = Optional.of(Units.degreesToRadians(intakeDeployedAngle.get()));
-                if (Math.abs(targetAngle.get() - currentAngle) < Math.PI / 4) {
+                // Math.
+                // if (Math.abs(targetAngle.get() - currentAngle) < Math.PI / 4) {
+                if (Math.abs(armController.getPositionError()) < Units.degreesToRadians(intakeWheelStartTol.get())) {
                     wheelMotor.setVoltage(wheelIntakeVoltage.get());
                 } else {
                     wheelMotor.setVoltage(0);
@@ -206,6 +210,8 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
             Logger.recordOutput("IntakeSubsystem/Arm/AtGoal", armController.atGoal());
             Logger.recordOutput("IntakeSubsystem/Arm/SetpointPos", Units.radiansToDegrees(setpoint.position));
             Logger.recordOutput("IntakeSubsystem/Arm/SetpointVel", Units.radiansToDegrees(setpoint.velocity));
+            Logger.recordOutput(
+                    "IntakeSubsystem/Arm/PidPosError", Units.radiansToDegrees(armController.getPositionError()));
             Logger.recordOutput("IntakeSubsystem/Arm/CurrVelocity", Units.radiansToDegrees(actualVelocity));
             Logger.recordOutput("IntakeSubsystem/Arm/TargetAngle", Units.radiansToDegrees(targetAngle.get()));
             TrapezoidProfile.State state = armController.getSetpoint();
@@ -221,9 +227,9 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
         Logger.recordOutput("IntakeSubsystem/Arm/CurrentAngle", Units.radiansToDegrees(currentAngle));
         Logger.recordOutput(
                 "IntakeSubsystem/Arm/OutputVolts", armMotor.getMotorVoltage().getValueAsDouble());
-        
-        Logger.recordOutput("IntakeSubsystem/Wheels/Voltage", wheelMotor.getMotorVoltage().getValueAsDouble());
-        
+
+        Logger.recordOutput(
+                "IntakeSubsystem/Wheels/Voltage", wheelMotor.getMotorVoltage().getValueAsDouble());
 
         // Current monitoring
         Logger.recordOutput(

@@ -10,7 +10,6 @@ import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.math.util.Units;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.constants.ShooterConstants;
@@ -236,9 +235,9 @@ public class ShotCalculator implements Refreshable {
         shotToUse.wheelSpeed = shooterMPSToRPM(shotToUse.ballVelocity);
         Logger.processInputs("ShotCalc/RealShot", shotToUse);
 
-        shotToUse.isPossible = ShooterConstants.SHOOTER_MPS_TO_RPM_MAP.get(9999.0) > shotToUse.wheelSpeed;
+        rawShot.isPossible = 5000.0 >= shotToUse.wheelSpeed;
 
-        return shotToUse;
+        return rawShot;
     }
 
     /**

@@ -446,10 +446,10 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
             Logger.recordOutput("ShooterSubsystem/Turret/PidOutput", turretPidOutput);
             Logger.recordOutput("ShooterSubsystem/Turret/PidError", turretController.getPositionError());
             TrapezoidProfile.State state = turretController.getSetpoint();
-            Logger.recordOutput("ShooterSubsystem/Turret/Trapizoid/SetpointPosDeg", Units.degreesToRadians(state.position));
-            Logger.recordOutput("ShooterSubsystem/Turret/Trapizoid/SetpointVelDeg", Units.radiansToDegrees(state.velocity));
-            
-
+            Logger.recordOutput(
+                    "ShooterSubsystem/Turret/Trapizoid/SetpointPosDeg", Units.radiansToDegrees(state.position));
+            Logger.recordOutput(
+                    "ShooterSubsystem/Turret/Trapizoid/SetpointVelDeg", Units.radiansToDegrees(state.velocity));
 
         } else {
             turretMotor.setVoltage(0);

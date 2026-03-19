@@ -92,6 +92,8 @@ public class RobotContainer {
 
         shooterSubsystem.setDefaultCommand(new DefaultShooterCommand(shooterSubsystem));
         intakeSubsystem.setDefaultCommand(new DefaultIntakeCommand(intakeSubsystem));
+        // intakeSubsystem.setDefaultCommand(new RunCommand(() -> intakeSubsystem.setState(State.OFF),
+        // intakeSubsystem));
         indexerSubsystem.setDefaultCommand(
                 new RunCommand(() -> indexerSubsystem.setState(IndexerSubsystem.State.OFF), indexerSubsystem));
         hopperSubsystem.setDefaultCommand(new DefaultHopperCommand(hopperSubsystem));
@@ -212,7 +214,7 @@ public class RobotContainer {
         new EventTrigger("StopIndex")
                 .onTrue(new RunCommand(() -> indexerSubsystem.setState(IndexerSubsystem.State.OFF), indexerSubsystem));
         new EventTrigger("Intake")
-                .onTrue(new IntakeCommand(intakeSubsystem, hopperSubsystem, IntakeCommand.Target.INTAKE));
+                .onTrue(new RunCommand(() -> intakeSubsystem.setState(IntakeSubsystem.State.INTAKE), intakeSubsystem));
         new EventTrigger("StopIntake")
                 .onTrue(new RunCommand(
                         () -> intakeSubsystem.setState(IntakeSubsystem.State.DEPLOYED), intakeSubsystem));

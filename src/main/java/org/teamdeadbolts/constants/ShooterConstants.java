@@ -10,6 +10,7 @@ import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.math.util.Units;
+import java.util.HashMap;
 import org.teamdeadbolts.utils.tuning.ConfigManager;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
@@ -66,20 +67,29 @@ public class ShooterConstants {
     private static final SavedLoggedNetworkNumber shooterWheelMotorCurrentLimit =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/ShooterWheelMotorCurrentLimit", 80);
 
+    private static HashMap<Double, SavedLoggedNetworkNumber> mpsToRpmTuning = new HashMap<>();
+
     static {
         ConfigManager.getInstance().onReady(ShooterConstants::init);
-        SHOOTER_MPS_TO_RPM_MAP.put(3.902 + 0.5, 1000.0);
-        SHOOTER_MPS_TO_RPM_MAP.put(4.151 + 0.5, 1500.0);
-        SHOOTER_MPS_TO_RPM_MAP.put(5.773 + 0.5, 2000.0);
-        SHOOTER_MPS_TO_RPM_MAP.put(6.175 + 0.5, 2500.0);
-        SHOOTER_MPS_TO_RPM_MAP.put(7.231, 3000.0);
-        SHOOTER_MPS_TO_RPM_MAP.put(8.562, 3500.0);
-        SHOOTER_MPS_TO_RPM_MAP.put(9.16, 4000.0);
-        SHOOTER_MPS_TO_RPM_MAP.put(10.0, 4500.0);
-        SHOOTER_MPS_TO_RPM_MAP.put(10.1, 5000.0);
+        for (double i = 1000; i <= 5000; i += 500) {
+            mpsToRpmTuning.put(i, SavedLoggedNetworkNumber.get("Tuning/Shooter/RpmToMpsMap/" + i + "->", 0));
+        }
+        // SHOOTER_MPS_TO_RPM_MAP.put(3.902 - 0.5, 1000.0);
+        // SHOOTER_MPS_TO_RPM_MAP.put(4.151 - 0.5, 1500.0);
+        // SHOOTER_MPS_TO_RPM_MAP.put(5.773 - .5, 2000.0);
+        // SHOOTER_MPS_TO_RPM_MAP.put(6.175 - 0.5, 2500.0);
+        // SHOOTER_MPS_TO_RPM_MAP.put(7.23 - 0.5, 3000.0);
+        // SHOOTER_MPS_TO_RPM_MAP.put(8.562 - 0.5, 3500.0);
+        // SHOOTER_MPS_TO_RPM_MAP.put(9.16 - 0.5, 4000.0);
+        // SHOOTER_MPS_TO_RPM_MAP.put(10.0 - 0.5, 4500.0);
+        // SHOOTER_MPS_TO_RPM_MAP.put(10.1 - 0.5, 5000.0);
     }
 
     public static void init() {
+        SHOOTER_MPS_TO_RPM_MAP.clear();
+        mpsToRpmTuning.forEach((rpm, mps) -> {
+            SHOOTER_MPS_TO_RPM_MAP.put(mps.get(), rpm);
+        });
         shooterTurretMotorCurrentLimit.initFromConfig();
         SHOOTER_TURRET_MOTOR_CONFIG.CurrentLimits.SupplyCurrentLimitEnable = true;
         SHOOTER_TURRET_MOTOR_CONFIG.CurrentLimits.SupplyCurrentLimit = shooterTurretMotorCurrentLimit.get();
