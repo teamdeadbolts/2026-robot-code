@@ -336,11 +336,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                         robotPose,
                         passTargetPose,
                         System.currentTimeMillis(),
-                        1.0,
-                        Units.degreesToRadians(
-                                alternative
-                                        ? alternativeMinHoodAngle.get()
-                                        : ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
+                        1.0);
                 targetHoodAngle = Optional.of(passShot.hoodAngle);
                 targetTurretPosition = Optional.of(passShot.turretAngle);
                 targetWheelSpeed = Optional.of(passShot.wheelSpeed);
@@ -354,11 +350,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                         robotPose,
                         target,
                         System.currentTimeMillis(),
-                        0.05,
-                        Units.degreesToRadians(
-                                alternative
-                                        ? alternativeMinHoodAngle.get()
-                                        : ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
+                        0.05);
                 targetWheelSpeed = Optional.of(shootShot.wheelSpeed);
                 targetHoodAngle = Optional.of(shootShot.hoodAngle);
                 targetTurretPosition = Optional.of(shootShot.turretAngle);

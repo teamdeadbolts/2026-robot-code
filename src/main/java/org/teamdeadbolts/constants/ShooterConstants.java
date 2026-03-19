@@ -10,7 +10,6 @@ import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.math.util.Units;
-import java.util.HashMap;
 import org.teamdeadbolts.utils.tuning.ConfigManager;
 import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 
@@ -28,8 +27,7 @@ public class ShooterConstants {
 
     public static final double WHEEL_MAX_OMEGA_RAD_PER_SEC = 600.0 * 2.0 * Math.PI / 60.0; // 600 RPM
 
-    public static final double EXIT_SPEED_EFFICIENCY =
-            0.95; // How well does the energy get transfered from the wheels to the ball
+    public static final double SHOOTER_MAX_RPM = 5000;
 
     public static final double SHOOTER_BIG_WHEEL_RADIUS_METERS = Units.inchesToMeters(1.5);
     public static final double SHOOTER_SMALL_WHEEL_RADIUS_METERS = Units.inchesToMeters(1.0);
@@ -58,7 +56,10 @@ public class ShooterConstants {
     public static final TalonFXConfiguration SHOOTER_WHEEL_MOTOR_CONFIG = new TalonFXConfiguration();
     public static final CANcoderConfiguration SHOOTER_ABS_ENCODER_CONFIG = new CANcoderConfiguration();
 
-    public static final InterpolatingDoubleTreeMap SHOOTER_MPS_TO_RPM_MAP = new InterpolatingDoubleTreeMap();
+    // public static final InterpolatingDoubleTreeMap SHOOTER_MPS_TO_RPM_MAP = new InterpolatingDoubleTreeMap();
+    public static final InterpolatingDoubleTreeMap DISTANCE_TO_HOOD_ANGLE = new InterpolatingDoubleTreeMap();
+    public static final InterpolatingDoubleTreeMap DISTNACE_TO_TOF = new InterpolatingDoubleTreeMap();
+    public static final InterpolatingDoubleTreeMap DISTANCE_TO_RPM = new InterpolatingDoubleTreeMap();
 
     private static final SavedLoggedNetworkNumber shooterTurretMotorCurrentLimit =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/ShooterTurretMotorCurrentLimit", 40);
@@ -67,13 +68,9 @@ public class ShooterConstants {
     private static final SavedLoggedNetworkNumber shooterWheelMotorCurrentLimit =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/ShooterWheelMotorCurrentLimit", 80);
 
-    private static HashMap<Double, SavedLoggedNetworkNumber> mpsToRpmTuning = new HashMap<>();
-
     static {
         ConfigManager.getInstance().onReady(ShooterConstants::init);
-        for (double i = 1000; i <= 5000; i += 500) {
-            mpsToRpmTuning.put(i, SavedLoggedNetworkNumber.get("Tuning/Shooter/RpmToMpsMap/" + i + "->", 0));
-        }
+
         // SHOOTER_MPS_TO_RPM_MAP.put(3.902 - 0.5, 1000.0);
         // SHOOTER_MPS_TO_RPM_MAP.put(4.151 - 0.5, 1500.0);
         // SHOOTER_MPS_TO_RPM_MAP.put(5.773 - .5, 2000.0);
@@ -86,10 +83,6 @@ public class ShooterConstants {
     }
 
     public static void init() {
-        SHOOTER_MPS_TO_RPM_MAP.clear();
-        mpsToRpmTuning.forEach((rpm, mps) -> {
-            SHOOTER_MPS_TO_RPM_MAP.put(mps.get(), rpm);
-        });
         shooterTurretMotorCurrentLimit.initFromConfig();
         SHOOTER_TURRET_MOTOR_CONFIG.CurrentLimits.SupplyCurrentLimitEnable = true;
         SHOOTER_TURRET_MOTOR_CONFIG.CurrentLimits.SupplyCurrentLimit = shooterTurretMotorCurrentLimit.get();

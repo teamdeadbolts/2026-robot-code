@@ -15,17 +15,11 @@ import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
 @Tag("visualizer")
 public class InteractiveShotVisualizer {
     private static final SavedLoggedNetworkNumber calcIterations =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/CalcIterations", 30);
-    private static final SavedLoggedNetworkNumber minImpactAngle =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/MinImpactAngleDegrees", 50);
-    private static final SavedLoggedNetworkNumber maxImpactAngle =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/MaxImpactAngleDegrees", 90);
+            SavedLoggedNetworkNumber.get("Tuning/Shooter/CalcIterations", 5);
     private static final SavedLoggedNetworkNumber shootLatancyMs =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/ShootLatancyMs", 0);
     private static final SavedLoggedNetworkNumber timeToKeepVel =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/TimeToKeepVelMs", 1000);
-    private static final SavedLoggedNetworkNumber airResistanceMultiplier =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/airResistanceMultiplier", 0.01);
     private static final SavedLoggedNetworkNumber linerFilter =
             SavedLoggedNetworkNumber.get("Tuning/Shooter/LinearFilter", 5);
 
@@ -41,13 +35,9 @@ public class InteractiveShotVisualizer {
             double vY,
             double vOmega,
             double calcIters,
-            double minImpact,
-            double maxImpact,
             double latencyMs,
             double timeToKeep,
-            double airRes,
-            double linearFilter,
-            double maxRpm) {}
+            double linearFilter) {}
 
     public record SimResponse(
             List<Double> xCoords,
@@ -68,7 +58,7 @@ public class InteractiveShotVisualizer {
             double calcHoodAngle,
             double calcTurretAngle,
             double calcRpm,
-            double impactAngle,
+            double flightTime,
             double ballVelocity,
             boolean isValid) {}
 
@@ -114,11 +104,8 @@ public class InteractiveShotVisualizer {
             SimRequest req = ctx.bodyAsClass(SimRequest.class);
 
             calcIterations.set(req.calcIters());
-            minImpactAngle.set(req.minImpact());
-            maxImpactAngle.set(req.maxImpact());
             shootLatancyMs.set(req.latencyMs());
             timeToKeepVel.set(req.timeToKeep());
-            airResistanceMultiplier.set(req.airRes());
 
             if (linerFilter.get() != req.linearFilter()) {
                 linerFilter.set(req.linearFilter());
@@ -136,12 +123,15 @@ public class InteractiveShotVisualizer {
             ChassisSpeeds speeds = new ChassisSpeeds(req.vX(), req.vY(), req.vOmega());
 
             calculator.updateVelocityState(currentTime, speeds);
+
+            // Call the refactored calculateShot (no maxAngle param needed anymore)
             ShotCalculator.ShotParameters result =
-                    calculator.calculateShot(robotPose, targetPos, currentTime, 0.0, Math.PI / 2);
+                    calculator.calculateShot(robotPose, targetPos, currentTime, 0.0);
 
             Pose3d turretPose = robotPose.transformBy(ShooterConstants.SHOOTER_OFFSET);
 
-            double theta = result.rawLaunchAngleRad;
+            // Assume hoodAngle from map is the physical launch angle in radians
+            double theta = result.hoodAngle;
             double phi = result.turretAngle + robotPose.getRotation().getZ();
 
             double u = Math.cos(theta) * Math.cos(phi);
@@ -156,9 +146,20 @@ public class InteractiveShotVisualizer {
             double turretVx = speeds.vxMetersPerSecond - (speeds.omegaRadiansPerSecond * fieldRelOffset.getY());
             double turretVy = speeds.vyMetersPerSecond + (speeds.omegaRadiansPerSecond * fieldRelOffset.getX());
 
-            double vx = (result.ballVelocity * u) + turretVx;
-            double vy = (result.ballVelocity * v) + turretVy;
-            double vz = result.ballVelocity * w;
+            // Reverse calculate m/s from RPM to keep the Three.js physics arc rendering.
+            double omegaRadPerSec = result.wheelSpeed * (2.0 * Math.PI / 60.0);
+
+            double wheel1RadiusMeters = 0.0254;
+            double wheel2RadiusMeters = 0.0381;
+
+            double surfaceVel1 = omegaRadPerSec * wheel1RadiusMeters;
+            double surfaceVel2 = omegaRadPerSec * wheel2RadiusMeters;
+
+            double ballVelocity = (surfaceVel1 + surfaceVel2) / 2.0;
+
+            double vx = (ballVelocity * u) + turretVx;
+            double vy = (ballVelocity * v) + turretVy;
+            double vz = ballVelocity * w;
 
             double exitRadius = ShooterConstants.EXIT_RADIUS_METERS;
             double x0 = turretPose.getX() + (exitRadius * u);
@@ -188,38 +189,20 @@ public class InteractiveShotVisualizer {
                 if (simZ < 0) break;
             }
 
-            // --- DETECT INTERPOLATING MAP CLAMP ---
-            // If asking for 1.0 m/s more velocity results in the exact same RPM, we know we've
-            // hit the hard ceiling of your map, making the shot impossible.
-            double testRpm = ShotCalculator.shooterMPSToRPM(result.ballVelocity + 1.0);
-            boolean mapIsClamped = Math.abs(result.wheelSpeed - testRpm) < 0.01;
-
-            boolean valid = result.ballVelocity > 0.1
-                    && !Double.isNaN(result.ballVelocity)
-                    && !mapIsClamped
-                    && result.wheelSpeed <= req.maxRpm();
+            // Validity is now cleanly handled by the refactored ShotCalculator
+            boolean valid = result.isPossible && ballVelocity > 0.1 && !Double.isNaN(ballVelocity);
 
             SimResponse response = new SimResponse(
-                    xCoords,
-                    yCoords,
-                    zCoords,
-                    x0,
-                    y0,
-                    z0,
-                    targetPos.getX(),
-                    targetPos.getY(),
-                    targetPos.getZ(),
-                    result.virtTarget.getX(),
-                    result.virtTarget.getY(),
-                    result.virtTarget.getZ(),
-                    u,
-                    v,
-                    w,
+                    xCoords, yCoords, zCoords,
+                    x0, y0, z0,
+                    targetPos.getX(), targetPos.getY(), targetPos.getZ(),
+                    result.virtTarget.getX(), result.virtTarget.getY(), result.virtTarget.getZ(),
+                    u, v, w,
                     Math.toDegrees(result.hoodAngle),
                     Math.toDegrees(result.turretAngle),
                     result.wheelSpeed,
-                    Math.toDegrees(result.impactAngle),
-                    result.ballVelocity,
+                    result.flightTimeSec,
+                    ballVelocity,
                     valid);
 
             ctx.json(response);
@@ -276,11 +259,7 @@ public class InteractiveShotVisualizer {
                 <div class="control-group"><label>Pose Jitter ± (m)</label><input type="number" id="poseNoise" value="0.0" step="0.05"></div>
 
                 <h3>Tuning</h3>
-                <div class="control-group"><label>Artificial RPM Limit</label><input type="number" id="maxRpm" value="6000" step="100"></div>
-                <div class="control-group"><label>Air Resistance</label><input type="number" id="airRes" value="0.01" step="0.001"></div>
-                <div class="control-group"><label>Calc Iterations</label><input type="number" id="calcIters" value="30" step="1"></div>
-                <div class="control-group"><label>Min Impact Angle (°)</label><input type="number" id="minImpact" value="50" step="1"></div>
-                <div class="control-group"><label>Max Impact Angle (°)</label><input type="number" id="maxImpact" value="90" step="1"></div>
+                <div class="control-group"><label>Calc Iterations</label><input type="number" id="calcIters" value="5" step="1"></div>
                 <div class="control-group"><label>Shoot Latency (ms)</label><input type="number" id="latencyMs" value="0" step="1"></div>
                 <div class="control-group"><label>Time to Keep Vel (ms)</label><input type="number" id="timeToKeep" value="1000" step="100"></div>
                 <div class="control-group"><label>Linear Filter Size</label><input type="number" id="linearFilter" value="5" step="1"></div>
@@ -290,7 +269,8 @@ public class InteractiveShotVisualizer {
                     <div>Hood Angle: <span id="outHood">0.0</span>°</div>
                     <div>Turret Angle: <span id="outTurret">0.0</span>°</div>
                     <div>Wheel RPM: <span id="outRpm">0</span> RPM</div>
-                    <div>Ball Vel: <span id="ballVelocity">0</span> m/s</div>
+                    <div>Flight Time: <span id="outFlightTime">0.0</span> s</div>
+                    <div>Est. Ball Vel: <span id="ballVelocity">0</span> m/s</div>
                 </div>
             </div>
 
@@ -446,13 +426,9 @@ public class InteractiveShotVisualizer {
                         tY: parseFloat(document.getElementById('tY').value),
                         tZ: parseFloat(document.getElementById('tZ').value),
                         calcIters: parseFloat(document.getElementById('calcIters').value),
-                        minImpact: parseFloat(document.getElementById('minImpact').value),
-                        maxImpact: parseFloat(document.getElementById('maxImpact').value),
                         latencyMs: parseFloat(document.getElementById('latencyMs').value),
                         timeToKeep: parseFloat(document.getElementById('timeToKeep').value),
-                        airRes: parseFloat(document.getElementById('airRes').value),
-                        linearFilter: parseFloat(document.getElementById('linearFilter').value),
-                        maxRpm: parseFloat(document.getElementById('maxRpm').value)
+                        linearFilter: parseFloat(document.getElementById('linearFilter').value)
                     };
 
                     try {
@@ -462,7 +438,8 @@ public class InteractiveShotVisualizer {
                         document.getElementById('outHood').innerText = latestSimData.calcHoodAngle.toFixed(2);
                         document.getElementById('outTurret').innerText = latestSimData.calcTurretAngle.toFixed(2);
                         document.getElementById('outRpm').innerText = latestSimData.calcRpm.toFixed(0);
-                        document.getElementById('ballVelocity').innerText = latestSimData.ballVelocity.toFixed(0);
+                        document.getElementById('outFlightTime').innerText = latestSimData.flightTime.toFixed(2);
+                        document.getElementById('ballVelocity').innerText = latestSimData.ballVelocity.toFixed(1);
 
                         // Constraints Visualizer Check
                         const validDisplay = document.getElementById('outValid');
