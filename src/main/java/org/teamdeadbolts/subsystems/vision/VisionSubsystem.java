@@ -37,7 +37,7 @@ public class VisionSubsystem extends SubsystemBase implements Refreshable {
     private final ArrayList<Pose3d> tagPoses = new ArrayList<>();
     private final ArrayList<Pose3d> robotPoses = new ArrayList<>();
     private final HashMap<PhotonVisionIO, SavedLoggedNetworkBoolean> cameraToggles = new HashMap<>();
-    private int loopCount = 0;
+    private final Tracer tracer = new Tracer();
 
     public VisionSubsystem(SwerveSubsystem swerveSubsystem, PhotonVisionIO... ios) {
         this.ios = ios;
@@ -68,7 +68,7 @@ public class VisionSubsystem extends SubsystemBase implements Refreshable {
     @Override
     public void periodic() {
         long startTime = RobotController.getFPGATime();
-        Tracer tracer = new Tracer();
+        tracer.resetTimer();
 
         tagPoses.clear();
         robotPoses.clear();
@@ -111,15 +111,6 @@ public class VisionSubsystem extends SubsystemBase implements Refreshable {
             }
 
             tracer.addEpoch("Camera" + index + " Add Observations");
-
-            // // Logging telemetry
-            // if (loopCount++ > 4) {
-            //     loopCount = 0;
-            //     Logger.recordOutput(
-            //             "Vision/Camera " + ios[index].getName() + "/TagPoses", tagPoses.toArray(new Pose3d[0]));
-            //     Logger.recordOutput(
-            //             "Vision/Camera " + ios[index].getName() + "/RobotPoses", robotPoses.toArray(new Pose3d[0]));
-            // }
         }
 
         // Performance monitoring

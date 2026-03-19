@@ -54,6 +54,9 @@ public class SwerveModule implements Refreshable {
     private final SavedLoggedNetworkNumber tMaxAccel =
             SavedLoggedNetworkNumber.get("Tuning/Swerve/Turn/MaxAcceleration", 0.0);
 
+    private SwerveModulePosition position;
+    private SwerveModuleState state;
+
     /* PID */
     private ProfiledPIDController tProfiledPIDController =
             new ProfiledPIDController(tP.get(), tI.get(), tD.get(), new Constraints(tMaxVel.get(), tMaxAccel.get()));
@@ -173,9 +176,10 @@ public class SwerveModule implements Refreshable {
      * @return The state
      */
     public SwerveModuleState getState() {
-        return new SwerveModuleState(
-                MathUtils.RPSToMPS(driveMotor.getVelocity().getValueAsDouble(), SwerveConstants.WHEEL_CIRCUMFERENCE),
-                this.getRotation());
+        state.speedMetersPerSecond =
+                MathUtils.RPSToMPS(driveMotor.getVelocity().getValueAsDouble(), SwerveConstants.WHEEL_CIRCUMFERENCE);
+        state.angle = this.getRotation();
+        return state;
     }
 
     /**
@@ -184,9 +188,10 @@ public class SwerveModule implements Refreshable {
      * @return The position
      */
     public SwerveModulePosition getPosition() {
-        return new SwerveModulePosition(
-                MathUtils.RPSToMPS(driveMotor.getPosition().getValueAsDouble(), SwerveConstants.WHEEL_CIRCUMFERENCE),
-                this.getRotation());
+        position.distanceMeters =
+                MathUtils.RPSToMPS(driveMotor.getPosition().getValueAsDouble(), SwerveConstants.WHEEL_CIRCUMFERENCE);
+        position.angle = this.getRotation();
+        return position;
     }
 
     public int getModuleNumber() {
