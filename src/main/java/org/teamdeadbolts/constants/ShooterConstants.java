@@ -12,7 +12,7 @@ import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.math.util.Units;
 import java.util.HashMap;
 import org.teamdeadbolts.utils.tuning.ConfigManager;
-import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
+import org.teamdeadbolts.utils.tuning.SavedTunableNumber;
 
 public class ShooterConstants {
     public static final int SHOOTER_TURRET_MOTOR_CAN_ID = 20;
@@ -60,19 +60,19 @@ public class ShooterConstants {
 
     public static final InterpolatingDoubleTreeMap SHOOTER_MPS_TO_RPM_MAP = new InterpolatingDoubleTreeMap();
 
-    private static final SavedLoggedNetworkNumber shooterTurretMotorCurrentLimit =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/ShooterTurretMotorCurrentLimit", 40);
-    private static final SavedLoggedNetworkNumber shooterHoodMotorCurrentLimit =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/ShooterHoodMotorCurrentLimit", 40);
-    private static final SavedLoggedNetworkNumber shooterWheelMotorCurrentLimit =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/ShooterWheelMotorCurrentLimit", 80);
+    private static final SavedTunableNumber shooterTurretMotorCurrentLimit =
+            SavedTunableNumber.get("Tuning/Shooter/ShooterTurretMotorCurrentLimit", 40);
+    private static final SavedTunableNumber shooterHoodMotorCurrentLimit =
+            SavedTunableNumber.get("Tuning/Shooter/ShooterHoodMotorCurrentLimit", 40);
+    private static final SavedTunableNumber shooterWheelMotorCurrentLimit =
+            SavedTunableNumber.get("Tuning/Shooter/ShooterWheelMotorCurrentLimit", 80);
 
-    private static HashMap<Double, SavedLoggedNetworkNumber> mpsToRpmTuning = new HashMap<>();
+    private static HashMap<Double, SavedTunableNumber> mpsToRpmTuning = new HashMap<>();
 
     static {
         ConfigManager.getInstance().onReady(ShooterConstants::init);
         for (double i = 1000; i <= 5000; i += 500) {
-            mpsToRpmTuning.put(i, SavedLoggedNetworkNumber.get("Tuning/Shooter/RpmToMpsMap/" + i + "->", 0));
+            mpsToRpmTuning.put(i, SavedTunableNumber.get("Tuning/Shooter/RpmToMpsMap/" + i + "->", 0));
         }
         // SHOOTER_MPS_TO_RPM_MAP.put(3.902 - 0.5, 1000.0);
         // SHOOTER_MPS_TO_RPM_MAP.put(4.151 - 0.5, 1500.0);

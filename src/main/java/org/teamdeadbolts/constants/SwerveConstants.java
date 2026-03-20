@@ -12,7 +12,7 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.util.Units;
 import org.teamdeadbolts.subsystems.drive.SwerveModule.SwerveModuleConfig;
 import org.teamdeadbolts.utils.tuning.ConfigManager;
-import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
+import org.teamdeadbolts.utils.tuning.SavedTunableNumber;
 
 /**
  * Constants related to the swerve drive
@@ -57,11 +57,11 @@ public class SwerveConstants {
     public static final TalonFXConfiguration DRIVE_MOTOR_CONFIG = new TalonFXConfiguration();
     public static final CANcoderConfiguration CANCODER_CONFIG = new CANcoderConfiguration();
 
-    private static final SavedLoggedNetworkNumber tCurrentLimit =
-            SavedLoggedNetworkNumber.get("Tuning/Swerve/Turn/CurrentLimit", 0.0);
+    private static final SavedTunableNumber tCurrentLimit =
+            SavedTunableNumber.get("Tuning/Swerve/Turn/CurrentLimit", 0.0);
 
-    private static final SavedLoggedNetworkNumber dCurrentLimit =
-            SavedLoggedNetworkNumber.get("Tuning/Swerve/Drive/CurrentLimit", 0.0);
+    private static final SavedTunableNumber dCurrentLimit =
+            SavedTunableNumber.get("Tuning/Swerve/Drive/CurrentLimit", 0.0);
 
     static {
         ConfigManager.getInstance().onReady(SwerveConstants::init);

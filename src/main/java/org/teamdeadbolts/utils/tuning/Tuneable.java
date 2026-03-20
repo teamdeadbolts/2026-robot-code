@@ -14,4 +14,10 @@ public interface Tuneable<T> {
      * This is typically called during system startup or when a configuration is loaded.
      */
     void initFromConfig();
+
+    void periodic();
+
+    T get();
+
+    void set(T value);
 }

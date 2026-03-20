@@ -15,6 +15,7 @@ import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform2d;
+import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -31,7 +32,7 @@ import org.teamdeadbolts.constants.ZoneConstants;
 import org.teamdeadbolts.utils.StatefulSubsystem;
 import org.teamdeadbolts.utils.Zone;
 import org.teamdeadbolts.utils.tuning.Refreshable;
-import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
+import org.teamdeadbolts.utils.tuning.SavedTunableNumber;
 
 /**
  * Manages the multi-DOF shooter subsystem, including turret rotation, hood
@@ -64,66 +65,47 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
     private final SimpleMotorFeedforward wheelFF = new SimpleMotorFeedforward(0, 0, 0);
 
     /* --- Tuning Parameters --- */
-    private final SavedLoggedNetworkNumber hoodControllerP =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/HoodController/kP", 0.1);
-    private final SavedLoggedNetworkNumber hoodControllerI =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/HoodController/kI", 0.0);
-    private final SavedLoggedNetworkNumber hoodControllerD =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/HoodController/kD", 0.0);
-    private final SavedLoggedNetworkNumber hoodControllerTol =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/HoodController/ToleranceDeg", 0.0);
-    private final SavedLoggedNetworkNumber hoodFeedforwardKs =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/HoodFeedforward/Ks", 0);
-    private final SavedLoggedNetworkNumber hoodZeroVoltage =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/HoodZeroVoltage", 0.0);
-    private final SavedLoggedNetworkNumber hoodZeroCurrent =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/HoodZeroCurrent", 0.0);
-    private final SavedLoggedNetworkNumber hoodZeroVelTol =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/HoodZeroVelTol", 0.0);
+    private final SavedTunableNumber hoodControllerP = SavedTunableNumber.get("Tuning/Shooter/HoodController/kP", 0.1);
+    private final SavedTunableNumber hoodControllerI = SavedTunableNumber.get("Tuning/Shooter/HoodController/kI", 0.0);
+    private final SavedTunableNumber hoodControllerD = SavedTunableNumber.get("Tuning/Shooter/HoodController/kD", 0.0);
+    private final SavedTunableNumber hoodControllerTol =
+            SavedTunableNumber.get("Tuning/Shooter/HoodController/ToleranceDeg", 0.0);
+    private final SavedTunableNumber hoodFeedforwardKs = SavedTunableNumber.get("Tuning/Shooter/HoodFeedforward/Ks", 0);
+    private final SavedTunableNumber hoodZeroVoltage = SavedTunableNumber.get("Tuning/Shooter/HoodZeroVoltage", 0.0);
+    private final SavedTunableNumber hoodZeroCurrent = SavedTunableNumber.get("Tuning/Shooter/HoodZeroCurrent", 0.0);
+    private final SavedTunableNumber hoodZeroVelTol = SavedTunableNumber.get("Tuning/Shooter/HoodZeroVelTol", 0.0);
 
-    private final SavedLoggedNetworkNumber turretControllerP =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/TurretController/kP", 0.1);
-    private final SavedLoggedNetworkNumber turretControllerI =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/TurretController/kI", 0.0);
-    private final SavedLoggedNetworkNumber turretControllerD =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/TurretController/kD", 0.0);
-    private final SavedLoggedNetworkNumber turretMaxVel =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/TurretController/MaxVel", 0);
-    private final SavedLoggedNetworkNumber turretMaxAccel =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/TurretController/MaxAccel", 0);
-    private final SavedLoggedNetworkNumber turretIZone =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/TurretController/IZone", 0.0);
-    private final SavedLoggedNetworkNumber turretIMax =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/TurretController/IMaxVolts", 3);
-    private final SavedLoggedNetworkNumber turretIMin =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/TurretController/IMinVolts", 0);
+    private final SavedTunableNumber turretControllerP =
+            SavedTunableNumber.get("Tuning/Shooter/TurretController/kP", 0.1);
+    private final SavedTunableNumber turretControllerI =
+            SavedTunableNumber.get("Tuning/Shooter/TurretController/kI", 0.0);
+    private final SavedTunableNumber turretControllerD =
+            SavedTunableNumber.get("Tuning/Shooter/TurretController/kD", 0.0);
+    private final SavedTunableNumber turretMaxVel = SavedTunableNumber.get("Tuning/Shooter/TurretController/MaxVel", 0);
+    private final SavedTunableNumber turretMaxAccel =
+            SavedTunableNumber.get("Tuning/Shooter/TurretController/MaxAccel", 0);
+    private final SavedTunableNumber turretIZone = SavedTunableNumber.get("Tuning/Shooter/TurretController/IZone", 0.0);
+    private final SavedTunableNumber turretIMax =
+            SavedTunableNumber.get("Tuning/Shooter/TurretController/IMaxVolts", 3);
+    private final SavedTunableNumber turretIMin =
+            SavedTunableNumber.get("Tuning/Shooter/TurretController/IMinVolts", 0);
 
-    private final SavedLoggedNetworkNumber wheelFFS =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/WheelController/kS", 0.1);
-    private final SavedLoggedNetworkNumber wheelFFV =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/WheelController/kV", 1);
-    private final SavedLoggedNetworkNumber wheelFFA =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/WheelController/kA", 0.0);
+    private final SavedTunableNumber wheelFFS = SavedTunableNumber.get("Tuning/Shooter/WheelController/kS", 0.1);
+    private final SavedTunableNumber wheelFFV = SavedTunableNumber.get("Tuning/Shooter/WheelController/kV", 1);
+    private final SavedTunableNumber wheelFFA = SavedTunableNumber.get("Tuning/Shooter/WheelController/kA", 0.0);
 
-    private final SavedLoggedNetworkNumber bangTol = SavedLoggedNetworkNumber.get("Tuning/Shooter/BangBangTol", 100);
-    private final SavedLoggedNetworkNumber shooterWheelSpinupSpeed =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/ShooterWheelSpinupSpeed", 5000.0);
+    private final SavedTunableNumber bangTol = SavedTunableNumber.get("Tuning/Shooter/BangBangTol", 100);
+    private final SavedTunableNumber shooterWheelSpinupSpeed =
+            SavedTunableNumber.get("Tuning/Shooter/ShooterWheelSpinupSpeed", 5000.0);
 
-    private final SavedLoggedNetworkNumber testHoodAngle =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/TestHoodAngle", 45);
-    private final SavedLoggedNetworkNumber testTurretPosition =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/TestTurretPosition", 45);
-    private final SavedLoggedNetworkNumber testVoltage = SavedLoggedNetworkNumber.get("Tuning/Shooter/TestVoltage", 0);
-    private final SavedLoggedNetworkNumber testShooterMPS =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/TestShooterRPM", 3);
-    private final SavedLoggedNetworkNumber testTargetX = SavedLoggedNetworkNumber.get("Tuning/Shooter/TestTargetX", 0);
-    private final SavedLoggedNetworkNumber testTargetY = SavedLoggedNetworkNumber.get("Tuning/Shooter/TestTargetY", 0);
-    private final SavedLoggedNetworkNumber testTargetZ = SavedLoggedNetworkNumber.get("Tuning/Shooter/TestTargetZ", 0);
-    private final SavedLoggedNetworkNumber aprilTagTrackRange =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/AprilTagTrackRange", 0);
+    private final SavedTunableNumber testHoodAngle = SavedTunableNumber.get("Tuning/Shooter/TestHoodAngle", 45);
 
-    private final SavedLoggedNetworkNumber alternativeMinHoodAngle =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/AlternativeMinHoodAngleDeg", 23);
+    private final SavedTunableNumber testShooterMPS = SavedTunableNumber.get("Tuning/Shooter/TestShooterRPM", 3);
+    private final SavedTunableNumber aprilTagTrackRange =
+            SavedTunableNumber.get("Tuning/Shooter/AprilTagTrackRange", 0);
+
+    private final SavedTunableNumber alternativeMinHoodAngle =
+            SavedTunableNumber.get("Tuning/Shooter/AlternativeMinHoodAngleDeg", 23);
 
     private Optional<Double> targetWheelSpeed;
     private Optional<Double> targetTurretPosition;
@@ -202,11 +184,11 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
         this.turretMotor.setPosition(0);
     }
 
-    public void setTurretFallbackMode(boolean enabled) {
+    public void setTurretFallbackMode(final boolean enabled) {
         this.turretFallbackMode = enabled;
     }
 
-    public void setAlternativeHoodMinAngle(boolean alternative) {
+    public void setAlternativeHoodMinAngle(final boolean alternative) {
         this.alternative = alternative;
     }
 
@@ -219,28 +201,35 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
     }
 
     public Pose3d getFieldRelativeTurretPose() {
-        Pose3d robotPose = RobotState.getInstance().getRobotPose();
+        final Pose3d robotPose = RobotState.getInstance().getRobotPose();
 
-        double fieldRelativeHeading = robotPose.getRotation().getZ() + getTurretRotation();
+        final double fieldRelativeHeading = robotPose.getRotation().getZ() + getTurretRotation();
 
         return new Pose3d(
                 robotPose.transformBy(ShooterConstants.SHOOTER_OFFSET).getTranslation(),
                 new Rotation3d(0, 0, fieldRelativeHeading));
     }
 
+    public Transform3d getRobotRelativeTurretTransform() {
+        return new Transform3d(
+                ShooterConstants.SHOOTER_OFFSET.getTranslation(), new Rotation3d(0, 0, getTurretRotation()));
+    }
+
     @Override
-    protected void onStateChange(State from, State to) {
+    protected void onStateChange(final State from, final State to) {
         hoodController.reset();
 
-        double position = Units.rotationsToRadians(turretMotor.getPosition().getValueAsDouble());
-        double velocity = Units.rotationsToRadians(turretMotor.getVelocity().getValueAsDouble());
+        final double position =
+                Units.rotationsToRadians(turretMotor.getPosition().getValueAsDouble());
+        final double velocity =
+                Units.rotationsToRadians(turretMotor.getVelocity().getValueAsDouble());
         turretController.reset(new TrapezoidProfile.State(position, velocity));
     }
 
     @Override
     public void periodic() {
         Logger.recordOutput("ShooterSubsystem/TargetState", targetState);
-        double currentHoodAngle =
+        final double currentHoodAngle =
                 Units.rotationsToRadians(hoodMotor.getPosition().getValueAsDouble());
         Optional<Double> targetHoodAngle = Optional.empty();
         Optional<Translation3d> currentTargetTranslation = Optional.empty();
@@ -250,11 +239,11 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
         targetWheelSpeed = Optional.empty();
         targetTurretPosition = Optional.empty();
 
-        Pose3d robotPose = RobotState.getInstance().getRobotPose();
-        ChassisSpeeds robotSpeeds = RobotState.getInstance().getFieldRelativeRobotVelocities();
+        final Pose3d robotPose = RobotState.getInstance().getRobotPose();
+        final ChassisSpeeds robotSpeeds = RobotState.getInstance().getFieldRelativeRobotVelocities();
         shotCalculator.updateVelocityState((double) System.currentTimeMillis(), robotSpeeds);
 
-        Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Red);
+        final Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Red);
 
         switch (targetState) {
             case OFF -> {
@@ -262,25 +251,27 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                 targetHoodAngle = Optional.of(Units.degreesToRadians(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
             }
             case APRILTAG_TRACK -> {
-                Pose3d turretPose = getFieldRelativeTurretPose();
-                Pose2d robotPose2d = robotPose.toPose2d();
-                Translation2d turretOffset =
+                final Pose3d turretPose = getFieldRelativeTurretPose();
+                final Pose2d robotPose2d = robotPose.toPose2d();
+                final Translation2d turretOffset =
                         ShooterConstants.SHOOTER_OFFSET.getTranslation().toTranslation2d();
-                Rotation2d towardsCenterAngle = turretOffset.times(-1.0).getAngle();
-                Translation2d shiftRobotRel = new Translation2d(Units.inchesToMeters(3.0), towardsCenterAngle);
-                Translation2d vertexRobotRel = turretOffset.plus(shiftRobotRel);
+                final Rotation2d towardsCenterAngle = turretOffset.times(-1.0).getAngle();
+                final Translation2d shiftRobotRel = new Translation2d(Units.inchesToMeters(3.0), towardsCenterAngle);
+                final Translation2d vertexRobotRel = turretOffset.plus(shiftRobotRel);
 
-                double dirX = Math.signum(turretOffset.getX());
-                double dirY = Math.signum(turretOffset.getY());
+                final double dirX = Math.signum(turretOffset.getX());
+                final double dirY = Math.signum(turretOffset.getY());
 
-                Translation2d forwardLeg = vertexRobotRel.plus(new Translation2d(aprilTagTrackRange.get() * dirX, 0));
-                Translation2d sideLeg = vertexRobotRel.plus(new Translation2d(0, aprilTagTrackRange.get() * dirY));
+                final Translation2d forwardLeg =
+                        vertexRobotRel.plus(new Translation2d(aprilTagTrackRange.get() * dirX, 0));
+                final Translation2d sideLeg =
+                        vertexRobotRel.plus(new Translation2d(0, aprilTagTrackRange.get() * dirY));
 
-                Translation2d vertexFieldRel =
+                final Translation2d vertexFieldRel =
                         vertexRobotRel.rotateBy(robotPose2d.getRotation()).plus(robotPose2d.getTranslation());
-                Translation2d forwardLegFieldRel =
+                final Translation2d forwardLegFieldRel =
                         forwardLeg.rotateBy(robotPose2d.getRotation()).plus(robotPose2d.getTranslation());
-                Translation2d sideLegFieldRel =
+                final Translation2d sideLegFieldRel =
                         sideLeg.rotateBy(robotPose2d.getRotation()).plus(robotPose2d.getTranslation());
 
                 aprilTagTrackZone.setVertices(vertexFieldRel, forwardLegFieldRel, sideLegFieldRel);
@@ -291,12 +282,12 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
 
                 Pose3d targetPose = null;
                 double minDistance = Double.MAX_VALUE;
-                Translation3d turretTrans = turretPose.getTranslation();
+                final Translation3d turretTrans = turretPose.getTranslation();
 
-                for (edu.wpi.first.apriltag.AprilTag tag : VisionConstants.FIELD_LAYOUT.getTags()) {
-                    Translation2d tagTrans2d = tag.pose.getTranslation().toTranslation2d();
+                for (final edu.wpi.first.apriltag.AprilTag tag : VisionConstants.FIELD_LAYOUT.getTags()) {
+                    final Translation2d tagTrans2d = tag.pose.getTranslation().toTranslation2d();
                     if (aprilTagTrackZone.contains(tagTrans2d)) {
-                        double dist = tag.pose.getTranslation().getDistance(turretTrans);
+                        final double dist = tag.pose.getTranslation().getDistance(turretTrans);
                         if (dist < minDistance) {
                             minDistance = dist;
                             targetPose = tag.pose;
@@ -332,7 +323,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                         new Pose2d(passTargetPose.toTranslation2d(), new Rotation2d()));
                 currentTargetTranslation = Optional.of(passTargetPose);
 
-                ShotParametersAutoLogged passShot = shotCalculator.calculateShot(
+                final ShotParametersAutoLogged passShot = shotCalculator.calculateShot(
                         robotPose,
                         passTargetPose,
                         System.currentTimeMillis(),
@@ -347,10 +338,10 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                 isPossibleShot = passShot.isPossible;
             }
             case SHOOT -> {
-                Translation3d target =
+                final Translation3d target =
                         alliance == Alliance.Blue ? ShooterConstants.SHOOT_POSE_BLUE : ShooterConstants.SHOOT_POSE_RED;
 
-                ShotParametersAutoLogged shootShot = shotCalculator.calculateShot(
+                final ShotParametersAutoLogged shootShot = shotCalculator.calculateShot(
                         robotPose,
                         target,
                         System.currentTimeMillis(),
@@ -392,7 +383,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
 
         fallbackChassisTargetAngle = Optional.empty();
         if (turretFallbackMode && targetTurretPosition.isPresent() && currentTargetTranslation.isPresent()) {
-            double lockedTurrentRad =
+            final double lockedTurrentRad =
                     Units.rotationsToRadians(turretMotor.getPosition().getValueAsDouble());
             fallbackChassisTargetAngle = Optional.of(calculateChassisAngleForLockedTurret(
                     robotPose.toPose2d(), currentTargetTranslation.get().toTranslation2d(), lockedTurrentRad));
@@ -404,11 +395,11 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
 
         // --- Hardware Control ---
         if (targetHoodAngle.isPresent()) {
-            double targetHoodAngleClamped = MathUtil.clamp(
+            final double targetHoodAngleClamped = MathUtil.clamp(
                     targetHoodAngle.get(),
                     Units.degreesToRadians(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES),
                     Units.degreesToRadians(ShooterConstants.SHOOTER_HOOD_MAX_ANGLE_DEGREES));
-            double pidOutput = hoodController.calculate(currentHoodAngle, targetHoodAngleClamped);
+            final double pidOutput = hoodController.calculate(currentHoodAngle, targetHoodAngleClamped);
             if (!hoodController.atSetpoint()) hoodMotor.setVoltage(pidOutput);
             Logger.recordOutput("ShooterSubsystem/Hood/TargetHoodAngle", Units.radiansToDegrees(targetHoodAngle.get()));
             Logger.recordOutput("ShooterSubsystem/Hood/HoodOutput", pidOutput);
@@ -417,7 +408,8 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
         }
 
         if (targetWheelSpeed.isPresent()) {
-            double wheelOutput = (getRPMError() > bangTol.get()) ? 12.0 : wheelFF.calculate(targetWheelSpeed.get());
+            final double wheelOutput =
+                    (getRPMError() > bangTol.get()) ? 12.0 : wheelFF.calculate(targetWheelSpeed.get());
             leftWheelMotor.setControl(new VoltageOut(wheelOutput));
             Logger.recordOutput("ShooterSubsystem/Wheel/Volts", wheelOutput);
             Logger.recordOutput("ShooterSubsystem/Wheel/TargetSpeedRPM", targetWheelSpeed.get());
@@ -430,17 +422,17 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                     Units.rotationsToRadians(turretMotor.getPosition().getValueAsDouble());
 
             // Just pass the robot-relative target directly into the new method
-            double normalizedTurretPosition =
+            final double normalizedTurretPosition =
                     calculateTurretSetpoint(currentTurretPosition, targetTurretPosition.get());
 
-            double turretPidOutput = turretController.calculate(currentTurretPosition, normalizedTurretPosition);
+            final double turretPidOutput = turretController.calculate(currentTurretPosition, normalizedTurretPosition);
 
             // Calculate field pose for logging
-            Transform2d targetTurretTransform = new Transform2d(
+            final Transform2d targetTurretTransform = new Transform2d(
                     ShooterConstants.SHOOTER_OFFSET.getTranslation().toTranslation2d(),
                     Rotation2d.fromRadians(normalizedTurretPosition
                             + ShooterConstants.SHOOTER_OFFSET.getRotation().getZ()));
-            Pose2d targetTurretFieldPose = robotPose.toPose2d().transformBy(targetTurretTransform);
+            final Pose2d targetTurretFieldPose = robotPose.toPose2d().transformBy(targetTurretTransform);
 
             turretMotor.setVoltage(turretPidOutput);
 
@@ -449,7 +441,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
             Logger.recordOutput("ShooterSubsystem/Target/TurretPose", targetTurretFieldPose);
             Logger.recordOutput("ShooterSubsystem/Turret/PidOutput", turretPidOutput);
             Logger.recordOutput("ShooterSubsystem/Turret/PidError", turretController.getPositionError());
-            TrapezoidProfile.State state = turretController.getSetpoint();
+            final TrapezoidProfile.State state = turretController.getSetpoint();
             Logger.recordOutput(
                     "ShooterSubsystem/Turret/Trapizoid/SetpointPosDeg", Units.radiansToDegrees(state.position));
             Logger.recordOutput(
@@ -507,17 +499,17 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
      *                               robot (radians).
      * @return The optimal continuous setpoint for the PID controller (radians).
      */
-    private double calculateTurretSetpoint(double currentEncoderRad, double targetRobotRelativeRad) {
+    private double calculateTurretSetpoint(final double currentEncoderRad, final double targetRobotRelativeRad) {
         // Shift the target from the Robot Frame to the Encoder Frame
-        double offsetRad = ShooterConstants.SHOOTER_OFFSET.getRotation().getZ();
-        double targetEncoderRad = targetRobotRelativeRad - offsetRad;
+        final double offsetRad = ShooterConstants.SHOOTER_OFFSET.getRotation().getZ();
+        final double targetEncoderRad = targetRobotRelativeRad - offsetRad;
 
-        double error = MathUtil.angleModulus(targetEncoderRad - currentEncoderRad);
+        final double error = MathUtil.angleModulus(targetEncoderRad - currentEncoderRad);
 
         double setpoint = currentEncoderRad + error;
 
-        double maxLimitRad = Math.toRadians(ShooterConstants.TURRET_MAX_POSITION_DEGREES);
-        double minLimitRad = Math.toRadians(ShooterConstants.TURRET_MIN_POSITION_DEGREES);
+        final double maxLimitRad = Math.toRadians(ShooterConstants.TURRET_MAX_POSITION_DEGREES);
+        final double minLimitRad = Math.toRadians(ShooterConstants.TURRET_MIN_POSITION_DEGREES);
 
         if (setpoint > maxLimitRad) {
             // We overshot the positive limit. Can we reach the target by spinning the long
@@ -558,21 +550,21 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
     }
 
     private Rotation2d calculateChassisAngleForLockedTurret(
-            Pose2d robotPose, Translation2d targetLocation, double lockedTurretAngle) {
-        Translation2d robotToTarget = targetLocation.minus(robotPose.getTranslation());
-        double distToTarget = robotToTarget.getNorm();
-        double angleToTarget = Math.atan2(robotToTarget.getY(), robotToTarget.getX());
+            final Pose2d robotPose, final Translation2d targetLocation, final double lockedTurretAngle) {
+        final Translation2d robotToTarget = targetLocation.minus(robotPose.getTranslation());
+        final double distToTarget = robotToTarget.getNorm();
+        final double angleToTarget = Math.atan2(robotToTarget.getY(), robotToTarget.getX());
 
-        Translation2d turretOffset =
+        final Translation2d turretOffset =
                 ShooterConstants.SHOOTER_OFFSET.getTranslation().toTranslation2d();
-        double perpendicularOffset =
+        final double perpendicularOffset =
                 turretOffset.getX() * Math.sin(lockedTurretAngle) - turretOffset.getY() * Math.cos(lockedTurretAngle);
 
         if (Math.abs(perpendicularOffset) > distToTarget) {
             return new Rotation2d(angleToTarget - lockedTurretAngle);
         }
 
-        double offsetCompensationAngle = Math.asin(perpendicularOffset / distToTarget);
+        final double offsetCompensationAngle = Math.asin(perpendicularOffset / distToTarget);
         return new Rotation2d(angleToTarget - lockedTurretAngle + offsetCompensationAngle);
     }
 }

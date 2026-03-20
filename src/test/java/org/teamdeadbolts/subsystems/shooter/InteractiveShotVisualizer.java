@@ -10,24 +10,22 @@ import java.util.List;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.teamdeadbolts.constants.ShooterConstants;
-import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
+import org.teamdeadbolts.utils.tuning.SavedTunableNumber;
 
 @Tag("visualizer")
 public class InteractiveShotVisualizer {
-    private static final SavedLoggedNetworkNumber calcIterations =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/CalcIterations", 30);
-    private static final SavedLoggedNetworkNumber minImpactAngle =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/MinImpactAngleDegrees", 50);
-    private static final SavedLoggedNetworkNumber maxImpactAngle =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/MaxImpactAngleDegrees", 90);
-    private static final SavedLoggedNetworkNumber shootLatancyMs =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/ShootLatancyMs", 0);
-    private static final SavedLoggedNetworkNumber timeToKeepVel =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/TimeToKeepVelMs", 1000);
-    private static final SavedLoggedNetworkNumber airResistanceMultiplier =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/airResistanceMultiplier", 0.01);
-    private static final SavedLoggedNetworkNumber linerFilter =
-            SavedLoggedNetworkNumber.get("Tuning/Shooter/LinearFilter", 5);
+    private static final SavedTunableNumber calcIterations =
+            SavedTunableNumber.get("Tuning/Shooter/CalcIterations", 30);
+    private static final SavedTunableNumber minImpactAngle =
+            SavedTunableNumber.get("Tuning/Shooter/MinImpactAngleDegrees", 50);
+    private static final SavedTunableNumber maxImpactAngle =
+            SavedTunableNumber.get("Tuning/Shooter/MaxImpactAngleDegrees", 90);
+    private static final SavedTunableNumber shootLatancyMs = SavedTunableNumber.get("Tuning/Shooter/ShootLatancyMs", 0);
+    private static final SavedTunableNumber timeToKeepVel =
+            SavedTunableNumber.get("Tuning/Shooter/TimeToKeepVelMs", 1000);
+    private static final SavedTunableNumber airResistanceMultiplier =
+            SavedTunableNumber.get("Tuning/Shooter/airResistanceMultiplier", 0.01);
+    private static final SavedTunableNumber linerFilter = SavedTunableNumber.get("Tuning/Shooter/LinearFilter", 5);
 
     public record SimRequest(
             double rX,

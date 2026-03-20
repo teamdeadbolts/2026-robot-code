@@ -11,7 +11,7 @@ import org.teamdeadbolts.constants.ZoneConstants;
 import org.teamdeadbolts.subsystems.HopperSubsystem;
 import org.teamdeadbolts.subsystems.IndexerSubsystem;
 import org.teamdeadbolts.subsystems.shooter.ShooterSubsystem;
-import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
+import org.teamdeadbolts.utils.tuning.SavedTunableNumber;
 
 /**
  * Activate the shooter to start shooter, automaticly decides
@@ -22,11 +22,10 @@ public class ShootCommand extends Command {
     private final ShooterSubsystem shooterSubsystem;
     private final HopperSubsystem hopperSubsystem;
 
-    private final SavedLoggedNetworkNumber wheelRpmError =
-            SavedLoggedNetworkNumber.get("Tuning/ShootCommand/WheelRpmError", 200);
+    private final SavedTunableNumber wheelRpmError = SavedTunableNumber.get("Tuning/ShootCommand/WheelRpmError", 200);
 
-    private final SavedLoggedNetworkNumber turretPositionError =
-            SavedLoggedNetworkNumber.get("Tuning/ShootCommand/TurretPositionError", 6);
+    private final SavedTunableNumber turretPositionError =
+            SavedTunableNumber.get("Tuning/ShootCommand/TurretPositionError", 6);
 
     private boolean fallback;
 

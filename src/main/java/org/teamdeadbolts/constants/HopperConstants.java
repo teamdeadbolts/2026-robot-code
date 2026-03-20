@@ -5,7 +5,7 @@ import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import org.teamdeadbolts.utils.tuning.ConfigManager;
-import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
+import org.teamdeadbolts.utils.tuning.SavedTunableNumber;
 
 public class HopperConstants {
     public static final int HOPPER_MOTOR_LEFT_CAN_ID = 60;
@@ -21,8 +21,8 @@ public class HopperConstants {
     public static final TalonFXConfiguration LEFT_HOPPER_MOTOR_CONFIG = new TalonFXConfiguration();
     public static final TalonFXConfiguration RIGHT_HOPPER_MOTOR_CONFIG = new TalonFXConfiguration();
 
-    private static SavedLoggedNetworkNumber lidLifterCurrentLimit =
-            SavedLoggedNetworkNumber.get("Tuning/Hopper/LidLifterCurrentLimit", 20);
+    private static SavedTunableNumber lidLifterCurrentLimit =
+            SavedTunableNumber.get("Tuning/Hopper/LidLifterCurrentLimit", 20);
 
     static {
         ConfigManager.getInstance().onReady(HopperConstants::init);

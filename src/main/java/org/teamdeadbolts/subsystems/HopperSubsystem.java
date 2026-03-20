@@ -9,7 +9,7 @@ import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.constants.HopperConstants;
 import org.teamdeadbolts.utils.StatefulSubsystem;
 import org.teamdeadbolts.utils.tuning.Refreshable;
-import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
+import org.teamdeadbolts.utils.tuning.SavedTunableNumber;
 
 /**
  * Manages the hopper subsystem,to position the lid (maybe we should call it lid subsystem)
@@ -32,28 +32,25 @@ public class HopperSubsystem extends StatefulSubsystem<HopperSubsystem.State> im
     private final SimpleMotorFeedforward rightLifterFF = new SimpleMotorFeedforward(0, 0, 0);
 
     /* --- Tuning Parameters --- */
-    private final SavedLoggedNetworkNumber leftLifterControllerP =
-            SavedLoggedNetworkNumber.get("Tuning/Hopper/LeftLifterController/kP", 0.1);
-    private final SavedLoggedNetworkNumber leftLifterControllerI =
-            SavedLoggedNetworkNumber.get("Tuning/Hopper/LeftLifterController/kI", 0.1);
-    private final SavedLoggedNetworkNumber leftLifterFFkS =
-            SavedLoggedNetworkNumber.get("Tuning/Hopper/LeftLifterFF/kS", 0.0);
+    private final SavedTunableNumber leftLifterControllerP =
+            SavedTunableNumber.get("Tuning/Hopper/LeftLifterController/kP", 0.1);
+    private final SavedTunableNumber leftLifterControllerI =
+            SavedTunableNumber.get("Tuning/Hopper/LeftLifterController/kI", 0.1);
+    private final SavedTunableNumber leftLifterFFkS = SavedTunableNumber.get("Tuning/Hopper/LeftLifterFF/kS", 0.0);
 
-    private final SavedLoggedNetworkNumber rightLifterControllerP =
-            SavedLoggedNetworkNumber.get("Tuning/Hopper/RightLifterController/kP", 0.1);
-    private final SavedLoggedNetworkNumber rightLifterControllerI =
-            SavedLoggedNetworkNumber.get("Tuning/Hopper/RightLifterController/kI", 0.1);
-    private final SavedLoggedNetworkNumber rightLifterFFkS =
-            SavedLoggedNetworkNumber.get("Tuning/Hopper/RightLifterFF/kS", 0.0);
+    private final SavedTunableNumber rightLifterControllerP =
+            SavedTunableNumber.get("Tuning/Hopper/RightLifterController/kP", 0.1);
+    private final SavedTunableNumber rightLifterControllerI =
+            SavedTunableNumber.get("Tuning/Hopper/RightLifterController/kI", 0.1);
+    private final SavedTunableNumber rightLifterFFkS = SavedTunableNumber.get("Tuning/Hopper/RightLifterFF/kS", 0.0);
 
-    private final SavedLoggedNetworkNumber lifterIZone = SavedLoggedNetworkNumber.get("Tuning/Hopper/LifterIZone", 0.0);
-    private final SavedLoggedNetworkNumber lifterMaxI = SavedLoggedNetworkNumber.get("Tuning/Hopper/LifterMaxI", 0.0);
+    private final SavedTunableNumber lifterIZone = SavedTunableNumber.get("Tuning/Hopper/LifterIZone", 0.0);
+    private final SavedTunableNumber lifterMaxI = SavedTunableNumber.get("Tuning/Hopper/LifterMaxI", 0.0);
 
-    private final SavedLoggedNetworkNumber lifterTol = SavedLoggedNetworkNumber.get("Tuning/Hopper/LifterTol", 0.0);
+    private final SavedTunableNumber lifterTol = SavedTunableNumber.get("Tuning/Hopper/LifterTol", 0.0);
 
-    private final SavedLoggedNetworkNumber lidDownHeight =
-            SavedLoggedNetworkNumber.get("Tuning/Hopper/LidDownHeight", 0.0);
-    private final SavedLoggedNetworkNumber lidUpHeight = SavedLoggedNetworkNumber.get("Tuning/Hopper/LidUpHeight", 0.0);
+    private final SavedTunableNumber lidDownHeight = SavedTunableNumber.get("Tuning/Hopper/LidDownHeight", 0.0);
+    private final SavedTunableNumber lidUpHeight = SavedTunableNumber.get("Tuning/Hopper/LidUpHeight", 0.0);
 
     public HopperSubsystem() {
         this.targetState = State.DOWN;
@@ -101,7 +98,7 @@ public class HopperSubsystem extends StatefulSubsystem<HopperSubsystem.State> im
     }
 
     @Override
-    protected void onStateChange(State to, State from) {
+    protected void onStateChange(final State to, final State from) {
         leftLifterController.reset();
         rightLifterController.reset();
     }
@@ -109,23 +106,23 @@ public class HopperSubsystem extends StatefulSubsystem<HopperSubsystem.State> im
     @Override
     public void periodic() {
         Logger.recordOutput("HopperSubsystem/TargetState", targetState);
-        double targetHeight =
+        final double targetHeight =
                 switch (this.targetState) {
                     case UP -> lidUpHeight.get();
                     case DOWN -> lidDownHeight.get();
                 };
 
         // Calculate control effort
-        double leftPidOutput = leftLifterController.calculate(getLeftLidHeight(), targetHeight);
-        double leftOutput = leftPidOutput + leftLifterFF.calculate(leftPidOutput);
+        final double leftPidOutput = leftLifterController.calculate(getLeftLidHeight(), targetHeight);
+        final double leftOutput = leftPidOutput + leftLifterFF.calculate(leftPidOutput);
         if (!leftLifterController.atSetpoint()) {
             hopperMotorLeft.setVoltage(leftOutput);
         } else {
             hopperMotorLeft.setVoltage(0);
         }
 
-        double rightPidOutput = rightLifterController.calculate(getRightLidHeight(), targetHeight);
-        double rightOutput = rightPidOutput + rightLifterFF.calculate(rightPidOutput);
+        final double rightPidOutput = rightLifterController.calculate(getRightLidHeight(), targetHeight);
+        final double rightOutput = rightPidOutput + rightLifterFF.calculate(rightPidOutput);
         if (!rightLifterController.atSetpoint()) {
             hopperMotorRight.setVoltage(rightOutput);
         } else {

@@ -13,9 +13,10 @@ import edu.wpi.first.wpilibj.Timer;
 import java.util.Optional;
 import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.constants.IntakeConstants;
+import org.teamdeadbolts.utils.MathUtils;
 import org.teamdeadbolts.utils.StatefulSubsystem;
 import org.teamdeadbolts.utils.tuning.Refreshable;
-import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
+import org.teamdeadbolts.utils.tuning.SavedTunableNumber;
 
 /**
  * Manages the intake assembly, including the rotating arm and intake rollers.
@@ -42,64 +43,57 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
             new ProfiledPIDController(0.0, 0.0, 0.0, new TrapezoidProfile.Constraints(0.0, 0.0));
     private final ArmFeedforward armFeedforward = new ArmFeedforward(0, 0, 0);
     /* --- Configuration and Tuning --- */
-    private final SavedLoggedNetworkNumber intakeDeployedAngle =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/IntakeDeployedAngle", 90.0);
-    private final SavedLoggedNetworkNumber intakeStowedAngle =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/IntakeStowedAngle", 0.0);
+    private final SavedTunableNumber intakeDeployedAngle =
+            SavedTunableNumber.get("Tuning/Intake/IntakeDeployedAngle", 90.0);
+    private final SavedTunableNumber intakeStowedAngle = SavedTunableNumber.get("Tuning/Intake/IntakeStowedAngle", 0.0);
 
-    private final SavedLoggedNetworkNumber armControllerP =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmController/kP", 0.1);
-    private final SavedLoggedNetworkNumber armControllerI =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmController/kI", 0.0);
-    private final SavedLoggedNetworkNumber armControllerD =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmController/kD", 0.0);
-    private final SavedLoggedNetworkNumber armControllerMaxVel =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmController/MaxVel", 0.0);
-    private final SavedLoggedNetworkNumber armControllerMaxAccel =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmController/MaxAccel", 0.0);
-    private final SavedLoggedNetworkNumber armControllerTol =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmController/TolDeg", 10);
+    private final SavedTunableNumber armControllerP = SavedTunableNumber.get("Tuning/Intake/ArmController/kP", 0.1);
+    private final SavedTunableNumber armControllerI = SavedTunableNumber.get("Tuning/Intake/ArmController/kI", 0.0);
+    private final SavedTunableNumber armControllerMaxVel =
+            SavedTunableNumber.get("Tuning/Intake/ArmController/MaxVel", 0.0);
+    private final SavedTunableNumber armControllerMaxAccel =
+            SavedTunableNumber.get("Tuning/Intake/ArmController/MaxAccel", 0.0);
+    private final SavedTunableNumber armControllerTol =
+            SavedTunableNumber.get("Tuning/Intake/ArmController/TolDeg", 10);
 
-    private final SavedLoggedNetworkNumber wheelIntakeVoltage =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/WheelIntakeVoltage", 6.0);
-    private final SavedLoggedNetworkNumber wheelShootVoltage =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/Shoot/WheelVoltage", 0.0);
-    private final SavedLoggedNetworkNumber intakeWheelStartTol =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/Wheel/StartWheelTol", 30);
+    private final SavedTunableNumber wheelIntakeVoltage =
+            SavedTunableNumber.get("Tuning/Intake/WheelIntakeVoltage", 6.0);
+    private final SavedTunableNumber wheelShootVoltage =
+            SavedTunableNumber.get("Tuning/Intake/Shoot/WheelVoltage", 0.0);
+    private final SavedTunableNumber intakeWheelStartTol =
+            SavedTunableNumber.get("Tuning/Intake/Wheel/StartWheelTol", 30);
 
-    private final SavedLoggedNetworkNumber armOffsetDeg = SavedLoggedNetworkNumber.get("Tuning/Intake/ArmOffsetDeg", 0);
+    private final SavedTunableNumber armOffsetDeg = SavedTunableNumber.get("Tuning/Intake/ArmOffsetDeg", 0);
 
-    private final SavedLoggedNetworkNumber armFeedforwardKs =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmFeedforward/kS", 0);
-    private final SavedLoggedNetworkNumber armFeedforwardKg =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/ArmFeedforward/kG", 0);
+    private final SavedTunableNumber armFeedforwardKs = SavedTunableNumber.get("Tuning/Intake/ArmFeedforward/kS", 0);
+    private final SavedTunableNumber armFeedforwardKg = SavedTunableNumber.get("Tuning/Intake/ArmFeedforward/kG", 0);
 
-    private final SavedLoggedNetworkNumber observerGain =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/Observer/Gain", 0.0);
-    private final SavedLoggedNetworkNumber maxObserverVolts =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/Observer/MaxVolts", 0.0);
+    private final SavedTunableNumber observerGain = SavedTunableNumber.get("Tuning/Intake/Observer/Gain", 0.0);
+    private final SavedTunableNumber maxObserverVolts = SavedTunableNumber.get("Tuning/Intake/Observer/MaxVolts", 0.0);
 
-    private final SavedLoggedNetworkNumber intakeShootMinAngle =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/Shoot/MinAngle", 0);
-    private final SavedLoggedNetworkNumber intakeShootMaxAngle =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/Shoot/MaxAngle", 0);
-    private final SavedLoggedNetworkNumber intakeShootFreq =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/Shoot/Freq", 0);
+    private final SavedTunableNumber intakeShootMinAngle = SavedTunableNumber.get("Tuning/Intake/Shoot/MinAngle", 0);
+    private final SavedTunableNumber intakeShootMaxAngle = SavedTunableNumber.get("Tuning/Intake/Shoot/MaxAngle", 0);
+    private final SavedTunableNumber intakeShootFreq = SavedTunableNumber.get("Tuning/Intake/Shoot/Freq", 0);
 
-    private final SavedLoggedNetworkNumber halfHoldAngle =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/HalfHoldAngle", 0);
+    private final SavedTunableNumber halfHoldAngle = SavedTunableNumber.get("Tuning/Intake/HalfHoldAngle", 0);
 
     private double currentAngle = 0;
     private double disturbanceAccumulator = 0.0;
 
     public IntakeSubsystem() {
-        this.targetState = State.STOWED;
+        this.currentAngle = MathUtil.inputModulus(
+                Units.rotationsToRadians(absEncoder.getPosition().getValueAsDouble())
+                        - Units.degreesToRadians(armOffsetDeg.get()),
+                0,
+                Math.PI * 2);
+        this.targetState = MathUtils.inRange(Math.abs(currentAngle - intakeStowedAngle.get()), 0, Math.PI / 4)
+                ? State.STOWED
+                : State.DEPLOYED;
         armController.enableContinuousInput(0, Math.PI * 2);
 
         // Register refreshables for real-time tuning
         armControllerP.addRefreshable(this);
         armControllerI.addRefreshable(this);
-        armControllerD.addRefreshable(this);
         armControllerTol.addRefreshable(this);
         armControllerMaxVel.addRefreshable(this);
         armControllerMaxAccel.addRefreshable(this);
@@ -110,7 +104,7 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
 
     @Override
     public void refresh() {
-        armController.setPID(armControllerP.get(), armControllerI.get(), armControllerD.get());
+        armController.setPID(armControllerP.get(), armControllerI.get(), 0.0);
         armController.setConstraints(new TrapezoidProfile.Constraints(
                 Units.degreesToRadians(armControllerMaxVel.get()),
                 Units.degreesToRadians(armControllerMaxAccel.get())));
@@ -126,7 +120,7 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
     }
 
     @Override
-    protected void onStateChange(State to, State from) {
+    protected void onStateChange(final State to, final State from) {
         armController.reset(new TrapezoidProfile.State(
                 currentAngle, Units.rotationsToRadians(absEncoder.getVelocity().getValueAsDouble())));
 
@@ -174,14 +168,14 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
                 wheelMotor.setVoltage(currentAngle);
             }
             case SHOOT -> {
-                double time = Timer.getFPGATimestamp();
-                double freq = intakeShootFreq.get();
-                double minAngle = Units.degreesToRadians(intakeShootMinAngle.get());
-                double maxAngle = Units.degreesToRadians(intakeShootMaxAngle.get());
+                final double time = Timer.getFPGATimestamp();
+                final double freq = intakeShootFreq.get();
+                final double minAngle = Units.degreesToRadians(intakeShootMinAngle.get());
+                final double maxAngle = Units.degreesToRadians(intakeShootMaxAngle.get());
 
-                double midAngle = (maxAngle + minAngle) / 2.0;
-                double amplitude = (maxAngle - minAngle) / 2.0;
-                double target = midAngle + amplitude * Math.sin(2 * Math.PI * freq * time);
+                final double midAngle = (maxAngle + minAngle) / 2.0;
+                final double amplitude = (maxAngle - minAngle) / 2.0;
+                final double target = midAngle + amplitude * Math.sin(2 * Math.PI * freq * time);
 
                 targetAngle = Optional.of(target);
                 wheelMotor.setVoltage(wheelShootVoltage.get());
@@ -189,18 +183,18 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
         }
 
         if (targetAngle.isPresent()) {
-            double pidVolts = armController.calculate(currentAngle, targetAngle.get());
-            TrapezoidProfile.State setpoint = armController.getSetpoint();
+            final double pidVolts = armController.calculate(currentAngle, targetAngle.get());
+            final TrapezoidProfile.State setpoint = armController.getSetpoint();
 
-            double feedforward = armFeedforward.calculate(setpoint.position, setpoint.velocity);
-            double actualVelocity =
+            final double feedforward = armFeedforward.calculate(setpoint.position, setpoint.velocity);
+            final double actualVelocity =
                     Units.rotationsToRadians(absEncoder.getVelocity().getValueAsDouble());
-            double vError = setpoint.velocity - actualVelocity;
+            final double vError = setpoint.velocity - actualVelocity;
 
             disturbanceAccumulator += vError * observerGain.get();
             disturbanceAccumulator =
                     MathUtil.clamp(disturbanceAccumulator, -maxObserverVolts.get(), maxObserverVolts.get());
-            double totalVolts = feedforward + pidVolts + disturbanceAccumulator;
+            final double totalVolts = feedforward + pidVolts + disturbanceAccumulator;
 
             if (targetState != State.SHOOT && armController.atGoal()) {
                 armMotor.setVoltage(0);
@@ -214,7 +208,7 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
                     "IntakeSubsystem/Arm/PidPosError", Units.radiansToDegrees(armController.getPositionError()));
             Logger.recordOutput("IntakeSubsystem/Arm/CurrVelocity", Units.radiansToDegrees(actualVelocity));
             Logger.recordOutput("IntakeSubsystem/Arm/TargetAngle", Units.radiansToDegrees(targetAngle.get()));
-            TrapezoidProfile.State state = armController.getSetpoint();
+            final TrapezoidProfile.State state = armController.getSetpoint();
             Logger.recordOutput("IntakeSubsystem/Arm/Trapizoid/SetpointPos", Units.radiansToDegrees(state.position));
             Logger.recordOutput("IntakeSubsystem/Arm/Trapizoid/SetpointVel", Units.radiansToDegrees(state.velocity));
 

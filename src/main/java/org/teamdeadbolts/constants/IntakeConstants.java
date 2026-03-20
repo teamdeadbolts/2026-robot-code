@@ -6,7 +6,7 @@ import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import org.teamdeadbolts.utils.tuning.ConfigManager;
-import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
+import org.teamdeadbolts.utils.tuning.SavedTunableNumber;
 
 public class IntakeConstants {
     public static final int INTAKE_ARM_MOTOR_CAN_ID = 41;
@@ -17,10 +17,10 @@ public class IntakeConstants {
     public static final TalonFXConfiguration INTAKE_WHEEL_MOTOR_CONFIG = new TalonFXConfiguration();
     public static final CANcoderConfiguration INTAKE_ABS_ENCODER_CONFIG = new CANcoderConfiguration();
 
-    private static final SavedLoggedNetworkNumber intakeArmMotorCurrentLimit =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/IntakeArmMotorCurrentLimit", 20);
-    private static final SavedLoggedNetworkNumber intakeWheelMotorCurrentLimit =
-            SavedLoggedNetworkNumber.get("Tuning/Intake/IntakeWheelMotorCurrentLimit", 20);
+    private static final SavedTunableNumber intakeArmMotorCurrentLimit =
+            SavedTunableNumber.get("Tuning/Intake/IntakeArmMotorCurrentLimit", 20);
+    private static final SavedTunableNumber intakeWheelMotorCurrentLimit =
+            SavedTunableNumber.get("Tuning/Intake/IntakeWheelMotorCurrentLimit", 20);
 
     static {
         ConfigManager.getInstance().onReady(IntakeConstants::init);

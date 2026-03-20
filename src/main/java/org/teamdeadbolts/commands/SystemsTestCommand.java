@@ -9,7 +9,7 @@ import org.teamdeadbolts.subsystems.IndexerSubsystem;
 import org.teamdeadbolts.subsystems.IntakeSubsystem;
 import org.teamdeadbolts.subsystems.drive.SwerveSubsystem;
 import org.teamdeadbolts.subsystems.shooter.ShooterSubsystem;
-import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
+import org.teamdeadbolts.utils.tuning.SavedTunableNumber;
 
 /**
  * Run a system test routine to test all the mechanisums
@@ -27,33 +27,31 @@ public class SystemsTestCommand extends Command {
     private boolean isFinished = false;
 
     // ---- Tunable timings (seconds) ----
-    private final SavedLoggedNetworkNumber swerveStepTime =
-            SavedLoggedNetworkNumber.get("Tuning/FullRobotTest/SwerveStepTime", 1.0);
-    private final SavedLoggedNetworkNumber swerveSpinTime =
-            SavedLoggedNetworkNumber.get("Tuning/FullRobotTest/SwerveSpinTime", 2.25);
-    private final SavedLoggedNetworkNumber swerveAroundTime =
-            SavedLoggedNetworkNumber.get("Tuning/FullRobotTest/SwerveAroundTime", 3.5);
+    private final SavedTunableNumber swerveStepTime =
+            SavedTunableNumber.get("Tuning/FullRobotTest/SwerveStepTime", 1.0);
+    private final SavedTunableNumber swerveSpinTime =
+            SavedTunableNumber.get("Tuning/FullRobotTest/SwerveSpinTime", 2.25);
+    private final SavedTunableNumber swerveAroundTime =
+            SavedTunableNumber.get("Tuning/FullRobotTest/SwerveAroundTime", 3.5);
 
-    private final SavedLoggedNetworkNumber hopperMoveTime =
-            SavedLoggedNetworkNumber.get("Tuning/FullRobotTest/HopperMoveTime", 1.0);
-    private final SavedLoggedNetworkNumber intakeMoveTime =
-            SavedLoggedNetworkNumber.get("Tuning/FullRobotTest/IntakeMoveTime", 1.0);
+    private final SavedTunableNumber hopperMoveTime =
+            SavedTunableNumber.get("Tuning/FullRobotTest/HopperMoveTime", 1.0);
+    private final SavedTunableNumber intakeMoveTime =
+            SavedTunableNumber.get("Tuning/FullRobotTest/IntakeMoveTime", 1.0);
 
-    private final SavedLoggedNetworkNumber outtakeTime =
-            SavedLoggedNetworkNumber.get("Tuning/FullRobotTest/OuttakeTime", 3.0);
-    private final SavedLoggedNetworkNumber intakeTime =
-            SavedLoggedNetworkNumber.get("Tuning/FullRobotTest/IntakeTime", 3.0);
+    private final SavedTunableNumber outtakeTime = SavedTunableNumber.get("Tuning/FullRobotTest/OuttakeTime", 3.0);
+    private final SavedTunableNumber intakeTime = SavedTunableNumber.get("Tuning/FullRobotTest/IntakeTime", 3.0);
 
-    private final SavedLoggedNetworkNumber indexerJiggleTime =
-            SavedLoggedNetworkNumber.get("Tuning/FullRobotTest/IndexerJiggleTime", 3.0);
-    private final SavedLoggedNetworkNumber indexerForwardTime =
-            SavedLoggedNetworkNumber.get("Tuning/FullRobotTest/IndexerForwardTime", 3.75);
+    private final SavedTunableNumber indexerJiggleTime =
+            SavedTunableNumber.get("Tuning/FullRobotTest/IndexerJiggleTime", 3.0);
+    private final SavedTunableNumber indexerForwardTime =
+            SavedTunableNumber.get("Tuning/FullRobotTest/IndexerForwardTime", 3.75);
 
-    private final SavedLoggedNetworkNumber turretTrackTime =
-            SavedLoggedNetworkNumber.get("Tuning/FullRobotTest/TurretTrackTime", 6.0);
+    private final SavedTunableNumber turretTrackTime =
+            SavedTunableNumber.get("Tuning/FullRobotTest/TurretTrackTime", 6.0);
 
-    private final SavedLoggedNetworkNumber shooterShowoffTime =
-            SavedLoggedNetworkNumber.get("Tuning/FullRobotTest/ShooterShowoffTime", 6.0);
+    private final SavedTunableNumber shooterShowoffTime =
+            SavedTunableNumber.get("Tuning/FullRobotTest/ShooterShowoffTime", 6.0);
 
     private enum Step {
         // Swerve startup sequence

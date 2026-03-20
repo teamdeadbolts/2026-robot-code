@@ -4,7 +4,7 @@ package org.teamdeadbolts.constants;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.signals.InvertedValue;
 import org.teamdeadbolts.utils.tuning.ConfigManager;
-import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
+import org.teamdeadbolts.utils.tuning.SavedTunableNumber;
 
 public class IndexerConstants {
     public static final int INDEXER_FLOOR_MOTOR_CAN_ID = 30;
@@ -14,10 +14,10 @@ public class IndexerConstants {
     public static final TalonFXConfiguration INDEXER_FLOOR_MOTOR_CONFIG = new TalonFXConfiguration();
     public static final TalonFXConfiguration INDEXER_KICKER_MOTOR_CONFIG = new TalonFXConfiguration();
 
-    private static SavedLoggedNetworkNumber indexerFloorMotorCurrentLimit =
-            SavedLoggedNetworkNumber.get("Tuning/Indexer/FloorMotorCurrentLimit", 20);
-    private static SavedLoggedNetworkNumber indexerKickerMotorCurrentLimit =
-            SavedLoggedNetworkNumber.get("Tuning/Indexer/KickerMotorCurrentLimit", 20);
+    private static SavedTunableNumber indexerFloorMotorCurrentLimit =
+            SavedTunableNumber.get("Tuning/Indexer/FloorMotorCurrentLimit", 20);
+    private static SavedTunableNumber indexerKickerMotorCurrentLimit =
+            SavedTunableNumber.get("Tuning/Indexer/KickerMotorCurrentLimit", 20);
 
     static {
         ConfigManager.getInstance().onReady(IndexerConstants::init);

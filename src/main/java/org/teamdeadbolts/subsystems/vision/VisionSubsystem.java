@@ -13,8 +13,8 @@ import org.teamdeadbolts.constants.VisionConstants;
 import org.teamdeadbolts.subsystems.drive.SwerveSubsystem;
 import org.teamdeadbolts.subsystems.vision.PhotonVisionIO.PoseObservation;
 import org.teamdeadbolts.utils.tuning.Refreshable;
-import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkBoolean;
-import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
+import org.teamdeadbolts.utils.tuning.SavedTunableBoolean;
+import org.teamdeadbolts.utils.tuning.SavedTunableNumber;
 
 /**
  * Manages computer vision data processing for robot localization.
@@ -27,28 +27,25 @@ public class VisionSubsystem extends SubsystemBase implements Refreshable {
     private final PhotonVisionIO[] ios;
 
     /* --- Tuning Parameters --- */
-    private final SavedLoggedNetworkNumber maxAmbiguity =
-            SavedLoggedNetworkNumber.get("Tuning/PoseEstimator/MaxAmbiguity", 0.5);
-    private final SavedLoggedNetworkNumber maxTagDist =
-            SavedLoggedNetworkNumber.get("Tuning/PoseEstimator/MaxTagDist", 0.5);
-    private final SavedLoggedNetworkBoolean enableVision =
-            SavedLoggedNetworkBoolean.get("Tuning/PoseEstimator/EnableVision", true);
+    private final SavedTunableNumber maxAmbiguity = SavedTunableNumber.get("Tuning/PoseEstimator/MaxAmbiguity", 0.5);
+    private final SavedTunableNumber maxTagDist = SavedTunableNumber.get("Tuning/PoseEstimator/MaxTagDist", 0.5);
+    private final SavedTunableBoolean enableVision = SavedTunableBoolean.get("Tuning/PoseEstimator/EnableVision", true);
 
     private final ArrayList<Pose3d> tagPoses = new ArrayList<>();
     private final ArrayList<Pose3d> robotPoses = new ArrayList<>();
-    private final HashMap<PhotonVisionIO, SavedLoggedNetworkBoolean> cameraToggles = new HashMap<>();
+    private final HashMap<PhotonVisionIO, SavedTunableBoolean> cameraToggles = new HashMap<>();
     private final Tracer tracer = new Tracer();
 
-    public VisionSubsystem(SwerveSubsystem swerveSubsystem, PhotonVisionIO... ios) {
+    public VisionSubsystem(final SwerveSubsystem swerveSubsystem, final PhotonVisionIO... ios) {
         this.ios = ios;
         this.ctxs = new PhotonVisionIOCtxAutoLogged[ios.length];
         for (int i = 0; i < ios.length; i++) {
             this.ctxs[i] = new PhotonVisionIOCtxAutoLogged();
         }
 
-        for (PhotonVisionIO io : this.ios) {
-            SavedLoggedNetworkBoolean bool =
-                    SavedLoggedNetworkBoolean.get("Tuning/Vision/Camera " + io.getName() + "/Enable", true);
+        for (final PhotonVisionIO io : this.ios) {
+            final SavedTunableBoolean bool =
+                    SavedTunableBoolean.get("Tuning/Vision/Camera " + io.getName() + "/Enable", true);
             this.cameraToggles.put(io, bool);
             bool.addRefreshable(this);
         }
@@ -67,7 +64,7 @@ public class VisionSubsystem extends SubsystemBase implements Refreshable {
 
     @Override
     public void periodic() {
-        long startTime = RobotController.getFPGATime();
+        final long startTime = RobotController.getFPGATime();
         tracer.resetTimer();
 
         tagPoses.clear();
@@ -83,20 +80,20 @@ public class VisionSubsystem extends SubsystemBase implements Refreshable {
 
         for (int index = 0; index < ctxs.length; index++) {
             // Retrieve tag poses from layout for debugging
-            for (int tId : ctxs[index].tagIds) {
+            for (final int tId : ctxs[index].tagIds) {
                 VisionConstants.FIELD_LAYOUT.getTagPose(tId).ifPresent(tagPoses::add);
             }
 
             tracer.addEpoch("Camera" + index + " TagPoses");
 
             // Filter and process camera observations
-            for (PoseObservation observation : ctxs[index].observations) {
-                boolean isInsideField = observation.pose().getX() > 0.0
+            for (final PoseObservation observation : ctxs[index].observations) {
+                final boolean isInsideField = observation.pose().getX() > 0.0
                         && observation.pose().getX() < VisionConstants.FIELD_LAYOUT.getFieldLength()
                         && observation.pose().getY() > 0.0
                         && observation.pose().getY() < VisionConstants.FIELD_LAYOUT.getFieldWidth();
 
-                boolean acceptPose = observation.ambiguity() <= maxAmbiguity.get()
+                final boolean acceptPose = observation.ambiguity() <= maxAmbiguity.get()
                         && observation.tagDist() <= maxTagDist.get()
                         && isInsideField;
 
@@ -114,7 +111,7 @@ public class VisionSubsystem extends SubsystemBase implements Refreshable {
         }
 
         // Performance monitoring
-        long elapsed = RobotController.getFPGATime() - startTime;
+        final long elapsed = RobotController.getFPGATime() - startTime;
         if (elapsed > 1_000_000) {
             tracer.printEpochs();
         }

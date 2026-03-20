@@ -7,7 +7,7 @@ import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.constants.IndexerConstants;
 import org.teamdeadbolts.utils.StatefulSubsystem;
 import org.teamdeadbolts.utils.tuning.Refreshable;
-import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
+import org.teamdeadbolts.utils.tuning.SavedTunableNumber;
 
 /**
  * Manages the indexing subsystem responsible for handling game pieces
@@ -27,16 +27,16 @@ public class IndexerSubsystem extends StatefulSubsystem<IndexerSubsystem.State> 
     private final TalonFX kickerMotor = new TalonFX(IndexerConstants.INDEXER_KICKER_MOTOR_CAN_ID, canBus);
 
     /* --- Tuning Parameters --- */
-    private final SavedLoggedNetworkNumber floorMotorIntakeVolts =
-            SavedLoggedNetworkNumber.get("Tuning/Indexer/IndexerFloorMotorIntakeVolts", 6.0);
-    private final SavedLoggedNetworkNumber floorMotorShootVolts =
-            SavedLoggedNetworkNumber.get("Tuning/Indexer/IndexerFloorMotorShootVolts", 6.0);
-    private final SavedLoggedNetworkNumber floorMotorJiggleVolts =
-            SavedLoggedNetworkNumber.get("Tuning/Indexer/IndexerFloorMotorJiggleVolts", 3.0);
-    private final SavedLoggedNetworkNumber kickerMotorShootVolts =
-            SavedLoggedNetworkNumber.get("Tuning/Indexer/IndexerKickerMotorShootVolts", 6.0);
-    private final SavedLoggedNetworkNumber jiggleFrequency =
-            SavedLoggedNetworkNumber.get("Tuning/Indexer/IndexerJiggleFrequency", 1.0);
+    private final SavedTunableNumber floorMotorIntakeVolts =
+            SavedTunableNumber.get("Tuning/Indexer/IndexerFloorMotorIntakeVolts", 6.0);
+    private final SavedTunableNumber floorMotorShootVolts =
+            SavedTunableNumber.get("Tuning/Indexer/IndexerFloorMotorShootVolts", 6.0);
+    private final SavedTunableNumber floorMotorJiggleVolts =
+            SavedTunableNumber.get("Tuning/Indexer/IndexerFloorMotorJiggleVolts", 3.0);
+    private final SavedTunableNumber kickerMotorShootVolts =
+            SavedTunableNumber.get("Tuning/Indexer/IndexerKickerMotorShootVolts", 6.0);
+    private final SavedTunableNumber jiggleFrequency =
+            SavedTunableNumber.get("Tuning/Indexer/IndexerJiggleFrequency", 1.0);
 
     public IndexerSubsystem() {
         this.targetState = State.OFF;
@@ -51,7 +51,7 @@ public class IndexerSubsystem extends StatefulSubsystem<IndexerSubsystem.State> 
     }
 
     @Override
-    protected void onStateChange(State to, State from) {}
+    protected void onStateChange(final State to, final State from) {}
 
     @Override
     public void periodic() {
@@ -62,7 +62,7 @@ public class IndexerSubsystem extends StatefulSubsystem<IndexerSubsystem.State> 
             }
             case REVERSE, JIGGLE -> {
                 // Sinusoidal oscillation to prevent game piece jams
-                double jiggleVolts =
+                final double jiggleVolts =
                         Math.sin(2 * Math.PI * jiggleFrequency.get() * (System.currentTimeMillis() / 1000.0))
                                 * floorMotorJiggleVolts.get();
                 floorMotor.setVoltage(jiggleVolts);

@@ -30,7 +30,7 @@ import org.teamdeadbolts.subsystems.drive.SwerveSubsystem;
 import org.teamdeadbolts.subsystems.shooter.ShooterSubsystem;
 import org.teamdeadbolts.subsystems.vision.PhotonVisionIO;
 import org.teamdeadbolts.subsystems.vision.VisionSubsystem;
-import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
+import org.teamdeadbolts.utils.tuning.SavedTunableNumber;
 
 public class RobotContainer {
 
@@ -40,14 +40,14 @@ public class RobotContainer {
     private final ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
     private final HopperSubsystem hopperSubsystem = new HopperSubsystem();
 
-    @SuppressWarnings("unused")
     private VisionSubsystem visionSubsystem = new VisionSubsystem(
             swerveSubsystem,
             new PhotonVisionIO("Left Cam", VisionConstants.LEFT_CAM_TRANSFORM),
             new PhotonVisionIO("Right Cam", VisionConstants.RIGHT_CAM_TRANSFORM),
-            new PhotonVisionIO("Back Cam", VisionConstants.BACK_CAM_TRANSFORM));
-    // new PhotonVisionIO(
-    //         "Turret Cam", () -> shooterSubsystem.g().plus(VisionConstants.TURRET_CAM_TO_TURRET)));
+            new PhotonVisionIO("Back Cam", VisionConstants.BACK_CAM_TRANSFORM),
+            new PhotonVisionIO("Turret Cam", () -> shooterSubsystem
+                    .getRobotRelativeTurretTransform()
+                    .plus(VisionConstants.TURRET_CAM_TO_TURRET)));
 
     private CommandXboxController primaryController = new CommandXboxController(0);
     private CommandXboxController secondaryController = new CommandXboxController(1);
@@ -56,19 +56,13 @@ public class RobotContainer {
 
     private SendableChooser<Command> autoChooser = new SendableChooser<>();
 
-    private final SavedLoggedNetworkNumber pathplannerTransKp =
-            SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Trans/kP", 0.0);
-    private final SavedLoggedNetworkNumber pathplannerTransKi =
-            SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Trans/kI", 0.0);
-    private final SavedLoggedNetworkNumber pathplannerTransKd =
-            SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Trans/kD", 0.0);
+    private final SavedTunableNumber pathplannerTransKp = SavedTunableNumber.get("Tuning/Pathplanner/Trans/kP", 0.0);
+    private final SavedTunableNumber pathplannerTransKi = SavedTunableNumber.get("Tuning/Pathplanner/Trans/kI", 0.0);
+    private final SavedTunableNumber pathplannerTransKd = SavedTunableNumber.get("Tuning/Pathplanner/Trans/kD", 0.0);
 
-    private final SavedLoggedNetworkNumber pathplannerRotKp =
-            SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Rot/kP", 0.0);
-    private final SavedLoggedNetworkNumber pathplannerRotKi =
-            SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Rot/kI", 0.0);
-    private final SavedLoggedNetworkNumber pathplannerRotKd =
-            SavedLoggedNetworkNumber.get("Tuning/Pathplanner/Rot/kD", 0.0);
+    private final SavedTunableNumber pathplannerRotKp = SavedTunableNumber.get("Tuning/Pathplanner/Rot/kP", 0.0);
+    private final SavedTunableNumber pathplannerRotKi = SavedTunableNumber.get("Tuning/Pathplanner/Rot/kI", 0.0);
+    private final SavedTunableNumber pathplannerRotKd = SavedTunableNumber.get("Tuning/Pathplanner/Rot/kD", 0.0);
 
     public RobotContainer() {
         robotState.initPoseEstimator(

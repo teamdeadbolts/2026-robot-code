@@ -17,7 +17,7 @@ import org.teamdeadbolts.constants.ZoneConstants;
 import org.teamdeadbolts.subsystems.drive.SwerveSubsystem;
 import org.teamdeadbolts.subsystems.shooter.ShooterSubsystem;
 import org.teamdeadbolts.utils.tuning.Refreshable;
-import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
+import org.teamdeadbolts.utils.tuning.SavedTunableNumber;
 
 /**
  * Command to drive the swerve
@@ -33,23 +33,20 @@ public class DriveCommand extends Command implements Refreshable {
     // For shooter fallback aiming
     private final PIDController angleController = new PIDController(0, 0, 0);
 
-    private final SavedLoggedNetworkNumber controllerDeadband =
-            SavedLoggedNetworkNumber.get("Tuning/Drive/ControllerDeadband", 0.08);
+    private final SavedTunableNumber controllerDeadband =
+            SavedTunableNumber.get("Tuning/Drive/ControllerDeadband", 0.08);
 
-    private final SavedLoggedNetworkNumber maxRobotSpeed =
-            SavedLoggedNetworkNumber.get("Tuning/Drive/MaxRobotSpeed", 1.0);
-    private final SavedLoggedNetworkNumber bumbSpeed = SavedLoggedNetworkNumber.get("Tuning/Drive/BumpSpeed", 0.5);
+    private final SavedTunableNumber maxRobotSpeed = SavedTunableNumber.get("Tuning/Drive/MaxRobotSpeed", 1.0);
+    private final SavedTunableNumber bumbSpeed = SavedTunableNumber.get("Tuning/Drive/BumpSpeed", 0.5);
 
-    private final SavedLoggedNetworkNumber maxRobotAnglarSpeed =
-            SavedLoggedNetworkNumber.get("Tuning/Drive/MaxRobotAngluarSpeed", 1.0);
+    private final SavedTunableNumber maxRobotAnglarSpeed =
+            SavedTunableNumber.get("Tuning/Drive/MaxRobotAngluarSpeed", 1.0);
 
-    private final SavedLoggedNetworkNumber defaultDrivePercent =
-            SavedLoggedNetworkNumber.get("Tuning/Drive/DefaultDrivePercent", 0.75);
-    private final SavedLoggedNetworkNumber slowDrivePercent =
-            SavedLoggedNetworkNumber.get("Tuning/Drive/slowDrivePercent", 0.28);
+    private final SavedTunableNumber defaultDrivePercent =
+            SavedTunableNumber.get("Tuning/Drive/DefaultDrivePercent", 0.75);
+    private final SavedTunableNumber slowDrivePercent = SavedTunableNumber.get("Tuning/Drive/slowDrivePercent", 0.28);
 
-    private final SavedLoggedNetworkNumber angleControllerP =
-            SavedLoggedNetworkNumber.get("Tuning/Drive/AngleController/kP", 0);
+    private final SavedTunableNumber angleControllerP = SavedTunableNumber.get("Tuning/Drive/AngleController/kP", 0);
 
     private boolean fast;
     private boolean slow;

@@ -8,6 +8,7 @@ pkgs.mkShell {
   buildInputs = with pkgs; [
     openjdk17
     nixfmt
+    visualvm
   ];
 
   shellHook = ''

@@ -16,7 +16,7 @@ import edu.wpi.first.wpilibj.Timer;
 import java.util.Optional;
 import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.constants.SwerveConstants;
-import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
+import org.teamdeadbolts.utils.tuning.SavedTunableNumber;
 
 /**
  * Singleton service that maintains the canonical state of the robot.
@@ -25,16 +25,16 @@ import org.teamdeadbolts.utils.tuning.SavedLoggedNetworkNumber;
  */
 public class RobotState {
     /* Tuning values */
-    private final SavedLoggedNetworkNumber wheelTransStdDev =
-            SavedLoggedNetworkNumber.get("Tuning/PoseEstimator/WheelTransStdDev", 0.05);
-    private final SavedLoggedNetworkNumber wheelHeadingStdDev =
-            SavedLoggedNetworkNumber.get("Tuning/PoseEstimator/WheelHeadingStdDev", 0.05);
+    private final SavedTunableNumber wheelTransStdDev =
+            SavedTunableNumber.get("Tuning/PoseEstimator/WheelTransStdDev", 0.05);
+    private final SavedTunableNumber wheelHeadingStdDev =
+            SavedTunableNumber.get("Tuning/PoseEstimator/WheelHeadingStdDev", 0.05);
 
     /* Vision base std dev (scales with distance) */
-    private final SavedLoggedNetworkNumber visionTransStdDev =
-            SavedLoggedNetworkNumber.get("Tuning/PoseEstimator/VisionTransStdDev", 0.05);
-    private final SavedLoggedNetworkNumber visionHeadingStdDev =
-            SavedLoggedNetworkNumber.get("Tuning/PoseEstimator/VisionHeadingStdDev", 0.05);
+    private final SavedTunableNumber visionTransStdDev =
+            SavedTunableNumber.get("Tuning/PoseEstimator/VisionTransStdDev", 0.05);
+    private final SavedTunableNumber visionHeadingStdDev =
+            SavedTunableNumber.get("Tuning/PoseEstimator/VisionHeadingStdDev", 0.05);
 
     private final Matrix<N4, N1> visionStdDevs = VecBuilder.fill(0, 0, 0, 0);
 

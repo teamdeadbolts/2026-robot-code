@@ -95,6 +95,24 @@ public class ConfigManager {
         System.out.println(readyListeners);
         readyListeners.forEach(Runnable::run);
         readyListeners.clear();
+
+        Thread thread = new Thread(() -> {
+            while (true) {
+                tuneablePerodic();
+                try {
+                    Thread.sleep(250);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        thread.start();
+    }
+
+    private void tuneablePerodic() {
+        for (int i = 0; i < tuneables.size(); i++) {
+            tuneables.get(i).periodic();
+        }
     }
 
     /**
