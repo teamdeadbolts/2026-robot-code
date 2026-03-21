@@ -1,7 +1,9 @@
 /* The Deadbolts (C) 2025 */
 package org.teamdeadbolts.subsystems.drive;
 
+import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.CANBus;
+import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import edu.wpi.first.math.controller.PIDController;
@@ -11,6 +13,10 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
+import edu.wpi.first.math.util.Units;
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Current;
 import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.constants.SwerveConstants;
 import org.teamdeadbolts.utils.MathUtils;
@@ -29,6 +35,12 @@ public class SwerveModule implements Refreshable {
     private final CANcoder encoder;
 
     private final CANBus canBus = new CANBus("*");
+
+    private final StatusSignal<AngularVelocity> driveVelocitySignal;
+    private final StatusSignal<Angle> drivePositionSignal;
+    private final StatusSignal<Current> driveCurrentSignal;
+    private final StatusSignal<Angle> turnAbsolutePositionSignal;
+    private final StatusSignal<Current> turnCurrentSignal;
 
     /** Tuning values */
     private final SavedTunableNumber dFFkS = SavedTunableNumber.get("Tuning/Swerve/Drive/kS", 0.0);
@@ -72,6 +84,13 @@ public class SwerveModule implements Refreshable {
         this.encoder = new CANcoder(config.encoderId(), canBus);
         this.driveMotor = new TalonFX(config.driveMotorId(), canBus);
         this.turningMotor = new TalonFX(config.turningMotorId(), canBus);
+
+        this.driveVelocitySignal = this.driveMotor.getVelocity();
+        this.drivePositionSignal = this.driveMotor.getPosition();
+        this.driveCurrentSignal = this.driveMotor.getStatorCurrent();
+        this.turnAbsolutePositionSignal = this.encoder.getPosition();
+        this.turnCurrentSignal = this.turningMotor.getStatorCurrent();
+
         this.resetToAbs();
         this.driveMotor.setPosition(0.0);
         dP.addRefreshable(this);
@@ -122,6 +141,12 @@ public class SwerveModule implements Refreshable {
         this.setAngle(desiredState.angle);
     }
 
+    public BaseStatusSignal[] getSignals() {
+        return new BaseStatusSignal[] {
+            driveVelocitySignal, drivePositionSignal, driveCurrentSignal, turnAbsolutePositionSignal, turnCurrentSignal,
+        };
+    }
+
     /**
      * Set the speed of the module (drive)
      *
@@ -151,7 +176,7 @@ public class SwerveModule implements Refreshable {
      * @return The rotation of the module
      */
     public Rotation2d getRotation() {
-        return Rotation2d.fromRotations(encoder.getAbsolutePosition().getValueAsDouble() + offset.getRotations());
+        return Rotation2d.fromRotations(turnAbsolutePositionSignal.getValueAsDouble() + offset.getRotations());
     }
 
     /** Reset the module to the absoulte position */
@@ -167,7 +192,7 @@ public class SwerveModule implements Refreshable {
      */
     public SwerveModuleState getState() {
         state.speedMetersPerSecond =
-                MathUtils.RPSToMPS(driveMotor.getVelocity().getValueAsDouble(), SwerveConstants.WHEEL_CIRCUMFERENCE);
+                MathUtils.RPSToMPS(driveVelocitySignal.getValueAsDouble(), SwerveConstants.WHEEL_CIRCUMFERENCE);
         state.angle = this.getRotation();
         return state;
     }
@@ -179,7 +204,7 @@ public class SwerveModule implements Refreshable {
      */
     public SwerveModulePosition getPosition() {
         position.distanceMeters =
-                MathUtils.RPSToMPS(driveMotor.getPosition().getValueAsDouble(), SwerveConstants.WHEEL_CIRCUMFERENCE);
+                MathUtils.RPSToMPS(drivePositionSignal.getValueAsDouble(), SwerveConstants.WHEEL_CIRCUMFERENCE);
         position.angle = this.getRotation();
         return position;
     }
@@ -216,42 +241,36 @@ public class SwerveModule implements Refreshable {
         final double driveVoltage = drivePidOut + driveFFOut;
         driveMotor.setVoltage(driveVoltage);
 
-        // Logger.recordOutput(
-        //         "SwerveSubsystem/Module" + moduleNumber + "/Drive/Current",
-        //         driveMotor.getSupplyCurrent().getValueAsDouble());
-        // Logger.recordOutput(
-        //         "SwerveSubsystem/Module" + moduleNumber + "/Turn/Current",
-        //         turningMotor.getSupplyCurrent().getValueAsDouble());
+        Logger.recordOutput(
+                "SwerveSubsystem/Module" + moduleNumber + "/Drive/Current", driveCurrentSignal.getValueAsDouble());
+        Logger.recordOutput(
+                "SwerveSubsystem/Module" + moduleNumber + "/Turn/Current", turnCurrentSignal.getValueAsDouble());
 
-        // Logger.recordOutput("SwerveSubsystem/Module " + moduleNumber + "/Drive/PIDOut", drivePidOut);
-        // Logger.recordOutput("SwerveSubsystem/Module " + moduleNumber + "/Drive/VoltageOut", driveVoltage);
+        Logger.recordOutput("SwerveSubsystem/Module " + moduleNumber + "/Drive/PIDOut", drivePidOut);
+        Logger.recordOutput("SwerveSubsystem/Module " + moduleNumber + "/Drive/VoltageOut", driveVoltage);
 
-        // Logger.recordOutput("SwerveSubsystem/Module " + moduleNumber + "/Drive/ReportedMPS", driveMeasurement);
-        // Logger.recordOutput(
-        //         "SwerveSubsystem/Module " + moduleNumber + "/Drive/ReportedRPS",
-        //         this.driveMotor.getVelocity().getValueAsDouble());
-        // Logger.recordOutput("SwerveSubsystem/Module " + moduleNumber + "/Drive/TargetMPS", this.targetSpeedMps);
+        Logger.recordOutput("SwerveSubsystem/Module " + moduleNumber + "/Drive/ReportedMPS", driveMeasurement);
+        Logger.recordOutput(
+                "SwerveSubsystem/Module " + moduleNumber + "/Drive/ReportedRPS",
+                driveVelocitySignal.getValueAsDouble());
+        Logger.recordOutput("SwerveSubsystem/Module " + moduleNumber + "/Drive/TargetMPS", this.targetSpeedMps);
 
-        // Logger.recordOutput("SwerveSubsystem/Module " + moduleNumber + "/Drive/PIDError", dPIDController.getError());
-        // Logger.recordOutput(
-        //         "SwerveSubsystem/Module " + moduleNumber + "/Turn/PIDError",
-        // tProfiledPIDController.getPositionError());
+        Logger.recordOutput("SwerveSubsystem/Module " + moduleNumber + "/Drive/PIDError", dPIDController.getError());
+        Logger.recordOutput(
+                "SwerveSubsystem/Module " + moduleNumber + "/Turn/PIDError", tProfiledPIDController.getPositionError());
 
-        // Logger.recordOutput(
-        //         "SwerveSubsystem/Module " + moduleNumber + "/Turn/PIDSetpoint",
-        // Units.radiansToDegrees(turnSetpoint));
+        Logger.recordOutput(
+                "SwerveSubsystem/Module " + moduleNumber + "/Turn/PIDSetpoint", Units.radiansToDegrees(turnSetpoint));
 
-        // Logger.recordOutput(
-        //         "SwerveSubsystem/Module " + moduleNumber + "/Turn/MeasurementDeg",
-        //         this.getRotation().getDegrees());
+        Logger.recordOutput(
+                "SwerveSubsystem/Module " + moduleNumber + "/Turn/MeasurementDeg",
+                this.getRotation().getDegrees());
 
-        // // Current monitoring
-        // Logger.recordOutput(
-        //         "Debug/Current/Swerve/Module " + moduleNumber + "/Drive",
-        //         driveMotor.getSupplyCurrent().getValueAsDouble());
-        // Logger.recordOutput(
-        //         "Debug/Current/Swerve/Module " + moduleNumber + "/Turn",
-        //         turningMotor.getSupplyCurrent().getValueAsDouble());
+        // Current monitoring
+        Logger.recordOutput(
+                "Debug/Current/Swerve/Module " + moduleNumber + "/Drive", driveCurrentSignal.getValueAsDouble());
+        Logger.recordOutput(
+                "Debug/Current/Swerve/Module " + moduleNumber + "/Turn", turnCurrentSignal.getValueAsDouble());
     }
 
     /**

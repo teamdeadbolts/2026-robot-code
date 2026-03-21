@@ -1,7 +1,9 @@
 /* The Deadbolts (C) 2026 */
 package org.teamdeadbolts.subsystems.shooter;
 
+import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.CANBus;
+import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
@@ -21,6 +23,9 @@ import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import java.util.Optional;
@@ -58,6 +63,25 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
     private final TalonFX hoodMotor = new TalonFX(ShooterConstants.SHOOTER_HOOD_MOTOR_CAN_ID, rio);
     private final TalonFX leftWheelMotor = new TalonFX(ShooterConstants.SHOOTER_WHEEL_MOTOR_LEFT_CAN_ID, rio);
     private final TalonFX rightWheelMotor = new TalonFX(ShooterConstants.SHOOTER_WHEEL_MOTOR_RIGHT_CAN_ID, rio);
+
+    private final StatusSignal<AngularVelocity> turretVelocitySignal = turretMotor.getVelocity();
+    private final StatusSignal<Angle> turretPositionSignal = turretMotor.getPosition();
+    private final StatusSignal<Current> turretCurrentSignal = turretMotor.getSupplyCurrent();
+
+    private final StatusSignal<AngularVelocity> hoodVelocitySignal = hoodMotor.getVelocity();
+    private final StatusSignal<Angle> hoodAngleSignal = hoodMotor.getPosition();
+    private final StatusSignal<Current> hoodCurrentSignal = hoodMotor.getSupplyCurrent();
+
+    private final StatusSignal<AngularVelocity> wheelVelocitySignal = leftWheelMotor.getVelocity();
+    private final StatusSignal<Current> wheelCurrentSignal = leftWheelMotor.getSupplyCurrent();
+
+    private final BaseStatusSignal[] rioSignals = new BaseStatusSignal[] {
+        hoodVelocitySignal, hoodAngleSignal, hoodCurrentSignal, wheelVelocitySignal, wheelCurrentSignal
+    };
+
+    private final BaseStatusSignal[] canivoreSignals = new BaseStatusSignal[] {
+        turretCurrentSignal, turretPositionSignal, turretCurrentSignal,
+    };
 
     private final PIDController hoodController = new PIDController(0.0, 0.0, 0.0);
     private final ProfiledPIDController turretController =
@@ -219,23 +243,22 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
     protected void onStateChange(final State from, final State to) {
         hoodController.reset();
 
-        final double position =
-                Units.rotationsToRadians(turretMotor.getPosition().getValueAsDouble());
-        final double velocity =
-                Units.rotationsToRadians(turretMotor.getVelocity().getValueAsDouble());
+        final double position = Units.rotationsToRadians(turretPositionSignal.getValueAsDouble());
+        final double velocity = Units.rotationsToRadians(turretVelocitySignal.getValueAsDouble());
         turretController.reset(new TrapezoidProfile.State(position, velocity));
     }
 
     @Override
     public void periodic() {
+        BaseStatusSignal.refreshAll(rioSignals);
+        BaseStatusSignal.refreshAll(canivoreSignals);
+
         Logger.recordOutput("ShooterSubsystem/TargetState", targetState);
-        final double currentHoodAngle =
-                Units.rotationsToRadians(hoodMotor.getPosition().getValueAsDouble());
+        final double currentHoodAngle = Units.rotationsToRadians(hoodAngleSignal.getValueAsDouble());
         Optional<Double> targetHoodAngle = Optional.empty();
         Optional<Translation3d> currentTargetTranslation = Optional.empty();
 
-        currentWheelSpeed =
-                Units.rotationsToRadians(leftWheelMotor.getVelocity().getValueAsDouble());
+        currentWheelSpeed = Units.rotationsToRadians(wheelVelocitySignal.getValueAsDouble());
         targetWheelSpeed = Optional.empty();
         targetTurretPosition = Optional.empty();
 
@@ -365,8 +388,8 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
             }
             case ZERO -> {
                 hoodMotor.setVoltage(-hoodZeroVoltage.get());
-                if (hoodMotor.getSupplyCurrent().getValueAsDouble() >= hoodZeroCurrent.get()
-                        && Math.abs(hoodMotor.getVelocity().getValueAsDouble())
+                if (hoodCurrentSignal.getValueAsDouble() >= hoodZeroCurrent.get()
+                        && Math.abs(hoodVelocitySignal.getValueAsDouble())
                                 <= Units.degreesToRotations(hoodZeroVelTol.get())) {
                     targetState = State.OFF;
                     hoodMotor.setPosition(Units.degreesToRotations(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
@@ -383,8 +406,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
 
         fallbackChassisTargetAngle = Optional.empty();
         if (turretFallbackMode && targetTurretPosition.isPresent() && currentTargetTranslation.isPresent()) {
-            final double lockedTurrentRad =
-                    Units.rotationsToRadians(turretMotor.getPosition().getValueAsDouble());
+            final double lockedTurrentRad = Units.rotationsToRadians(turretPositionSignal.getValueAsDouble());
             fallbackChassisTargetAngle = Optional.of(calculateChassisAngleForLockedTurret(
                     robotPose.toPose2d(), currentTargetTranslation.get().toTranslation2d(), lockedTurrentRad));
 
@@ -411,8 +433,8 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
             final double wheelOutput =
                     (getRPMError() > bangTol.get()) ? 12.0 : wheelFF.calculate(targetWheelSpeed.get());
             leftWheelMotor.setControl(new VoltageOut(wheelOutput));
-            Logger.recordOutput("ShooterSubsystem/Wheel/Volts", wheelOutput);
-            Logger.recordOutput("ShooterSubsystem/Wheel/TargetSpeedRPM", targetWheelSpeed.get());
+            // Logger.recordOutput("ShooterSubsystem/Wheel/Volts", wheelOutput);
+            // Logger.recordOutput("ShooterSubsystem/Wheel/TargetSpeedRPM", targetWheelSpeed.get());
         } else {
             leftWheelMotor.setVoltage(0);
         }
@@ -452,8 +474,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
         }
         // Hood
         Logger.recordOutput("ShooterSubsystem/Hood/CurrentAngle", Units.radiansToDegrees(currentHoodAngle));
-        Logger.recordOutput(
-                "ShooterSubsystem/Hood/OutAmps", hoodMotor.getSupplyCurrent().getValueAsDouble());
+        Logger.recordOutput("ShooterSubsystem/Hood/OutAmps", hoodCurrentSignal.getValueAsDouble());
         Logger.recordOutput("ShooterSubsystem/Hood/UseAlternativeMinAngle", alternative);
 
         // Turret
@@ -462,7 +483,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
 
         Logger.recordOutput(
                 "ShooterSubsystem/Turret/VelocityDegPerSec",
-                Units.rotationsToDegrees(turretMotor.getVelocity().getValueAsDouble()));
+                Units.rotationsToDegrees(turretVelocitySignal.getValueAsDouble()));
 
         // Wheels
         Logger.recordOutput(
@@ -476,16 +497,9 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                 rightWheelMotor.getMotorVoltage().getValueAsDouble());
 
         // Current
-        Logger.recordOutput(
-                "Debug/Current/Shooter/Hood", hoodMotor.getSupplyCurrent().getValueAsDouble());
-        Logger.recordOutput(
-                "Debug/Current/Shooter/Turret", turretMotor.getSupplyCurrent().getValueAsDouble());
-        Logger.recordOutput(
-                "Debug/Current/Shooter/LeftWheel",
-                leftWheelMotor.getSupplyCurrent().getValueAsDouble());
-        Logger.recordOutput(
-                "Debug/Current/Shooter/RightWheel",
-                rightWheelMotor.getSupplyCurrent().getValueAsDouble());
+        Logger.recordOutput("Debug/Current/Shooter/Hood", hoodCurrentSignal.getValueAsDouble());
+        Logger.recordOutput("Debug/Current/Shooter/Turret", turretCurrentSignal.getValueAsDouble());
+        Logger.recordOutput("Debug/Current/Shooter/LeftWheel", wheelCurrentSignal.getValueAsDouble());
     }
 
     /**

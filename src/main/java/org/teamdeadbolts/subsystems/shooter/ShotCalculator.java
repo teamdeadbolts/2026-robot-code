@@ -6,6 +6,7 @@ import edu.wpi.first.math.filter.LinearFilter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
@@ -35,7 +36,7 @@ public class ShotCalculator implements Refreshable {
 
         public boolean isPossible;
 
-        public Translation3d virtTarget;
+        public Pose3d virtTarget;
 
         @Override
         public String toString() {
@@ -49,6 +50,10 @@ public class ShotCalculator implements Refreshable {
 
     public static double shooterMPSToRPM(final double mps) {
         return ShooterConstants.SHOOTER_MPS_TO_RPM_MAP.get(mps);
+        // double smallWheelCircumference = Units.inchesToMeters(1) * 2 * Math.PI;
+        // double largeWheelCircumference = Units.inchesToMeters(1.5) * 2 * Math.PI;
+        // double wheelSpeed = mps / (smallWheelCircumference + largeWheelCircumference);
+        // return wheelSpeed * 60.0;
     }
 
     private static double calculateFieldRelativeTurret(final Pose2d robotPose, final Translation2d targetLocation) {
@@ -243,7 +248,7 @@ public class ShotCalculator implements Refreshable {
         rawShot.ballVelocity = ballVelocity;
         rawShot.rawLaunchAngleRad = hoodAngle;
         rawShot.impactAngle = impactAngle;
-        rawShot.virtTarget = new Translation3d(virtTarget2d.getX(), virtTarget2d.getY(), targetZ);
+        rawShot.virtTarget = new Pose3d(virtTarget2d.getX(), virtTarget2d.getY(), targetZ, new Rotation3d());
         rawShot.wheelSpeed = shooterMPSToRPM(ballVelocity);
 
         Logger.processInputs("ShotCalc/RawShot", rawShot);

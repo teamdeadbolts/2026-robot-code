@@ -47,6 +47,9 @@ public class PhotonVisionIO {
     private final SavedTunableNumber testRobotRotationDeg =
             SavedTunableNumber.get("Tuning/Vision/TestRobotRotationDeg", 0);
 
+    private final SavedTunableNumber maxAmbiguity;
+    private final SavedTunableNumber maxTagDist;
+
     // private final SavedLoggedNetworkBoolean enableCam;
     private boolean hardDisabled = false;
     private boolean enabled = true;
@@ -61,6 +64,9 @@ public class PhotonVisionIO {
         this.poseEstimator = new PhotonPoseEstimator(
                 VisionConstants.FIELD_LAYOUT, PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR, this.offset);
 
+        this.maxAmbiguity = SavedTunableNumber.get("Tuning/Vision/Camera " + camName + "/MaxAmbiguity", 0.5);
+        this.maxTagDist = SavedTunableNumber.get("Tuning/Vision/Camera " + camName + "/MaxTagDist", 0.5);
+
         cacheTagPoses();
     }
 
@@ -73,6 +79,9 @@ public class PhotonVisionIO {
         this.offsetSupplier = offsetSupplier;
         this.poseEstimator = new PhotonPoseEstimator(
                 VisionConstants.FIELD_LAYOUT, PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR, new Transform3d());
+
+        this.maxAmbiguity = SavedTunableNumber.get("Tuning/Vision/Camera " + camName + "/MaxAmbiguity", 0.5);
+        this.maxTagDist = SavedTunableNumber.get("Tuning/Vision/Camera " + camName + "/MaxTagDist", 0.5);
 
         cacheTagPoses();
     }
@@ -148,7 +157,7 @@ public class PhotonVisionIO {
                 if (estPose.isPresent()) {
                     final EstimatedRobotPose pose = estPose.get();
                     double totalDist = 0.0;
-                    double maxAmbiguity = 0.0;
+                    double highestAmbiguity = 0.0;
 
                     for (final PhotonTrackedTarget target : pose.targetsUsed) {
                         tagIds.add(target.fiducialId);
@@ -156,20 +165,21 @@ public class PhotonVisionIO {
                                 target.getBestCameraToTarget().getTranslation().getNorm();
                         totalDist += distanceToTag;
 
-                        maxAmbiguity = Math.max(maxAmbiguity, target.poseAmbiguity);
+                        highestAmbiguity = Math.max(highestAmbiguity, target.poseAmbiguity);
                     }
 
                     final double avgDist = totalDist / pose.targetsUsed.size();
 
                     final double finalAmbiguity =
-                            (pose.strategy == PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR) ? 0 : maxAmbiguity;
+                            (pose.strategy == PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR) ? 0 : highestAmbiguity;
+
+                    boolean isGood = finalAmbiguity < maxAmbiguity.get()
+                            && avgDist < maxTagDist.get()
+                            && enabled
+                            && !hardDisabled;
 
                     poseObservations.add(new PoseObservation(
-                            pose.timestampSeconds,
-                            pose.estimatedPose,
-                            finalAmbiguity,
-                            avgDist,
-                            enabled && !hardDisabled));
+                            pose.timestampSeconds, pose.estimatedPose, finalAmbiguity, avgDist, isGood));
                 }
 
                 ctx.observations = poseObservations.toArray(new PoseObservation[0]);

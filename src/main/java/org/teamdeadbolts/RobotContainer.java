@@ -64,6 +64,10 @@ public class RobotContainer {
     private final SavedTunableNumber pathplannerRotKi = SavedTunableNumber.get("Tuning/Pathplanner/Rot/kI", 0.0);
     private final SavedTunableNumber pathplannerRotKd = SavedTunableNumber.get("Tuning/Pathplanner/Rot/kD", 0.0);
 
+    private final SavedTunableNumber fastDriveScaler = SavedTunableNumber.get("Tuning/Drive/FastDriveScaler", 1.5);
+    private final SavedTunableNumber slowDriveScaler = SavedTunableNumber.get("Tuning/Drive/SlowDriveScaler", 0.28);
+    private final SavedTunableNumber shootDriveScaler = SavedTunableNumber.get("Tuning/Drive/ShootDriveScaler", 0.1);
+
     public RobotContainer() {
         robotState.initPoseEstimator(
                 new Rotation3d(swerveSubsystem.getGyroRotation()), swerveSubsystem.getModulePositions());
@@ -81,13 +85,11 @@ public class RobotContainer {
                 primaryController::getLeftX,
                 primaryController::getRightX,
                 true,
-                false,
-                false));
+                () -> 1));
 
         shooterSubsystem.setDefaultCommand(new DefaultShooterCommand(shooterSubsystem));
         intakeSubsystem.setDefaultCommand(new DefaultIntakeCommand(intakeSubsystem));
-        // intakeSubsystem.setDefaultCommand(new RunCommand(() -> intakeSubsystem.setState(State.OFF),
-        // intakeSubsystem));
+
         indexerSubsystem.setDefaultCommand(
                 new RunCommand(() -> indexerSubsystem.setState(IndexerSubsystem.State.OFF), indexerSubsystem));
         hopperSubsystem.setDefaultCommand(new DefaultHopperCommand(hopperSubsystem));
@@ -102,8 +104,7 @@ public class RobotContainer {
                         primaryController::getLeftX,
                         primaryController::getRightX,
                         true,
-                        true,
-                        false));
+                        fastDriveScaler::get));
         primaryController
                 .rightTrigger(0.4)
                 .whileTrue(new ParallelCommandGroup(new DriveCommand(
@@ -113,8 +114,7 @@ public class RobotContainer {
                         primaryController::getLeftX,
                         primaryController::getRightX,
                         true,
-                        false,
-                        true)));
+                        slowDriveScaler::get)));
 
         primaryController
                 .rightBumper()
@@ -177,8 +177,7 @@ public class RobotContainer {
                                 primaryController::getLeftX,
                                 primaryController::getRightX,
                                 true,
-                                false,
-                                true),
+                                shootDriveScaler::get),
                         new ShootCommand(indexerSubsystem, shooterSubsystem, hopperSubsystem, false)));
         secondaryController
                 .povLeft()

@@ -1,7 +1,9 @@
 /* The Deadbolts (C) 2026 */
 package org.teamdeadbolts.subsystems;
 
+import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.CANBus;
+import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import edu.wpi.first.math.MathUtil;
@@ -9,6 +11,10 @@ import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Current;
+import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.Timer;
 import java.util.Optional;
 import org.littletonrobotics.junction.Logger;
@@ -38,6 +44,22 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
     private final TalonFX armMotor = new TalonFX(IntakeConstants.INTAKE_ARM_MOTOR_CAN_ID, canBus);
     private final TalonFX wheelMotor = new TalonFX(IntakeConstants.INTAKE_DRIVE_MOTOR_CAN_ID, canBus);
     private final CANcoder absEncoder = new CANcoder(IntakeConstants.INTAKE_ABS_ENCODER_CAN_ID, canBus);
+
+    private final StatusSignal<Current> armMotorCurrentSignal = armMotor.getSupplyCurrent();
+    private final StatusSignal<Current> wheelMotorCurrentSignal = wheelMotor.getSupplyCurrent();
+    private final StatusSignal<Angle> absEncoderAngleSignal = absEncoder.getAbsolutePosition();
+    private final StatusSignal<AngularVelocity> absEncoderVelocitySignal = absEncoder.getVelocity();
+    private final StatusSignal<Voltage> armMotorVoltageSignal = armMotor.getSupplyVoltage();
+    private final StatusSignal<Voltage> wheelMotorVoltageSignal = wheelMotor.getSupplyVoltage();
+
+    private final BaseStatusSignal[] signals = new BaseStatusSignal[] {
+        armMotorCurrentSignal,
+        wheelMotorCurrentSignal,
+        absEncoderAngleSignal,
+        absEncoderVelocitySignal,
+        armMotorVoltageSignal,
+        wheelMotorVoltageSignal
+    };
 
     private final ProfiledPIDController armController =
             new ProfiledPIDController(0.0, 0.0, 0.0, new TrapezoidProfile.Constraints(0.0, 0.0));
@@ -82,11 +104,12 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
 
     public IntakeSubsystem() {
         this.currentAngle = MathUtil.inputModulus(
-                Units.rotationsToRadians(absEncoder.getPosition().getValueAsDouble())
+                Units.rotationsToRadians(absEncoderAngleSignal.getValueAsDouble())
                         - Units.degreesToRadians(armOffsetDeg.get()),
                 0,
                 Math.PI * 2);
-        this.targetState = MathUtils.inRange(Math.abs(currentAngle - intakeStowedAngle.get()), 0, Math.PI / 4)
+        this.targetState = MathUtils.inRange(
+                        Math.abs(currentAngle - Units.degreesToRadians(intakeStowedAngle.get())), 0, Math.PI / 4)
                 ? State.STOWED
                 : State.DEPLOYED;
         armController.enableContinuousInput(0, Math.PI * 2);
@@ -122,15 +145,16 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
     @Override
     protected void onStateChange(final State to, final State from) {
         armController.reset(new TrapezoidProfile.State(
-                currentAngle, Units.rotationsToRadians(absEncoder.getVelocity().getValueAsDouble())));
+                currentAngle, Units.rotationsToRadians(absEncoderVelocitySignal.getValueAsDouble())));
 
         disturbanceAccumulator = 0.0;
     }
 
     @Override
     public void periodic() {
+        BaseStatusSignal.refreshAll(signals);
         currentAngle = MathUtil.inputModulus(
-                Units.rotationsToRadians(absEncoder.getPosition().getValueAsDouble())
+                Units.rotationsToRadians(absEncoderAngleSignal.getValueAsDouble())
                         - Units.degreesToRadians(armOffsetDeg.get()),
                 0,
                 Math.PI * 2);
@@ -165,7 +189,7 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
             }
             case HALF_HOLD -> {
                 targetAngle = Optional.of(Units.degreesToRadians(halfHoldAngle.get()));
-                wheelMotor.setVoltage(currentAngle);
+                wheelMotor.setVoltage(0.0);
             }
             case SHOOT -> {
                 final double time = Timer.getFPGATimestamp();
@@ -219,17 +243,13 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
         }
         Logger.recordOutput("IntakeSubsystem/TargetState", targetState);
         Logger.recordOutput("IntakeSubsystem/Arm/CurrentAngle", Units.radiansToDegrees(currentAngle));
-        Logger.recordOutput(
-                "IntakeSubsystem/Arm/OutputVolts", armMotor.getMotorVoltage().getValueAsDouble());
+        Logger.recordOutput("IntakeSubsystem/Arm/OutputVolts", armMotorVoltageSignal.getValueAsDouble());
 
-        Logger.recordOutput(
-                "IntakeSubsystem/Wheels/Voltage", wheelMotor.getMotorVoltage().getValueAsDouble());
+        Logger.recordOutput("IntakeSubsystem/Wheels/Voltage", wheelMotorVoltageSignal.getValueAsDouble());
 
         // Current monitoring
-        Logger.recordOutput(
-                "Debug/Current/Intake/Arm", armMotor.getSupplyCurrent().getValueAsDouble());
-        Logger.recordOutput(
-                "Debug/Current/Intake/Wheel", wheelMotor.getSupplyCurrent().getValueAsDouble());
+        Logger.recordOutput("Debug/Current/Intake/Arm", armMotorCurrentSignal.getValueAsDouble());
+        Logger.recordOutput("Debug/Current/Intake/Wheel", wheelMotorCurrentSignal.getValueAsDouble());
     }
 
     public boolean armAtGoal() {

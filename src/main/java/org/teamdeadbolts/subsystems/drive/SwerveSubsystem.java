@@ -6,6 +6,7 @@ import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
 
+import com.ctre.phoenix6.BaseStatusSignal;
 import com.studica.frc.AHRS;
 import com.studica.frc.AHRS.NavXComType;
 import edu.wpi.first.math.controller.PIDController;
@@ -40,6 +41,7 @@ import org.teamdeadbolts.utils.tuning.SavedTunableNumber;
 public class SwerveSubsystem extends SubsystemBase implements Refreshable {
     private final AHRS gyro = new AHRS(NavXComType.kMXP_SPI);
     private final SwerveModule[] modules;
+    private final BaseStatusSignal[] allSignals = new BaseStatusSignal[4 * 5];
     private final SwerveModuleState[] cachedModuleStates = new SwerveModuleState[4];
     private final SwerveModulePosition[] cachedModulePositions = new SwerveModulePosition[4];
     private SlewRateLimiter slewRateLimiterTranslationalX;
@@ -70,6 +72,13 @@ public class SwerveSubsystem extends SubsystemBase implements Refreshable {
             new SwerveModule(SwerveConstants.BACK_LEFT_CONFIG),
             new SwerveModule(SwerveConstants.BACK_RIGHT_CONFIG)
         };
+
+        int i = 0;
+        for (SwerveModule m : modules) {
+            for (BaseStatusSignal signal : m.getSignals()) {
+                allSignals[i++] = signal;
+            }
+        }
 
         trajHeadingController.enableContinuousInput(-Math.PI, Math.PI);
         slewRateTranslational.addRefreshable(this);
@@ -223,6 +232,7 @@ public class SwerveSubsystem extends SubsystemBase implements Refreshable {
 
     @Override
     public void periodic() {
+        BaseStatusSignal.refreshAll(allSignals);
         tracer.resetTimer();
         Logger.recordOutput("Swerve/GyroRotationDeg", getGyroRotation().getDegrees());
         for (final SwerveModule m : this.modules) {
@@ -233,6 +243,6 @@ public class SwerveSubsystem extends SubsystemBase implements Refreshable {
         final ChassisSpeeds speeds = getFieldRelativeChassisSpeeds();
         state.setFieldRelativeVelocities(speeds);
         state.setRobotRelativeVelocities(getRobotRelativeChassisSpeeds());
-        // Logger.recordOutput("Swerve/RobotVelocities", speeds);
+        Logger.recordOutput("Swerve/RobotVelocities", speeds);
     }
 }

@@ -29,6 +29,7 @@ public class DriveCommand extends Command implements Refreshable {
     private DoubleSupplier sidewaysSupplier;
     private DoubleSupplier rotationSupplier;
     private boolean fieldRelative;
+    private DoubleSupplier speedScaler;
 
     // For shooter fallback aiming
     private final PIDController angleController = new PIDController(0, 0, 0);
@@ -42,14 +43,8 @@ public class DriveCommand extends Command implements Refreshable {
     private final SavedTunableNumber maxRobotAnglarSpeed =
             SavedTunableNumber.get("Tuning/Drive/MaxRobotAngluarSpeed", 1.0);
 
-    private final SavedTunableNumber defaultDrivePercent =
-            SavedTunableNumber.get("Tuning/Drive/DefaultDrivePercent", 0.75);
-    private final SavedTunableNumber slowDrivePercent = SavedTunableNumber.get("Tuning/Drive/slowDrivePercent", 0.28);
-
     private final SavedTunableNumber angleControllerP = SavedTunableNumber.get("Tuning/Drive/AngleController/kP", 0);
 
-    private boolean fast;
-    private boolean slow;
     /**
      * Command to drive swerve
      *
@@ -68,16 +63,14 @@ public class DriveCommand extends Command implements Refreshable {
             DoubleSupplier sidewaysSupplier,
             DoubleSupplier rotationSuplier,
             boolean fieldRelative,
-            boolean fast,
-            boolean slow) {
+            DoubleSupplier speedScaler) {
         this.swerveSubsystem = swerveSubsystem;
         this.shooterSubsystem = shooterSubsystem;
         this.forwardSupplier = forwardSupplier;
         this.sidewaysSupplier = sidewaysSupplier;
         this.rotationSupplier = rotationSuplier;
         this.fieldRelative = fieldRelative;
-        this.fast = fast;
-        this.slow = slow;
+        this.speedScaler = speedScaler;
 
         angleControllerP.addRefreshable(this);
 
@@ -102,21 +95,9 @@ public class DriveCommand extends Command implements Refreshable {
         double sidewaysMps;
         double rotationRps;
 
-        if (fast) {
-            slow = false;
-            forwardMps = forwardPercent * maxRobotSpeed.get();
-            sidewaysMps = sidewaysPercent * maxRobotSpeed.get();
-            rotationRps = rotationPercent * Units.degreesToRadians(maxRobotAnglarSpeed.get());
-        } else if (slow) {
-            forwardMps = forwardPercent * maxRobotSpeed.get() * slowDrivePercent.get();
-            sidewaysMps = sidewaysPercent * maxRobotSpeed.get() * slowDrivePercent.get();
-            rotationRps = rotationPercent * Units.degreesToRadians(maxRobotAnglarSpeed.get()) * slowDrivePercent.get();
-        } else {
-            forwardMps = forwardPercent * maxRobotSpeed.get() * defaultDrivePercent.get();
-            sidewaysMps = sidewaysPercent * maxRobotSpeed.get() * defaultDrivePercent.get();
-            rotationRps =
-                    rotationPercent * Units.degreesToRadians(maxRobotAnglarSpeed.get()) * defaultDrivePercent.get();
-        }
+        forwardMps = forwardPercent * maxRobotSpeed.get() * speedScaler.getAsDouble();
+        sidewaysMps = sidewaysPercent * maxRobotSpeed.get() * speedScaler.getAsDouble();
+        rotationRps = rotationPercent * Units.degreesToRadians(maxRobotAnglarSpeed.get()) * speedScaler.getAsDouble();
 
         if (ZoneConstants.RED_TOP_BUMP_ZONE.contains(robotTrans)
                 || ZoneConstants.RED_BOTTOM_BUMP_ZONE.contains(robotTrans)

@@ -1,8 +1,11 @@
 /* The Deadbolts (C) 2026 */
 package org.teamdeadbolts.subsystems;
 
+import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.CANBus;
+import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.hardware.TalonFX;
+import edu.wpi.first.units.measure.Current;
 import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.constants.IndexerConstants;
 import org.teamdeadbolts.utils.StatefulSubsystem;
@@ -25,6 +28,12 @@ public class IndexerSubsystem extends StatefulSubsystem<IndexerSubsystem.State> 
     private final CANBus canBus = new CANBus("*");
     private final TalonFX floorMotor = new TalonFX(IndexerConstants.INDEXER_FLOOR_MOTOR_CAN_ID, canBus);
     private final TalonFX kickerMotor = new TalonFX(IndexerConstants.INDEXER_KICKER_MOTOR_CAN_ID, canBus);
+
+    private final StatusSignal<Current> floorMotorCurrentSignal = floorMotor.getSupplyCurrent();
+    private final StatusSignal<Current> kickerMotorCurrentSignal = kickerMotor.getSupplyCurrent();
+
+    private final BaseStatusSignal[] signals =
+            new BaseStatusSignal[] {floorMotorCurrentSignal, kickerMotorCurrentSignal};
 
     /* --- Tuning Parameters --- */
     private final SavedTunableNumber floorMotorIntakeVolts =
@@ -55,6 +64,7 @@ public class IndexerSubsystem extends StatefulSubsystem<IndexerSubsystem.State> 
 
     @Override
     public void periodic() {
+        BaseStatusSignal.refreshAll(signals);
         switch (targetState) {
             case OFF -> {
                 floorMotor.setVoltage(0);
@@ -78,9 +88,7 @@ public class IndexerSubsystem extends StatefulSubsystem<IndexerSubsystem.State> 
 
         Logger.recordOutput("IndexerSubsystem/TargetState", this.targetState);
         // Current
-        Logger.recordOutput(
-                "Debug/Current/Indexer/Floor", floorMotor.getSupplyCurrent().getValueAsDouble());
-        Logger.recordOutput(
-                "Debug/Current/Indexer/Kicker", kickerMotor.getSupplyCurrent().getValueAsDouble());
+        Logger.recordOutput("Debug/Current/Indexer/Floor", floorMotorCurrentSignal.getValueAsDouble());
+        Logger.recordOutput("Debug/Current/Indexer/Kicker", kickerMotorCurrentSignal.getValueAsDouble());
     }
 }

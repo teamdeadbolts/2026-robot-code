@@ -1,10 +1,14 @@
 /* The Deadbolts (C) 2026 */
 package org.teamdeadbolts.subsystems;
 
+import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.CANBus;
+import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.hardware.TalonFX;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.Current;
 import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.constants.HopperConstants;
 import org.teamdeadbolts.utils.StatefulSubsystem;
@@ -30,6 +34,15 @@ public class HopperSubsystem extends StatefulSubsystem<HopperSubsystem.State> im
 
     private final PIDController rightLifterController = new PIDController(0.0, 0.0, 0.0);
     private final SimpleMotorFeedforward rightLifterFF = new SimpleMotorFeedforward(0, 0, 0);
+
+    private final StatusSignal<Angle> leftLifterPositionSignal = hopperMotorLeft.getPosition();
+    private final StatusSignal<Angle> rightLifterPositionSignal = hopperMotorRight.getPosition();
+    private final StatusSignal<Current> leftLifterCurrentSignal = hopperMotorLeft.getSupplyCurrent();
+    private final StatusSignal<Current> rightLifterCurrentSignal = hopperMotorRight.getSupplyCurrent();
+
+    private final BaseStatusSignal[] signals = new BaseStatusSignal[] {
+        leftLifterPositionSignal, rightLifterPositionSignal, leftLifterCurrentSignal, rightLifterCurrentSignal
+    };
 
     /* --- Tuning Parameters --- */
     private final SavedTunableNumber leftLifterControllerP =
@@ -105,6 +118,7 @@ public class HopperSubsystem extends StatefulSubsystem<HopperSubsystem.State> im
 
     @Override
     public void periodic() {
+        BaseStatusSignal.refreshAll(signals);
         Logger.recordOutput("HopperSubsystem/TargetState", targetState);
         final double targetHeight =
                 switch (this.targetState) {
@@ -133,29 +147,22 @@ public class HopperSubsystem extends StatefulSubsystem<HopperSubsystem.State> im
         Logger.recordOutput("HopperSubsystem/TargetHeight", targetHeight);
         Logger.recordOutput("HopperSubsystem/Left/CurrentHeight", getLeftLidHeight());
         Logger.recordOutput("HopperSubsystem/Left/Output", leftOutput);
-        Logger.recordOutput(
-                "HopperSubsystem/Left/RawMotorPosition",
-                hopperMotorLeft.getPosition().getValueAsDouble());
+        Logger.recordOutput("HopperSubsystem/Left/RawMotorPosition", leftLifterPositionSignal.getValueAsDouble());
 
         Logger.recordOutput("HopperSubsystem/Right/CurrentHeight", getRightLidHeight());
         Logger.recordOutput("HopperSubsystem/Right/Output", rightOutput);
-        Logger.recordOutput(
-                "HopperSubsystem/Right/RawMotorPosition",
-                hopperMotorRight.getPosition().getValueAsDouble());
+        Logger.recordOutput("HopperSubsystem/Right/RawMotorPosition", rightLifterPositionSignal.getValueAsDouble());
         // current
-        Logger.recordOutput(
-                "Debug/Current/Hopper/Left", hopperMotorLeft.getSupplyCurrent().getValueAsDouble());
-        Logger.recordOutput(
-                "Debug/Current/Hopper/Right",
-                hopperMotorRight.getSupplyCurrent().getValueAsDouble());
+        Logger.recordOutput("Debug/Current/Hopper/Left", leftLifterCurrentSignal.getValueAsDouble());
+        Logger.recordOutput("Debug/Current/Hopper/Right", rightLifterCurrentSignal.getValueAsDouble());
     }
 
     /** @return The current lid height in meters. */
     private double getLeftLidHeight() {
-        return hopperMotorLeft.getPosition().getValueAsDouble() * HopperConstants.HOPPER_LEFT_ROTATIONS_TO_METERS;
+        return leftLifterPositionSignal.getValueAsDouble() * HopperConstants.HOPPER_LEFT_ROTATIONS_TO_METERS;
     }
 
     private double getRightLidHeight() {
-        return hopperMotorRight.getPosition().getValueAsDouble() * HopperConstants.HOPPER_RIGHT_ROTATIONS_TO_METERS;
+        return rightLifterPositionSignal.getValueAsDouble() * HopperConstants.HOPPER_RIGHT_ROTATIONS_TO_METERS;
     }
 }

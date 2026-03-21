@@ -14,7 +14,6 @@ import org.teamdeadbolts.subsystems.drive.SwerveSubsystem;
 import org.teamdeadbolts.subsystems.vision.PhotonVisionIO.PoseObservation;
 import org.teamdeadbolts.utils.tuning.Refreshable;
 import org.teamdeadbolts.utils.tuning.SavedTunableBoolean;
-import org.teamdeadbolts.utils.tuning.SavedTunableNumber;
 
 /**
  * Manages computer vision data processing for robot localization.
@@ -27,8 +26,6 @@ public class VisionSubsystem extends SubsystemBase implements Refreshable {
     private final PhotonVisionIO[] ios;
 
     /* --- Tuning Parameters --- */
-    private final SavedTunableNumber maxAmbiguity = SavedTunableNumber.get("Tuning/PoseEstimator/MaxAmbiguity", 0.5);
-    private final SavedTunableNumber maxTagDist = SavedTunableNumber.get("Tuning/PoseEstimator/MaxTagDist", 0.5);
     private final SavedTunableBoolean enableVision = SavedTunableBoolean.get("Tuning/PoseEstimator/EnableVision", true);
 
     private final ArrayList<Pose3d> tagPoses = new ArrayList<>();
@@ -93,17 +90,15 @@ public class VisionSubsystem extends SubsystemBase implements Refreshable {
                         && observation.pose().getY() > 0.0
                         && observation.pose().getY() < VisionConstants.FIELD_LAYOUT.getFieldWidth();
 
-                final boolean acceptPose = observation.ambiguity() <= maxAmbiguity.get()
-                        && observation.tagDist() <= maxTagDist.get()
-                        && isInsideField;
+                // final boolean acceptPose = observation.ambiguity() <= maxAmbiguity.get()
+                //         && observation.tagDist() <= maxTagDist.get()
+                //         && isInsideField;
 
-                if (acceptPose) {
+                if (isInsideField && enableVision.get() && observation.good()) {
                     robotPoses.add(observation.pose());
-                    if (enableVision.get() && observation.good()) {
-                        RobotState.getInstance()
-                                .addVisionMeasurement(
-                                        observation.pose(), observation.timestamp(), observation.tagDist());
-                    }
+
+                    RobotState.getInstance()
+                            .addVisionMeasurement(observation.pose(), observation.timestamp(), observation.tagDist());
                 }
             }
 
