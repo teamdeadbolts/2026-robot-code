@@ -96,16 +96,18 @@ public class ConfigManager {
         readyListeners.forEach(Runnable::run);
         readyListeners.clear();
 
-        Thread thread = new Thread(() -> {
-            while (true) {
-                tuneablePerodic();
-                try {
-                    Thread.sleep(250);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
+        Thread thread = new Thread(
+                () -> {
+                    while (true) {
+                        tuneablePerodic();
+                        try {
+                            Thread.sleep(250);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                },
+                "ConfigManager-UpdateValuesThread");
         thread.start();
     }
 

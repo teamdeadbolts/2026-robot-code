@@ -37,6 +37,7 @@ public class IntakeCommand extends Command {
         this.prevHopperState = hopperSubsystem.getState();
         // boolean needHopper = this.prevHopperState != HopperSubsystem.State.UP && this.target != Target.SHOOT &&
         // ((this.target == Target.S) || ());
+        hopperUp = true;
 
         if (this.prevHopperState != HopperSubsystem.State.UP
                 && this.target != Target.SHOOT
