@@ -11,8 +11,10 @@ import com.studica.frc.AHRS;
 import com.studica.frc.AHRS.NavXComType;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.filter.SlewRateLimiter;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
@@ -196,10 +198,10 @@ public class SwerveSubsystem extends SubsystemBase implements Refreshable {
     /** @return Chassis speeds in the field-relative frame. */
     public ChassisSpeeds getFieldRelativeChassisSpeeds() {
         final ChassisSpeeds robotRelative = this.getRobotRelativeChassisSpeeds();
-        final double rot = getGyroRotation().getRadians();
+        final double rot = RobotState.getInstance().getRobotPose().getRotation().getZ();
         return new ChassisSpeeds(
-                -(robotRelative.vxMetersPerSecond * Math.cos(rot) - robotRelative.vyMetersPerSecond * Math.sin(rot)),
-                -(robotRelative.vyMetersPerSecond * Math.cos(rot) + robotRelative.vxMetersPerSecond * Math.sin(rot)),
+                robotRelative.vxMetersPerSecond * Math.cos(rot) - robotRelative.vyMetersPerSecond * Math.sin(rot),
+                robotRelative.vyMetersPerSecond * Math.cos(rot) + robotRelative.vxMetersPerSecond * Math.sin(rot),
                 robotRelative.omegaRadiansPerSecond);
     }
 
@@ -239,10 +241,18 @@ public class SwerveSubsystem extends SubsystemBase implements Refreshable {
             m.periodic();
         }
 
+        Translation2d robotTranslation =
+                RobotState.getInstance().getRobotPose().getTranslation().toTranslation2d();
         state.updateFromSwerve(getModulePositions(), new Rotation3d(getGyroRotation()));
         final ChassisSpeeds speeds = getFieldRelativeChassisSpeeds();
         state.setFieldRelativeVelocities(speeds);
         state.setRobotRelativeVelocities(getRobotRelativeChassisSpeeds());
         Logger.recordOutput("Swerve/RobotVelocities", speeds);
+        Logger.recordOutput(
+                "Swerve/VelocityVector",
+                new Pose2d(
+                        robotTranslation.getX() + speeds.vxMetersPerSecond,
+                        robotTranslation.getY() + speeds.vyMetersPerSecond,
+                        new Rotation2d()));
     }
 }
