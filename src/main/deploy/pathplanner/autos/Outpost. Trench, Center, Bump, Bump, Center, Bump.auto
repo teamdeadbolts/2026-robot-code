@@ -11,12 +11,6 @@
           }
         },
         {
-          "type": "wait",
-          "data": {
-            "waitTime": 0.7
-          }
-        },
-        {
           "type": "path",
           "data": {
             "pathName": "Outpost Fuel Scoop"
