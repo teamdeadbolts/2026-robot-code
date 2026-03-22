@@ -25,12 +25,12 @@ import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.Tracer;
 import edu.wpi.first.wpilibj.sysid.SysIdRoutineLog;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.RobotState;
 import org.teamdeadbolts.constants.SwerveConstants;
+import org.teamdeadbolts.utils.AsyncSubsystemBase;
 import org.teamdeadbolts.utils.tuning.Refreshable;
 import org.teamdeadbolts.utils.tuning.SavedTunableNumber;
 
@@ -38,7 +38,7 @@ import org.teamdeadbolts.utils.tuning.SavedTunableNumber;
  * Manages the swerve drive drivetrain, including kinematics, odometry updates,
  * trajectory following, and system identification.
  */
-public class SwerveSubsystem extends SubsystemBase implements Refreshable {
+public class SwerveSubsystem extends AsyncSubsystemBase implements Refreshable {
     private final AHRS gyro = new AHRS(NavXComType.kMXP_SPI);
     private final SwerveModule[] modules;
     private final BaseStatusSignal[] allSignals = new BaseStatusSignal[4 * 5];
@@ -231,7 +231,7 @@ public class SwerveSubsystem extends SubsystemBase implements Refreshable {
     }
 
     @Override
-    public void periodic() {
+    public void periodicAsync() {
         BaseStatusSignal.refreshAll(allSignals);
         tracer.resetTimer();
         Logger.recordOutput("Swerve/GyroRotationDeg", getGyroRotation().getDegrees());
@@ -243,6 +243,9 @@ public class SwerveSubsystem extends SubsystemBase implements Refreshable {
         final ChassisSpeeds speeds = getFieldRelativeChassisSpeeds();
         state.setFieldRelativeVelocities(speeds);
         state.setRobotRelativeVelocities(getRobotRelativeChassisSpeeds());
-        Logger.recordOutput("Swerve/RobotVelocities", speeds);
+
+        synchronized (Logger.class) {
+            Logger.recordOutput("Swerve/RobotVelocities", speeds);
+        }
     }
 }

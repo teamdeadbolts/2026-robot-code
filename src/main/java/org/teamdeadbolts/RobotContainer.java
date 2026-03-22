@@ -22,7 +22,6 @@ import org.teamdeadbolts.commands.DefaultShooterCommand;
 import org.teamdeadbolts.commands.DriveCommand;
 import org.teamdeadbolts.commands.IntakeCommand;
 import org.teamdeadbolts.commands.ShootCommand;
-import org.teamdeadbolts.constants.VisionConstants;
 import org.teamdeadbolts.subsystems.HopperSubsystem;
 import org.teamdeadbolts.subsystems.IndexerSubsystem;
 import org.teamdeadbolts.subsystems.IntakeSubsystem;
@@ -40,14 +39,13 @@ public class RobotContainer {
     private final ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
     private final HopperSubsystem hopperSubsystem = new HopperSubsystem();
 
-    private VisionSubsystem visionSubsystem = new VisionSubsystem(
-            swerveSubsystem,
-            new PhotonVisionIO("Left Cam", VisionConstants.LEFT_CAM_TRANSFORM),
-            new PhotonVisionIO("Right Cam", VisionConstants.RIGHT_CAM_TRANSFORM),
-            new PhotonVisionIO("Back Cam", VisionConstants.BACK_CAM_TRANSFORM),
-            new PhotonVisionIO("Turret Cam", () -> shooterSubsystem
-                    .getRobotRelativeTurretTransform()
-                    .plus(VisionConstants.TURRET_CAM_TO_TURRET)));
+    private VisionSubsystem visionSubsystem = new VisionSubsystem(swerveSubsystem);
+    //            new PhotonVisionIO("Left Cam", VisionConstants.LEFT_CAM_TRANSFORM),
+    //            new PhotonVisionIO("Right Cam", VisionConstants.RIGHT_CAM_TRANSFORM),
+    //            new PhotonVisionIO("Back Cam", VisionConstants.BACK_CAM_TRANSFORM),
+    //            new PhotonVisionIO("Turret Cam", () -> shooterSubsystem
+    //                    .getRobotRelativeTurretTransform()
+    //                    .plus(VisionConstants.TURRET_CAM_TO_TURRET)));
 
     private CommandXboxController primaryController = new CommandXboxController(0);
     private CommandXboxController secondaryController = new CommandXboxController(1);

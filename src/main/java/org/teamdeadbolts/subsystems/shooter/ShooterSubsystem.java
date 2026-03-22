@@ -249,7 +249,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
     }
 
     @Override
-    public void periodic() {
+    public void periodicAsync() {
         BaseStatusSignal.refreshAll(rioSignals);
         BaseStatusSignal.refreshAll(canivoreSignals);
 
@@ -299,9 +299,11 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
 
                 aprilTagTrackZone.setVertices(vertexFieldRel, forwardLegFieldRel, sideLegFieldRel);
 
-                Logger.recordOutput("ShooterSubsystem/AprilTagTrack/RangeVertex", vertexFieldRel);
-                Logger.recordOutput("ShooterSubsystem/AprilTagTrack/RangeForward", forwardLegFieldRel);
-                Logger.recordOutput("ShooterSubsystem/AprilTagTrack/RangeSide", sideLegFieldRel);
+                synchronized (Logger.class) {
+                    Logger.recordOutput("ShooterSubsystem/AprilTagTrack/RangeVertex", vertexFieldRel);
+                    Logger.recordOutput("ShooterSubsystem/AprilTagTrack/RangeForward", forwardLegFieldRel);
+                    Logger.recordOutput("ShooterSubsystem/AprilTagTrack/RangeSide", sideLegFieldRel);
+                }
 
                 Pose3d targetPose = null;
                 double minDistance = Double.MAX_VALUE;
@@ -322,7 +324,9 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                 if (targetPose != null) {
                     targetTurretPosition = Optional.of(shotCalculator.calculateLatancyOffsetTurretAngle(
                             robotPose2d, targetPose.toPose2d().getTranslation(), System.currentTimeMillis()));
-                    Logger.recordOutput("ShooterSubsystem/AprilTagTrack/TargetTagPose", targetPose);
+                    synchronized (Logger.class) {
+                        Logger.recordOutput("ShooterSubsystem/AprilTagTrack/TargetTagPose", targetPose);
+                    }
                 }
             }
             case PASS -> {
@@ -341,9 +345,12 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                     break;
                 }
 
-                Logger.recordOutput(
-                        "ShooterSubsystem/PassTargetPose",
-                        new Pose2d(passTargetPose.toTranslation2d(), new Rotation2d()));
+                synchronized (Logger.class) {
+                    Logger.recordOutput(
+                            "ShooterSubsystem/PassTargetPose",
+                            new Pose2d(passTargetPose.toTranslation2d(), new Rotation2d()));
+                }
+
                 currentTargetTranslation = Optional.of(passTargetPose);
 
                 final ShotParametersAutoLogged passShot = shotCalculator.calculateShot(
@@ -412,7 +419,9 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
 
             targetTurretPosition = Optional.empty();
             Logger.recordOutput("ShooterSubsystem/Fallback/Fallback", true);
-            Logger.recordOutput("ShooterSybsystem/Fallback/ChassisTarget", fallbackChassisTargetAngle.get());
+            synchronized (Logger.class) {
+                Logger.recordOutput("ShooterSybsystem/Fallback/ChassisTarget", fallbackChassisTargetAngle.get());
+            }
         }
 
         // --- Hardware Control ---
@@ -460,7 +469,9 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
 
             Logger.recordOutput(
                     "ShooterSubsystem/Turret/NormalizedSetpoint", Units.radiansToDegrees(normalizedTurretPosition));
-            Logger.recordOutput("ShooterSubsystem/Target/TurretPose", targetTurretFieldPose);
+            synchronized (Logger.class) {
+                Logger.recordOutput("ShooterSubsystem/Target/TurretPose", targetTurretFieldPose);
+            }
             Logger.recordOutput("ShooterSubsystem/Turret/PidOutput", turretPidOutput);
             Logger.recordOutput("ShooterSubsystem/Turret/PidError", turretController.getPositionError());
             final TrapezoidProfile.State state = turretController.getSetpoint();
@@ -478,7 +489,9 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
         Logger.recordOutput("ShooterSubsystem/Hood/UseAlternativeMinAngle", alternative);
 
         // Turret
-        Logger.recordOutput("ShooterSubsystem/Turret/Pose", getFieldRelativeTurretPose());
+        synchronized (Logger.class) {
+            Logger.recordOutput("ShooterSubsystem/Turret/Pose", getFieldRelativeTurretPose());
+        }
         Logger.recordOutput("ShooterSubsystem/Turret/CurrentPosition", Units.radiansToDegrees(currentTurretPosition));
 
         Logger.recordOutput(

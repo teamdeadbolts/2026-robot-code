@@ -117,7 +117,7 @@ public class HopperSubsystem extends StatefulSubsystem<HopperSubsystem.State> im
     }
 
     @Override
-    public void periodic() {
+    public void periodicAsync() {
         BaseStatusSignal.refreshAll(signals);
         Logger.recordOutput("HopperSubsystem/TargetState", targetState);
         final double targetHeight =

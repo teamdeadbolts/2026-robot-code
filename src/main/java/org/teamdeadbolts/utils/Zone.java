@@ -83,7 +83,9 @@ public class Zone {
     public void visulize() {
         int i = t++ % vertices.size();
         Pose2d pose = new Pose2d(vertices.get(i), new Rotation2d());
-        Logger.recordOutput("Debug/ZonePose", pose);
+        synchronized (Logger.class) {
+            Logger.recordOutput("Debug/ZonePose", pose);
+        }
     }
 
     /**

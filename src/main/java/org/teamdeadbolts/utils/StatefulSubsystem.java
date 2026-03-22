@@ -1,8 +1,6 @@
 /* The Deadbolts (C) 2026 */
 package org.teamdeadbolts.utils;
 
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
-
 /**
  * An abstract base class for subsystems that operate on a finite set of discrete states.
  * Provides a standardized way to track the current state and perform actions when
@@ -10,7 +8,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
  *
  * @param <S> The enum representing the valid states for the subsystem.
  */
-public abstract class StatefulSubsystem<S extends Enum<S>> extends SubsystemBase {
+public abstract class StatefulSubsystem<S extends Enum<S>> extends AsyncSubsystemBase {
     protected S targetState;
 
     /**

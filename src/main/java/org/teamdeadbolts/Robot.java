@@ -11,7 +11,7 @@ import org.teamdeadbolts.utils.tuning.ConfigManager;
 
 public class Robot extends LoggedRobot {
     private Command autonomousCommand;
-    private RobotState robotState = RobotState.getInstance();
+    private final RobotState robotState = RobotState.getInstance();
 
     private final RobotContainer robotContainer;
 
@@ -37,7 +37,6 @@ public class Robot extends LoggedRobot {
 
     @Override
     public void robotPeriodic() {
-
         CommandScheduler.getInstance().run();
     }
 

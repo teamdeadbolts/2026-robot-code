@@ -13,7 +13,13 @@ import edu.wpi.first.math.numbers.N4;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Timer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.constants.SwerveConstants;
 import org.teamdeadbolts.utils.tuning.SavedTunableNumber;
@@ -45,6 +51,9 @@ public class RobotState {
     private boolean isTransitionShift = true;
     private final Timer activeTimer = new Timer();
 
+    private final ExecutorService subsystemExecutor = Executors.newFixedThreadPool(6);
+    private final List<Future<?>> subsystemFutures = new ArrayList<>();
+
     private static final RobotState INSTANCE = new RobotState();
 
     private RobotState() {}
@@ -52,6 +61,24 @@ public class RobotState {
     /** @return The singleton instance of the RobotState. */
     public static RobotState getInstance() {
         return INSTANCE;
+    }
+
+    public void execAsync(Runnable r) {
+        Future<?> f = subsystemExecutor.submit(r);
+        subsystemFutures.add(f);
+    }
+
+    public void awaitAllSubsystems() {
+        for (Future<?> f : subsystemFutures) {
+            try {
+                f.get(200, TimeUnit.MILLISECONDS);
+            } catch (Exception e) {
+                e.printStackTrace();
+                Logger.recordOutput("State/asyncExec", e.toString());
+            }
+        }
+
+        subsystemFutures.clear();
     }
 
     /**

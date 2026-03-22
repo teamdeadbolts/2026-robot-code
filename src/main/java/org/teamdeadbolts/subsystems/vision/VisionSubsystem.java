@@ -4,7 +4,6 @@ package org.teamdeadbolts.subsystems.vision;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.Tracer;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import java.util.ArrayList;
 import java.util.HashMap;
 import org.littletonrobotics.junction.Logger;
@@ -12,6 +11,7 @@ import org.teamdeadbolts.RobotState;
 import org.teamdeadbolts.constants.VisionConstants;
 import org.teamdeadbolts.subsystems.drive.SwerveSubsystem;
 import org.teamdeadbolts.subsystems.vision.PhotonVisionIO.PoseObservation;
+import org.teamdeadbolts.utils.AsyncSubsystemBase;
 import org.teamdeadbolts.utils.tuning.Refreshable;
 import org.teamdeadbolts.utils.tuning.SavedTunableBoolean;
 
@@ -20,7 +20,7 @@ import org.teamdeadbolts.utils.tuning.SavedTunableBoolean;
  * Fuses camera observations with the field layout to provide pose estimates
  * to the {@link RobotState}.
  */
-public class VisionSubsystem extends SubsystemBase implements Refreshable {
+public class VisionSubsystem extends AsyncSubsystemBase implements Refreshable {
 
     private final PhotonVisionIOCtxAutoLogged[] ctxs;
     private final PhotonVisionIO[] ios;
@@ -61,6 +61,12 @@ public class VisionSubsystem extends SubsystemBase implements Refreshable {
 
     @Override
     public void periodic() {
+        super.periodic();
+        RobotState.getInstance().awaitAllSubsystems();
+    }
+
+    @Override
+    public void periodicAsync() {
         final long startTime = RobotController.getFPGATime();
         tracer.resetTimer();
 
@@ -111,6 +117,8 @@ public class VisionSubsystem extends SubsystemBase implements Refreshable {
             tracer.printEpochs();
         }
 
-        Logger.recordOutput("State/Pose", RobotState.getInstance().getRobotPose());
+        synchronized (Logger.class) {
+            Logger.recordOutput("State/Pose", RobotState.getInstance().getRobotPose());
+        }
     }
 }
