@@ -433,8 +433,9 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
             final double wheelOutput =
                     (getRPMError() > bangTol.get()) ? 12.0 : wheelFF.calculate(targetWheelSpeed.get());
             leftWheelMotor.setControl(new VoltageOut(wheelOutput));
-            // Logger.recordOutput("ShooterSubsystem/Wheel/Volts", wheelOutput);
-            // Logger.recordOutput("ShooterSubsystem/Wheel/TargetSpeedRPM", targetWheelSpeed.get());
+            Logger.recordOutput("ShooterSubsystem/Wheel/Volts", wheelOutput);
+            Logger.recordOutput("ShooterSubsystem/Wheel/TargetSpeedRPM", targetWheelSpeed.get());
+            Logger.recordOutput("ShooterSubsystem/Wheel/RPMError", getRPMError());
         } else {
             leftWheelMotor.setVoltage(0);
         }

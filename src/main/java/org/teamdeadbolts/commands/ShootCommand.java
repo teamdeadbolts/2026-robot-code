@@ -62,7 +62,7 @@ public class ShootCommand extends Command {
         } else {
             shooterSubsystem.setState(ShooterSubsystem.State.SHOOT);
         }
-        if (shooterSubsystem.getRPMError() <= wheelRpmError.get()
+        if (Math.abs(shooterSubsystem.getRPMError()) <= wheelRpmError.get()
                 && shooterSubsystem.isPossibleShot()
                 && shooterSubsystem.getTurretError() <= Units.degreesToRadians(turretPositionError.get())) {
             feedShooter();
