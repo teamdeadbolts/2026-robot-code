@@ -18,6 +18,7 @@ import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.Timer;
 import java.util.Optional;
 import org.littletonrobotics.junction.Logger;
+import org.teamdeadbolts.PeriodicLogger;
 import org.teamdeadbolts.constants.IntakeConstants;
 import org.teamdeadbolts.subsystems.logstructs.IntakeData;
 import org.teamdeadbolts.utils.MathUtils;
@@ -290,7 +291,9 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
             intakeData.armEffortObserverVolts = disturbanceAccumulator;
         }
 
-        Logger.recordOutput("IntakeSubsystem/TargetState", targetState);
+        if (PeriodicLogger.getInstance().shouldLog()) {
+            Logger.recordOutput("IntakeSubsystem/TargetState", targetState);
+        }
 
         //        Logger.recordOutput("IntakeSubsystem/Arm/CurrentAngle", Units.radiansToDegrees(currentAngle));
         //        Logger.recordOutput("IntakeSubsystem/Arm/OutputVolts", armMotorVoltageSignal.getValueAsDouble());
@@ -301,11 +304,13 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
         intakeData.armOutputVolts = armMotorVoltageSignal.getValueAsDouble();
         intakeData.wheelsVoltage = wheelMotorVoltageSignal.getValueAsDouble();
 
-        Logger.recordOutput("IntakeSubsystem", intakeData);
+        if (PeriodicLogger.getInstance().shouldLog()) {
+            Logger.recordOutput("IntakeSubsystem", intakeData);
 
-        // Current monitoring
-        Logger.recordOutput("Debug/Current/Intake/Arm", armMotorCurrentSignal.getValueAsDouble());
-        Logger.recordOutput("Debug/Current/Intake/Wheel", wheelMotorCurrentSignal.getValueAsDouble());
+            // Current monitoring
+            Logger.recordOutput("Debug/Current/Intake/Arm", armMotorCurrentSignal.getValueAsDouble());
+            Logger.recordOutput("Debug/Current/Intake/Wheel", wheelMotorCurrentSignal.getValueAsDouble());
+        }
     }
 
     public boolean armAtGoal() {
