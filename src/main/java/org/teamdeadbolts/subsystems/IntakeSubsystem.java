@@ -16,9 +16,10 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.Timer;
+import java.util.List;
 import java.util.Optional;
 import org.littletonrobotics.junction.Logger;
-import org.teamdeadbolts.PeriodicLogger;
+import org.teamdeadbolts.PeriodicTasks;
 import org.teamdeadbolts.constants.IntakeConstants;
 import org.teamdeadbolts.subsystems.logstructs.IntakeData;
 import org.teamdeadbolts.utils.MathUtils;
@@ -55,14 +56,13 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
     private final StatusSignal<Voltage> armMotorVoltageSignal = armMotor.getSupplyVoltage();
     private final StatusSignal<Voltage> wheelMotorVoltageSignal = wheelMotor.getSupplyVoltage();
 
-    private final BaseStatusSignal[] signals = new BaseStatusSignal[] {
-        armMotorCurrentSignal,
-        wheelMotorCurrentSignal,
-        absEncoderAngleSignal,
-        absEncoderVelocitySignal,
-        armMotorVoltageSignal,
-        wheelMotorVoltageSignal
-    };
+    private final List<BaseStatusSignal> signals = List.of(
+            armMotorCurrentSignal,
+            wheelMotorCurrentSignal,
+            absEncoderAngleSignal,
+            absEncoderVelocitySignal,
+            armMotorVoltageSignal,
+            wheelMotorVoltageSignal);
 
     private final ProfiledPIDController armController =
             new ProfiledPIDController(0.0, 0.0, 0.0, new TrapezoidProfile.Constraints(0.0, 0.0));
@@ -168,9 +168,16 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
         disturbanceAccumulator = 0.0;
     }
 
+    public List<BaseStatusSignal> getSignals() {
+        return signals;
+    }
+
     @Override
     public void subsystemPeriodic() {
-        BaseStatusSignal.refreshAll(signals);
+        if (PeriodicTasks.getInstance().shouldRefreshSignals()) {
+            BaseStatusSignal.refreshAll(signals);
+        }
+
         currentAngle = MathUtil.inputModulus(
                 Units.rotationsToRadians(absEncoderAngleSignal.getValueAsDouble())
                         - Units.degreesToRadians(armOffsetDeg.get()),
@@ -291,7 +298,7 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
             intakeData.armEffortObserverVolts = disturbanceAccumulator;
         }
 
-        if (PeriodicLogger.getInstance().shouldLog()) {
+        if (PeriodicTasks.getInstance().shouldLog()) {
             Logger.recordOutput("IntakeSubsystem/TargetState", targetState);
         }
 
@@ -304,7 +311,7 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
         intakeData.armOutputVolts = armMotorVoltageSignal.getValueAsDouble();
         intakeData.wheelsVoltage = wheelMotorVoltageSignal.getValueAsDouble();
 
-        if (PeriodicLogger.getInstance().shouldLog()) {
+        if (PeriodicTasks.getInstance().shouldLog()) {
             Logger.recordOutput("IntakeSubsystem", intakeData);
 
             // Current monitoring

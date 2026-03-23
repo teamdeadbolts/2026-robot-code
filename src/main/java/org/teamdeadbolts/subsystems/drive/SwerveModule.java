@@ -17,8 +17,9 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
+import java.util.List;
 import org.littletonrobotics.junction.Logger;
-import org.teamdeadbolts.PeriodicLogger;
+import org.teamdeadbolts.PeriodicTasks;
 import org.teamdeadbolts.constants.SwerveConstants;
 import org.teamdeadbolts.subsystems.logstructs.DebugSwerveData;
 import org.teamdeadbolts.subsystems.logstructs.SwerveData;
@@ -44,6 +45,8 @@ public class SwerveModule implements Refreshable {
     private final StatusSignal<Current> driveCurrentSignal;
     private final StatusSignal<Angle> turnAbsolutePositionSignal;
     private final StatusSignal<Current> turnCurrentSignal;
+
+    private final List<BaseStatusSignal> signals;
 
     /** Tuning values */
     private final SavedTunableNumber dFFkS = SavedTunableNumber.get("Tuning/Swerve/Drive/kS", 0.0);
@@ -93,6 +96,13 @@ public class SwerveModule implements Refreshable {
         this.driveCurrentSignal = this.driveMotor.getStatorCurrent();
         this.turnAbsolutePositionSignal = this.encoder.getPosition();
         this.turnCurrentSignal = this.turningMotor.getStatorCurrent();
+
+        this.signals = List.of(
+                this.driveVelocitySignal,
+                this.drivePositionSignal,
+                this.driveCurrentSignal,
+                this.turnAbsolutePositionSignal,
+                this.turnCurrentSignal);
 
         this.resetToAbs();
         this.driveMotor.setPosition(0.0);
@@ -144,10 +154,8 @@ public class SwerveModule implements Refreshable {
         this.setAngle(desiredState.angle);
     }
 
-    public BaseStatusSignal[] getSignals() {
-        return new BaseStatusSignal[] {
-            driveVelocitySignal, drivePositionSignal, driveCurrentSignal, turnAbsolutePositionSignal, turnCurrentSignal,
-        };
+    public List<BaseStatusSignal> getSignals() {
+        return signals;
     }
 
     /**
@@ -276,7 +284,7 @@ public class SwerveModule implements Refreshable {
         //                "SwerveSubsystem/Module " + moduleNumber + "/Turn/MeasurementDeg",
         //                this.getRotation().getDegrees());
 
-        if (PeriodicLogger.getInstance().shouldLog()) {
+        if (PeriodicTasks.getInstance().shouldLog()) {
             SwerveData swerveData = new SwerveData(
                     driveCurrentSignal.getValueAsDouble(),
                     turnCurrentSignal.getValueAsDouble(),

@@ -28,8 +28,11 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import org.littletonrobotics.junction.Logger;
+import org.teamdeadbolts.PeriodicTasks;
 import org.teamdeadbolts.RobotState;
 import org.teamdeadbolts.constants.ShooterConstants;
 import org.teamdeadbolts.constants.VisionConstants;
@@ -75,13 +78,11 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
     private final StatusSignal<AngularVelocity> wheelVelocitySignal = leftWheelMotor.getVelocity();
     private final StatusSignal<Current> wheelCurrentSignal = leftWheelMotor.getSupplyCurrent();
 
-    private final BaseStatusSignal[] rioSignals = new BaseStatusSignal[] {
-        hoodVelocitySignal, hoodAngleSignal, hoodCurrentSignal, wheelVelocitySignal, wheelCurrentSignal
-    };
+    private final List<BaseStatusSignal> rioSignals =
+            List.of(hoodVelocitySignal, hoodAngleSignal, hoodCurrentSignal, wheelVelocitySignal, wheelCurrentSignal);
 
-    private final BaseStatusSignal[] canivoreSignals = new BaseStatusSignal[] {
-        turretCurrentSignal, turretPositionSignal, turretCurrentSignal,
-    };
+    private final List<BaseStatusSignal> canivoreSignals =
+            List.of(turretVelocitySignal, turretPositionSignal, turretCurrentSignal);
 
     private final PIDController hoodController = new PIDController(0.0, 0.0, 0.0);
     private final ProfiledPIDController turretController =
@@ -258,10 +259,19 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
         turretController.reset(new TrapezoidProfile.State(position, velocity));
     }
 
+    public List<BaseStatusSignal> getSignals() {
+        List<BaseStatusSignal> signals = new ArrayList<>(rioSignals.size() + canivoreSignals.size());
+        signals.addAll(rioSignals);
+        signals.addAll(canivoreSignals);
+        return signals;
+    }
+
     @Override
     public void subsystemPeriodic() {
-        BaseStatusSignal.refreshAll(rioSignals);
-        BaseStatusSignal.refreshAll(canivoreSignals);
+        if (PeriodicTasks.getInstance().shouldRefreshSignals()) {
+            BaseStatusSignal.refreshAll(rioSignals);
+            BaseStatusSignal.refreshAll(canivoreSignals);
+        }
 
         final double currentHoodAngle = Units.rotationsToRadians(hoodAngleSignal.getValueAsDouble());
         Optional<Double> targetHoodAngle = Optional.empty();

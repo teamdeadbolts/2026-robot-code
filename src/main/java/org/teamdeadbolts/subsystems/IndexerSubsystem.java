@@ -7,7 +7,9 @@ import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.hardware.TalonFX;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.wpilibj.Timer;
+import java.util.List;
 import org.littletonrobotics.junction.Logger;
+import org.teamdeadbolts.PeriodicTasks;
 import org.teamdeadbolts.constants.IndexerConstants;
 import org.teamdeadbolts.utils.StatefulSubsystem;
 import org.teamdeadbolts.utils.tuning.Refreshable;
@@ -33,8 +35,7 @@ public class IndexerSubsystem extends StatefulSubsystem<IndexerSubsystem.State> 
     private final StatusSignal<Current> floorMotorCurrentSignal = floorMotor.getSupplyCurrent();
     private final StatusSignal<Current> kickerMotorCurrentSignal = kickerMotor.getSupplyCurrent();
 
-    private final BaseStatusSignal[] signals =
-            new BaseStatusSignal[] {floorMotorCurrentSignal, kickerMotorCurrentSignal};
+    private final List<BaseStatusSignal> signals = List.of(floorMotorCurrentSignal, kickerMotorCurrentSignal);
 
     /* --- Tuning Parameters --- */
     private final SavedTunableNumber floorMotorIntakeVolts =
@@ -66,9 +67,15 @@ public class IndexerSubsystem extends StatefulSubsystem<IndexerSubsystem.State> 
     @Override
     protected void onStateChange(final State to, final State from) {}
 
+    public List<BaseStatusSignal> getSignals() {
+        return signals;
+    }
+
     @Override
     public void subsystemPeriodic() {
-        BaseStatusSignal.refreshAll(signals);
+        if (PeriodicTasks.getInstance().shouldRefreshSignals()) {
+            BaseStatusSignal.refreshAll(signals);
+        }
         switch (targetState) {
             case OFF -> {
                 floorMotor.setVoltage(0);
@@ -97,8 +104,10 @@ public class IndexerSubsystem extends StatefulSubsystem<IndexerSubsystem.State> 
             }
         }
 
-        // Current
-        Logger.recordOutput("Debug/Current/Indexer/Floor", floorMotorCurrentSignal.getValueAsDouble());
-        Logger.recordOutput("Debug/Current/Indexer/Kicker", kickerMotorCurrentSignal.getValueAsDouble());
+        if (PeriodicTasks.getInstance().shouldLog()) {
+            // Current
+            Logger.recordOutput("Debug/Current/Indexer/Floor", floorMotorCurrentSignal.getValueAsDouble());
+            Logger.recordOutput("Debug/Current/Indexer/Kicker", kickerMotorCurrentSignal.getValueAsDouble());
+        }
     }
 }
