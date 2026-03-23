@@ -4,6 +4,7 @@ package org.teamdeadbolts.commands;
 import edu.wpi.first.wpilibj2.command.Command;
 import org.teamdeadbolts.subsystems.HopperSubsystem;
 import org.teamdeadbolts.subsystems.IntakeSubsystem;
+import org.teamdeadbolts.utils.StatefulSubsystem.Priority;
 
 /**
  * Intake balls
@@ -45,7 +46,7 @@ public class IntakeCommand extends Command {
                         || (target == Target.INTAKE
                                 && intakeSubsystem.getState() != IntakeSubsystem.State.INTAKE
                                 && intakeSubsystem.getState() != IntakeSubsystem.State.DEPLOYED))) {
-            hopperSubsystem.setState(HopperSubsystem.State.UP);
+            hopperSubsystem.setState(HopperSubsystem.State.UP, Priority.NORMAL);
             hopperUp = false;
         }
     }
@@ -56,26 +57,26 @@ public class IntakeCommand extends Command {
             hopperUp = true;
             switch (target) {
                 case INTAKE -> {
-                    intakeSubsystem.setState(IntakeSubsystem.State.INTAKE);
+                    intakeSubsystem.setState(IntakeSubsystem.State.INTAKE, Priority.NORMAL);
                 }
                 case SHOOT -> {
-                    intakeSubsystem.setState(IntakeSubsystem.State.SHOOT);
+                    intakeSubsystem.setState(IntakeSubsystem.State.SHOOT, Priority.NORMAL);
                 }
                 case STOW -> {
-                    intakeSubsystem.setState(IntakeSubsystem.State.STOWED);
+                    intakeSubsystem.setState(IntakeSubsystem.State.STOWED, Priority.NORMAL);
                 }
             }
         }
 
         if (intakeSubsystem.armAtGoal() && hopperUp) {
-            this.hopperSubsystem.setState(this.prevHopperState);
+            this.hopperSubsystem.setState(this.prevHopperState, Priority.LOW);
         }
     }
 
     @Override
     public void end(boolean interrupted) {
         if (this.target == Target.INTAKE || this.target == Target.SHOOT)
-            intakeSubsystem.setState(IntakeSubsystem.State.DEPLOYED);
-        hopperSubsystem.setState(this.prevHopperState);
+            intakeSubsystem.setState(IntakeSubsystem.State.DEPLOYED, Priority.LOW);
+        hopperSubsystem.setState(this.prevHopperState, Priority.NORMAL);
     }
 }

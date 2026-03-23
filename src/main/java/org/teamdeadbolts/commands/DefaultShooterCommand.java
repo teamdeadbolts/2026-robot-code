@@ -6,6 +6,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import org.teamdeadbolts.RobotState;
 import org.teamdeadbolts.constants.ZoneConstants;
 import org.teamdeadbolts.subsystems.shooter.ShooterSubsystem;
+import org.teamdeadbolts.utils.StatefulSubsystem.Priority;
 
 /**
  * The default command for the shooter, active when no other shooter commands are running.
@@ -30,9 +31,9 @@ public class DefaultShooterCommand extends Command {
         // If in a low zone (e.g., trench or tower), disable the shooter to avoid collisions.
         // Otherwise, track april tags
         if (ZoneConstants.isInLowZone(robotPose.getTranslation())) {
-            shooterSubsystem.setState(ShooterSubsystem.State.OFF);
+            shooterSubsystem.setState(ShooterSubsystem.State.OFF, Priority.NORMAL);
         } else {
-            shooterSubsystem.setState(ShooterSubsystem.State.APRILTAG_TRACK);
+            shooterSubsystem.setState(ShooterSubsystem.State.APRILTAG_TRACK, Priority.NORMAL);
         }
     }
 }

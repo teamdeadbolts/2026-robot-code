@@ -7,10 +7,13 @@ import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.hardware.TalonFX;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Current;
 import org.littletonrobotics.junction.Logger;
+import org.teamdeadbolts.RobotState;
 import org.teamdeadbolts.constants.HopperConstants;
+import org.teamdeadbolts.constants.ZoneConstants;
 import org.teamdeadbolts.utils.StatefulSubsystem;
 import org.teamdeadbolts.utils.tuning.Refreshable;
 import org.teamdeadbolts.utils.tuning.SavedTunableNumber;
@@ -117,8 +120,16 @@ public class HopperSubsystem extends StatefulSubsystem<HopperSubsystem.State> im
     }
 
     @Override
-    public void periodic() {
+    public void subsystemPeriodic() {
         BaseStatusSignal.refreshAll(signals);
+
+        Pose2d robotPose = RobotState.getInstance()
+                .getRobotPose()
+                .toPose2d(); // Get the current robot pose from the state of the whole robot
+
+        if (ZoneConstants.isInLowZone(robotPose.getTranslation()))
+            this.setState(HopperSubsystem.State.DOWN, Priority.CRITICAL);
+
         Logger.recordOutput("HopperSubsystem/TargetState", targetState);
         final double targetHeight =
                 switch (this.targetState) {

@@ -197,7 +197,17 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
 
     public double getTurretError() {
         if (targetTurretPosition.isEmpty()) return 0;
-        return (targetTurretPosition.get() - currentTurretPosition);
+        final double normalizedSetpoint = calculateTurretSetpoint(currentTurretPosition, targetTurretPosition.get());
+        return Math.abs(normalizedSetpoint - currentTurretPosition);
+    }
+
+    public boolean isTurretSettled(double positionToleranceRad, double velocityToleranceRadPerSec) {
+        if (targetTurretPosition.isEmpty()) return false;
+
+        double positionError = getTurretError();
+        double currentVelocity = Math.abs(Units.rotationsToRadians(turretVelocitySignal.getValueAsDouble()));
+
+        return positionError <= positionToleranceRad && currentVelocity <= velocityToleranceRadPerSec;
     }
 
     public boolean isPossibleShot() {
@@ -249,7 +259,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
     }
 
     @Override
-    public void periodic() {
+    public void subsystemPeriodic() {
         BaseStatusSignal.refreshAll(rioSignals);
         BaseStatusSignal.refreshAll(canivoreSignals);
 

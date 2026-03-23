@@ -11,6 +11,7 @@ import org.teamdeadbolts.constants.ZoneConstants;
 import org.teamdeadbolts.subsystems.HopperSubsystem;
 import org.teamdeadbolts.subsystems.IndexerSubsystem;
 import org.teamdeadbolts.subsystems.shooter.ShooterSubsystem;
+import org.teamdeadbolts.utils.StatefulSubsystem.Priority;
 import org.teamdeadbolts.utils.tuning.SavedTunableNumber;
 
 /**
@@ -26,6 +27,9 @@ public class ShootCommand extends Command {
 
     private final SavedTunableNumber turretPositionError =
             SavedTunableNumber.get("Tuning/ShootCommand/TurretPositionError", 6);
+
+    private final SavedTunableNumber turretVelocityError =
+            SavedTunableNumber.get("Tuning/ShootCommand/TurretVelocityErrorDegPerSec", 15);
 
     private boolean fallback;
 
@@ -58,27 +62,32 @@ public class ShootCommand extends Command {
         shooterSubsystem.setAlternativeHoodMinAngle(hopperSubsystem.getState() == HopperSubsystem.State.UP);
 
         if (passing) {
-            shooterSubsystem.setState(ShooterSubsystem.State.PASS);
+            shooterSubsystem.setState(ShooterSubsystem.State.PASS, Priority.NORMAL);
         } else {
-            shooterSubsystem.setState(ShooterSubsystem.State.SHOOT);
+            shooterSubsystem.setState(ShooterSubsystem.State.SHOOT, Priority.NORMAL);
         }
+
+        boolean turretReady = shooterSubsystem.isTurretSettled(
+                Units.degreesToRadians(turretPositionError.get()), Units.degreesToRadians(turretVelocityError.get()));
+
         if (Math.abs(shooterSubsystem.getRPMError()) <= wheelRpmError.get()
                 && shooterSubsystem.isPossibleShot()
-                && shooterSubsystem.getTurretError() <= Units.degreesToRadians(turretPositionError.get())) {
+                && turretReady) {
             feedShooter();
         } else {
-            indexerSubsystem.setState(IndexerSubsystem.State.JIGGLE);
+            indexerSubsystem.setState(IndexerSubsystem.State.JIGGLE, Priority.NORMAL);
         }
+
         // shooterSubsystem.setState(ShooterSubsystem.State.SPINUP);
     }
 
     @Override
     public void end(boolean i) {
-        indexerSubsystem.setState(IndexerSubsystem.State.OFF);
-        shooterSubsystem.setState(ShooterSubsystem.State.APRILTAG_TRACK);
+        indexerSubsystem.setState(IndexerSubsystem.State.OFF, Priority.LOW);
+        shooterSubsystem.setState(ShooterSubsystem.State.APRILTAG_TRACK, Priority.LOW);
     }
 
     private void feedShooter() {
-        indexerSubsystem.setState(IndexerSubsystem.State.SHOOT);
+        indexerSubsystem.setState(IndexerSubsystem.State.SHOOT, Priority.NORMAL);
     }
 }

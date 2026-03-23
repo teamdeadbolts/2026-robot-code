@@ -6,6 +6,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import org.teamdeadbolts.RobotState;
 import org.teamdeadbolts.constants.ZoneConstants;
 import org.teamdeadbolts.subsystems.IntakeSubsystem;
+import org.teamdeadbolts.utils.StatefulSubsystem.Priority;
 
 public class DefaultIntakeCommand extends Command {
     private final IntakeSubsystem intakeSubsystem;
@@ -27,12 +28,12 @@ public class DefaultIntakeCommand extends Command {
     public void execute() {
         if (isInUpZone(robotState.getRobotPose().toPose2d().getTranslation())
                 && intakeSubsystem.getState() != IntakeSubsystem.State.STOWED) {
-            intakeSubsystem.setState(IntakeSubsystem.State.HALF_HOLD);
+            intakeSubsystem.setState(IntakeSubsystem.State.HALF_HOLD, Priority.LOW);
             return;
         }
 
         if (this.prevIntakeState == IntakeSubsystem.State.OUTTAKE) this.prevIntakeState = IntakeSubsystem.State.OFF;
-        this.intakeSubsystem.setState(this.prevIntakeState);
+        this.intakeSubsystem.setState(this.prevIntakeState, Priority.LOW);
     }
 
     private boolean isInUpZone(Translation2d robotPose) {

@@ -1,0 +1,19 @@
+// Project tasks configuration. See https://zed.dev/docs/tasks for documentation.
+//
+// Example:
+[
+  {
+    "label": "Spotless Apply & Build",
+    "command": "./gradlew spotlessApply build",
+    "use_new_terminal": false,
+    "reveal": "always",
+    "reveal_target": "dock",
+  },
+  {
+    "label": "Spotless Apply, Build & Deploy",
+    "command": "./gradlew spotlessApply build deploy",
+    "use_new_terminal": false,
+    "reveal": "always",
+    "reveal_target": "dock",
+  },
+]

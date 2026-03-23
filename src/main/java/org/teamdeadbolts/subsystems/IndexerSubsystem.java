@@ -63,7 +63,7 @@ public class IndexerSubsystem extends StatefulSubsystem<IndexerSubsystem.State> 
     protected void onStateChange(final State to, final State from) {}
 
     @Override
-    public void periodic() {
+    public void subsystemPeriodic() {
         BaseStatusSignal.refreshAll(signals);
         switch (targetState) {
             case OFF -> {

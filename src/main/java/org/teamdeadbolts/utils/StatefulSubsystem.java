@@ -11,18 +11,36 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
  * @param <S> The enum representing the valid states for the subsystem.
  */
 public abstract class StatefulSubsystem<S extends Enum<S>> extends SubsystemBase {
-    protected S targetState;
+
 
     /**
-     * Updates the subsystem state and triggers the {@link #onStateChange} hook
-     * if the state has transitioned to a new value.
+     * Defines the priority levels for state transitions.
+     * Higher priorites override lower ones every cycle
+     */
+    public enum Priority {
+        LOW,
+        NORMAL,
+        HIGH,
+        CRITICAL;
+    }
+
+    protected S targetState;
+
+    protected S requestedState;
+    private Priority currentPriority = null;
+
+    /**
+     * Attemps to set the subsystem state with a given priority.
+     * If the priority is higher than the current priority, the state change is queued.
+     * If the state changes, the {@link #onStateChange} hook is triggered.
      *
      * @param newState The desired state for the subsystem.
+     * @param priority The priority level for the state change.
      */
-    public final void setState(S newState) {
-        if (this.targetState != newState) {
-            onStateChange(newState, targetState);
-            targetState = newState;
+    public final void setState(S newState, Priority priority) {
+        if (currentPriority == null || priority.ordinal() >= currentPriority.ordinal()) {
+            this.requestedState = newState;
+            this.currentPriority = priority;
         }
     }
 
@@ -42,4 +60,21 @@ public abstract class StatefulSubsystem<S extends Enum<S>> extends SubsystemBase
      * @param from The previous state.
      */
     protected abstract void onStateChange(S to, S from);
+
+    /**
+     * Normal periodic logic for the subsystem.
+     */
+    protected abstract void subsystemPeriodic();
+
+    @Override
+    public void periodic() {
+        subsystemPeriodic();
+        if (requestedState != null && requestedState != targetState) {
+          onStateChange(requestedState, targetState);
+          targetState = requestedState;
+        }
+
+        currentPriority = null;
+        requestedState = null;
+    }
 }

@@ -74,20 +74,12 @@ public class ShooterConstants {
         for (double i = 1000; i <= 5000; i += 500) {
             mpsToRpmTuning.put(i, SavedTunableNumber.get("Tuning/Shooter/RpmToMpsMap/" + i + "->", 0));
         }
-        // SHOOTER_MPS_TO_RPM_MAP.put(3.902 - 0.5, 1000.0);
-        // SHOOTER_MPS_TO_RPM_MAP.put(4.151 - 0.5, 1500.0);
-        // SHOOTER_MPS_TO_RPM_MAP.put(5.773 - .5, 2000.0);
-        // SHOOTER_MPS_TO_RPM_MAP.put(6.175 - 0.5, 2500.0);
-        // SHOOTER_MPS_TO_RPM_MAP.put(7.23 - 0.5, 3000.0);
-        // SHOOTER_MPS_TO_RPM_MAP.put(8.562 - 0.5, 3500.0);
-        // SHOOTER_MPS_TO_RPM_MAP.put(9.16 - 0.5, 4000.0);
-        // SHOOTER_MPS_TO_RPM_MAP.put(10.0 - 0.5, 4500.0);
-        // SHOOTER_MPS_TO_RPM_MAP.put(10.1 - 0.5, 5000.0);
     }
 
     public static void init() {
         SHOOTER_MPS_TO_RPM_MAP.clear();
         mpsToRpmTuning.forEach((rpm, mps) -> {
+            System.out.println("mps: " + mps.get() + " rpm: " + rpm);
             SHOOTER_MPS_TO_RPM_MAP.put(mps.get(), rpm);
         });
         shooterTurretMotorCurrentLimit.initFromConfig();

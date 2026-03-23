@@ -151,7 +151,7 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
     }
 
     @Override
-    public void periodic() {
+    public void subsystemPeriodic() {
         BaseStatusSignal.refreshAll(signals);
         currentAngle = MathUtil.inputModulus(
                 Units.rotationsToRadians(absEncoderAngleSignal.getValueAsDouble())
