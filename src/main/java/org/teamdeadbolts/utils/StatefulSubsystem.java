@@ -67,7 +67,7 @@ public abstract class StatefulSubsystem<S extends Enum<S>> extends SubsystemBase
     protected abstract void subsystemPeriodic();
 
     @Override
-    public void periodic() {
+    public final void periodic() {
         subsystemPeriodic();
         if (requestedState != null && requestedState != targetState) {
           onStateChange(requestedState, targetState);
