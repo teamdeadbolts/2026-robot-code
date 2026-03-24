@@ -15,7 +15,6 @@ public class DefaultIntakeCommand extends Command {
 
     public DefaultIntakeCommand(IntakeSubsystem intakeSubsystem) {
         this.intakeSubsystem = intakeSubsystem;
-
         addRequirements(intakeSubsystem);
     }
 

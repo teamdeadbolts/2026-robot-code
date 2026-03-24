@@ -16,7 +16,6 @@ import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import java.util.Optional;
-import org.teamdeadbolts.commands.DefaultHopperCommand;
 import org.teamdeadbolts.commands.DefaultIntakeCommand;
 import org.teamdeadbolts.commands.DefaultShooterCommand;
 import org.teamdeadbolts.commands.DriveCommand;
@@ -30,6 +29,7 @@ import org.teamdeadbolts.subsystems.drive.SwerveSubsystem;
 import org.teamdeadbolts.subsystems.shooter.ShooterSubsystem;
 import org.teamdeadbolts.subsystems.vision.PhotonVisionIO;
 import org.teamdeadbolts.subsystems.vision.VisionSubsystem;
+import org.teamdeadbolts.utils.StatefulSubsystem.Priority;
 import org.teamdeadbolts.utils.tuning.SavedTunableNumber;
 
 public class RobotContainer {
@@ -90,9 +90,8 @@ public class RobotContainer {
         shooterSubsystem.setDefaultCommand(new DefaultShooterCommand(shooterSubsystem));
         intakeSubsystem.setDefaultCommand(new DefaultIntakeCommand(intakeSubsystem));
 
-        indexerSubsystem.setDefaultCommand(
-                new RunCommand(() -> indexerSubsystem.setState(IndexerSubsystem.State.OFF), indexerSubsystem));
-        hopperSubsystem.setDefaultCommand(new DefaultHopperCommand(hopperSubsystem));
+        indexerSubsystem.setDefaultCommand(new RunCommand(
+                () -> indexerSubsystem.setState(IndexerSubsystem.State.OFF, Priority.LOW), indexerSubsystem));
 
         // Primary controller
         primaryController
@@ -131,42 +130,48 @@ public class RobotContainer {
 
         primaryController
                 .b()
-                .whileTrue(
-                        new RunCommand(() -> shooterSubsystem.setState(ShooterSubsystem.State.TEST), shooterSubsystem));
+                .whileTrue(new RunCommand(
+                        () -> shooterSubsystem.setState(ShooterSubsystem.State.TEST, Priority.NORMAL),
+                        shooterSubsystem));
 
         primaryController.x().whileTrue(new RunCommand(() -> swerveSubsystem.resetGyro(), swerveSubsystem));
 
         primaryController
                 .a()
-                .whileTrue(
-                        new RunCommand(() -> shooterSubsystem.setState(ShooterSubsystem.State.TEST), shooterSubsystem));
+                .whileTrue(new RunCommand(
+                        () -> shooterSubsystem.setState(ShooterSubsystem.State.TEST, Priority.NORMAL),
+                        shooterSubsystem));
         primaryController
                 .y()
                 .whileTrue(new RunCommand(
                         () -> {
-                            shooterSubsystem.setState(ShooterSubsystem.State.TEST);
-                            indexerSubsystem.setState(IndexerSubsystem.State.SHOOT);
+                            shooterSubsystem.setState(ShooterSubsystem.State.TEST, Priority.NORMAL);
+                            indexerSubsystem.setState(IndexerSubsystem.State.SHOOT, Priority.NORMAL);
                         },
                         shooterSubsystem));
 
         // Secondary Controller
         secondaryController
                 .povUp()
-                .whileTrue(new RunCommand(() -> hopperSubsystem.setState(HopperSubsystem.State.UP), hopperSubsystem));
+                .whileTrue(new RunCommand(
+                        () -> hopperSubsystem.setState(HopperSubsystem.State.UP, Priority.NORMAL), hopperSubsystem));
         secondaryController
                 .povDown()
-                .whileTrue(new RunCommand(() -> hopperSubsystem.setState(HopperSubsystem.State.DOWN), hopperSubsystem));
+                .whileTrue(new RunCommand(
+                        () -> hopperSubsystem.setState(HopperSubsystem.State.DOWN, Priority.NORMAL), hopperSubsystem));
         secondaryController
                 .rightBumper()
                 .whileTrue(new RunCommand(
-                        () -> shooterSubsystem.setState(ShooterSubsystem.State.SPINUP), shooterSubsystem));
+                        () -> shooterSubsystem.setState(ShooterSubsystem.State.SPINUP, Priority.NORMAL),
+                        shooterSubsystem));
         secondaryController
                 .leftTrigger(0.4)
                 .whileTrue(new IntakeCommand(intakeSubsystem, hopperSubsystem, IntakeCommand.Target.SHOOT));
         secondaryController
                 .leftBumper()
                 .whileTrue(new RunCommand(
-                        () -> indexerSubsystem.setState(IndexerSubsystem.State.JIGGLE), indexerSubsystem));
+                        () -> indexerSubsystem.setState(IndexerSubsystem.State.JIGGLE, Priority.NORMAL),
+                        indexerSubsystem));
         secondaryController
                 .a()
                 .whileTrue(new ParallelCommandGroup(
@@ -183,8 +188,8 @@ public class RobotContainer {
                 .povLeft()
                 .whileTrue(new RunCommand(
                         () -> {
-                            indexerSubsystem.setState(IndexerSubsystem.State.REVERSE);
-                            intakeSubsystem.setState(IntakeSubsystem.State.OUTTAKE);
+                            indexerSubsystem.setState(IndexerSubsystem.State.REVERSE, Priority.NORMAL);
+                            intakeSubsystem.setState(IntakeSubsystem.State.OUTTAKE, Priority.NORMAL);
                         },
                         intakeSubsystem,
                         indexerSubsystem));
@@ -203,27 +208,38 @@ public class RobotContainer {
 
         new EventTrigger("Index")
                 .onTrue(new RunCommand(
-                        () -> indexerSubsystem.setState(IndexerSubsystem.State.JIGGLE), indexerSubsystem));
+                        () -> indexerSubsystem.setState(IndexerSubsystem.State.JIGGLE, Priority.NORMAL),
+                        indexerSubsystem));
         new EventTrigger("StopIndex")
-                .onTrue(new RunCommand(() -> indexerSubsystem.setState(IndexerSubsystem.State.OFF), indexerSubsystem));
+                .onTrue(new RunCommand(
+                        () -> indexerSubsystem.setState(IndexerSubsystem.State.OFF, Priority.NORMAL),
+                        indexerSubsystem));
         new EventTrigger("Intake")
-                .onTrue(new RunCommand(() -> intakeSubsystem.setState(IntakeSubsystem.State.INTAKE), intakeSubsystem));
+                .onTrue(new RunCommand(
+                        () -> intakeSubsystem.setState(IntakeSubsystem.State.INTAKE, Priority.NORMAL),
+                        intakeSubsystem));
         new EventTrigger("StopIntake")
                 .onTrue(new RunCommand(
-                        () -> intakeSubsystem.setState(IntakeSubsystem.State.DEPLOYED), intakeSubsystem));
+                        () -> intakeSubsystem.setState(IntakeSubsystem.State.DEPLOYED, Priority.NORMAL),
+                        intakeSubsystem));
         new EventTrigger("Shoot")
                 .onTrue(new ParallelCommandGroup(
                         new ShootCommand(indexerSubsystem, shooterSubsystem, hopperSubsystem, false),
                         new IntakeCommand(intakeSubsystem, hopperSubsystem, IntakeCommand.Target.SHOOT)));
         new EventTrigger("SpinUp")
                 .onTrue(new RunCommand(
-                        () -> shooterSubsystem.setState(ShooterSubsystem.State.SPINUP), shooterSubsystem));
+                        () -> shooterSubsystem.setState(ShooterSubsystem.State.SPINUP, Priority.NORMAL),
+                        shooterSubsystem));
         new EventTrigger("StopShoot")
-                .onTrue(new RunCommand(() -> shooterSubsystem.setState(ShooterSubsystem.State.OFF), shooterSubsystem));
+                .onTrue(new RunCommand(
+                        () -> shooterSubsystem.setState(ShooterSubsystem.State.OFF, Priority.NORMAL),
+                        shooterSubsystem));
         new EventTrigger("HopperUp")
-                .onTrue(new RunCommand(() -> hopperSubsystem.setState(HopperSubsystem.State.UP), hopperSubsystem));
+                .onTrue(new RunCommand(
+                        () -> hopperSubsystem.setState(HopperSubsystem.State.UP, Priority.NORMAL), hopperSubsystem));
         new EventTrigger("HopperDown")
-                .onTrue(new RunCommand(() -> hopperSubsystem.setState(HopperSubsystem.State.DOWN), hopperSubsystem));
+                .onTrue(new RunCommand(
+                        () -> hopperSubsystem.setState(HopperSubsystem.State.DOWN, Priority.NORMAL), hopperSubsystem));
 
         AutoBuilder.configure(
                 () -> state.getRobotPose().toPose2d(),

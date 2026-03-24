@@ -12,7 +12,6 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
  */
 public abstract class StatefulSubsystem<S extends Enum<S>> extends SubsystemBase {
 
-
     /**
      * Defines the priority levels for state transitions.
      * Higher priorites override lower ones every cycle
@@ -70,8 +69,8 @@ public abstract class StatefulSubsystem<S extends Enum<S>> extends SubsystemBase
     public final void periodic() {
         subsystemPeriodic();
         if (requestedState != null && requestedState != targetState) {
-          onStateChange(requestedState, targetState);
-          targetState = requestedState;
+            onStateChange(requestedState, targetState);
+            targetState = requestedState;
         }
 
         currentPriority = null;

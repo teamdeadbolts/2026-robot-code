@@ -79,7 +79,6 @@ public class ShooterConstants {
     public static void init() {
         SHOOTER_MPS_TO_RPM_MAP.clear();
         mpsToRpmTuning.forEach((rpm, mps) -> {
-            System.out.println("mps: " + mps.get() + " rpm: " + rpm);
             SHOOTER_MPS_TO_RPM_MAP.put(mps.get(), rpm);
         });
         shooterTurretMotorCurrentLimit.initFromConfig();

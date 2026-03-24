@@ -42,7 +42,6 @@ public class ShootCommand extends Command {
         this.shooterSubsystem = shooterSubsystem;
         this.hopperSubsystem = hopperSubsystem;
         this.fallback = fallback;
-        addRequirements(indexerSubsystem, shooterSubsystem);
     }
 
     @Override
@@ -83,8 +82,8 @@ public class ShootCommand extends Command {
 
     @Override
     public void end(boolean i) {
-        indexerSubsystem.setState(IndexerSubsystem.State.OFF, Priority.LOW);
-        shooterSubsystem.setState(ShooterSubsystem.State.APRILTAG_TRACK, Priority.LOW);
+        indexerSubsystem.setState(IndexerSubsystem.State.OFF, Priority.NORMAL);
+        shooterSubsystem.setState(ShooterSubsystem.State.APRILTAG_TRACK, Priority.NORMAL);
     }
 
     private void feedShooter() {

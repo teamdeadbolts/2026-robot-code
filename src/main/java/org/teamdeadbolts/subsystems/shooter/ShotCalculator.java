@@ -79,12 +79,9 @@ public class ShotCalculator implements Refreshable {
     private final SavedTunableNumber linerFilter = SavedTunableNumber.get("Tuning/Shooter/LinearFilter", 5);
 
     /* --- Air Resistance & Ballistics Tuning Parameters --- */
-    private final SavedTunableNumber dragCoefficient =
-            SavedTunableNumber.get("Tuning/Shooter/DragCoefficient", 0.47); // Rough sphere default
-    private final SavedTunableNumber airDensity =
-            SavedTunableNumber.get("Tuning/Shooter/AirDensity", 1.1); // Sea level kg/m^3
-    private final SavedTunableNumber simStepSize =
-            SavedTunableNumber.get("Tuning/Shooter/SimStepSizeSec", 0.02); // 20ms integration step
+    private final SavedTunableNumber dragCoefficient = SavedTunableNumber.get("Tuning/Shooter/DragCoefficient", 0.47);
+    private final SavedTunableNumber airDensity = SavedTunableNumber.get("Tuning/Shooter/AirDensity", 1.1);
+    private final SavedTunableNumber simStepSize = SavedTunableNumber.get("Tuning/Shooter/SimStepSizeSec", 0.02);
 
     private final TimedExtrapolatingDoubleMap vxMap = new TimedExtrapolatingDoubleMap(timeToKeepVel.get());
     private final TimedExtrapolatingDoubleMap vyMap = new TimedExtrapolatingDoubleMap(timeToKeepVel.get());

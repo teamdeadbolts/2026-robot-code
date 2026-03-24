@@ -26,11 +26,6 @@ public class IntakeCommand extends Command {
         this.intakeSubsystem = intakeSubsystem;
         this.hopperSubsystem = hopperSubsystem;
         this.target = target;
-        if (target == Target.SHOOT) {
-            addRequirements(intakeSubsystem);
-        } else {
-            addRequirements(intakeSubsystem, hopperSubsystem);
-        }
     }
 
     @Override
@@ -69,14 +64,14 @@ public class IntakeCommand extends Command {
         }
 
         if (intakeSubsystem.armAtGoal() && hopperUp) {
-            this.hopperSubsystem.setState(this.prevHopperState, Priority.LOW);
+            this.hopperSubsystem.setState(this.prevHopperState, Priority.NORMAL);
         }
     }
 
     @Override
     public void end(boolean interrupted) {
         if (this.target == Target.INTAKE || this.target == Target.SHOOT)
-            intakeSubsystem.setState(IntakeSubsystem.State.DEPLOYED, Priority.LOW);
+            intakeSubsystem.setState(IntakeSubsystem.State.DEPLOYED, Priority.NORMAL);
         hopperSubsystem.setState(this.prevHopperState, Priority.NORMAL);
     }
 }
