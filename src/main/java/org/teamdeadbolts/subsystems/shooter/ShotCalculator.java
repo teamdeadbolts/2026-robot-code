@@ -62,10 +62,11 @@ public class ShotCalculator implements Refreshable {
     private final SavedTunableNumber timeToKeepVel = SavedTunableNumber.get("Tuning/Shooter/TimeToKeepVelMs", 1000);
     private final SavedTunableNumber linerFilter = SavedTunableNumber.get("Tuning/Shooter/LinearFilter", 5);
 
-    /* --- Air Resistance & Ballistics Tuning Parameters --- */
     private final SavedTunableNumber dragCoefficient = SavedTunableNumber.get("Tuning/Shooter/DragCoefficient", 0.47);
     private final SavedTunableNumber airDensity = SavedTunableNumber.get("Tuning/Shooter/AirDensity", 1.1);
     private final SavedTunableNumber simStepSize = SavedTunableNumber.get("Tuning/Shooter/SimStepSizeSec", 0.02);
+
+    private final SavedTunableNumber magnusCoefficient = SavedTunableNumber.get("Tuning/Shooter/MagnuxCoefficient", 0.015);
 
     private final TimedExtrapolatingDoubleMap vxMap = new TimedExtrapolatingDoubleMap(timeToKeepVel.get());
     private final TimedExtrapolatingDoubleMap vyMap = new TimedExtrapolatingDoubleMap(timeToKeepVel.get());
@@ -271,42 +272,45 @@ public class ShotCalculator implements Refreshable {
 
         double area = Math.PI * Math.pow(ShooterConstants.BALL_RADIUS_METERS, 2);
         // k = (rho * Cd * A) / 2m
-        double k = 0.5 * airDensity.get() * dragCoefficient.get() * area / ShooterConstants.BALL_MASS_KG;
-
-        while (x < target.getX() && y > -2.0 && t < 3.0) { // Safeties: ground strike or 3 sec max
+        double kDrag = 0.5 * airDensity.get() * dragCoefficient.get() * area / ShooterConstants.BALL_MASS_KG;
+        double kMagnus = magnusCoefficient.get() * v0;
+        while (x < target.getX() && t < 3.0) { // Safeties: 3 sec max
             double v = Math.sqrt(vx * vx + vy * vy);
 
             // Apply accelerations based on quadratic drag forces
-            double ax = -k * v * vx;
-            double ay = -G - k * v * vy;
+            double axDrag = -kDrag * v * vx;
+            double ayDrag = -kDrag * v * vy;
 
-            vx += ax * dt;
-            vy += ay * dt;
+            double axMagnus = -kMagnus * vy;
+            double ayMagnus = kMagnus * vx;
+
+            vx += (axDrag + axMagnus) * dt;
+            vy += (-G + ayDrag + ayMagnus) * dt;
             x += vx * dt;
             y += vy * dt;
             t += dt;
         }
 
         // Linearly interpolate for exact Y intersection and flight time at target X
-        double x_prev = x - vx * dt;
-        double y_prev = y - vy * dt;
-        double dx = x - x_prev;
+        double xPrev = x - vx * dt;
+        double yPrev = y - vy * dt;
+        double dx = x - xPrev;
 
-        double exact_y = y;
-        double exact_t = t;
+        double exactY = y;
+        double exactT = t;
 
         if (dx > 0) {
-            double frac = (target.getX() - x_prev) / dx;
-            exact_y = y_prev + frac * (y - y_prev);
-            exact_t = (t - dt) + frac * dt;
+            double frac = (target.getX() - xPrev) / dx;
+            exactY = yPrev + frac * (y - yPrev);
+            exactT = (t - dt) + frac * dt;
         }
 
         if (outParams != null && outParams.length >= 2) {
-            outParams[0] = exact_t;
+            outParams[0] = exactT;
             outParams[1] = Math.abs(Math.atan2(vy, vx)); // Store absolute impact angle magnitude
         }
 
-        return exact_y;
+        return exactY;
     }
 
     /** Binary searches to find the initial velocity required to hit the target (X,Y) given an angle */
