@@ -32,10 +32,8 @@ public class SavedTunableNumber implements Tuneable<Double> {
         this.key = key;
         this.defaultValue = defaultValue;
 
-        // Use the key directly as the path
         this.entry = NetworkTableInstance.getDefault().getEntry(key);
 
-        // Initial set of the entry if it doesn't exist yet
         if (!entry.exists()) {
             entry.setDouble(defaultValue);
         }

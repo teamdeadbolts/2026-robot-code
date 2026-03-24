@@ -69,7 +69,7 @@ public class HopperSubsystem extends StatefulSubsystem<HopperSubsystem.State> im
     private final SavedTunableNumber lidUpHeight = SavedTunableNumber.get("Tuning/Hopper/LidUpHeight", 0.0);
 
     public HopperSubsystem() {
-        this.targetState = State.DOWN;
+        super(State.DOWN);
         hopperMotorLeft.setPosition(0);
         hopperMotorRight.setPosition(0);
 

@@ -48,7 +48,7 @@ public class IndexerSubsystem extends StatefulSubsystem<IndexerSubsystem.State> 
             SavedTunableNumber.get("Tuning/Indexer/IndexerJiggleFrequency", 1.0);
 
     public IndexerSubsystem() {
-        this.targetState = State.OFF;
+        super(State.OFF);
         refresh();
     }
 

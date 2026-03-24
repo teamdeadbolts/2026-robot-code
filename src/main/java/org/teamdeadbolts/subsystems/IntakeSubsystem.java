@@ -103,6 +103,7 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
     private double disturbanceAccumulator = 0.0;
 
     public IntakeSubsystem() {
+        super(State.OFF);
         this.currentAngle = MathUtil.inputModulus(
                 Units.rotationsToRadians(absEncoderAngleSignal.getValueAsDouble())
                         - Units.degreesToRadians(armOffsetDeg.get()),
@@ -111,7 +112,8 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
         this.targetState = MathUtils.inRange(
                         Math.abs(currentAngle - Units.degreesToRadians(intakeStowedAngle.get())), 0, Math.PI / 4)
                 ? State.STOWED
-                : State.DEPLOYED;
+                : State.DEPLOYED; // TODO: A little janky but ok
+
         armController.enableContinuousInput(0, Math.PI * 2);
 
         // Register refreshables for real-time tuning

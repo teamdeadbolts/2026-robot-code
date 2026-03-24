@@ -28,6 +28,10 @@ public abstract class StatefulSubsystem<S extends Enum<S>> extends SubsystemBase
     protected S requestedState;
     private Priority currentPriority = null;
 
+    public StatefulSubsystem(S initialState) {
+        this.targetState = initialState;
+    }
+
     /**
      * Attemps to set the subsystem state with a given priority.
      * If the priority is higher than the current priority, the state change is queued.

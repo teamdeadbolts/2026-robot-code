@@ -145,8 +145,8 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
     private Optional<Rotation2d> fallbackChassisTargetAngle = Optional.empty();
 
     public ShooterSubsystem() {
+        super(State.OFF);
         this.shotCalculator = new ShotCalculator();
-        this.targetState = State.OFF;
 
         hoodMotor.setPosition(Units.degreesToRotations(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES - 1));
         resetTurretPosition();
