@@ -32,7 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.littletonrobotics.junction.Logger;
-import org.teamdeadbolts.PeriodicTasks;
+import org.teamdeadbolts.utils.PeriodicTasks;
 import org.teamdeadbolts.RobotState;
 import org.teamdeadbolts.constants.ShooterConstants;
 import org.teamdeadbolts.constants.VisionConstants;

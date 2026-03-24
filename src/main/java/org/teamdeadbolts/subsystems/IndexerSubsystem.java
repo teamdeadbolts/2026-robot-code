@@ -9,7 +9,7 @@ import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.wpilibj.Timer;
 import java.util.List;
 import org.littletonrobotics.junction.Logger;
-import org.teamdeadbolts.PeriodicTasks;
+import org.teamdeadbolts.utils.PeriodicTasks;
 import org.teamdeadbolts.constants.IndexerConstants;
 import org.teamdeadbolts.utils.StatefulSubsystem;
 import org.teamdeadbolts.utils.tuning.Refreshable;

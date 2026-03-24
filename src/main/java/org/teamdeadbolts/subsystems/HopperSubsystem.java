@@ -12,7 +12,7 @@ import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Current;
 import java.util.List;
 import org.littletonrobotics.junction.Logger;
-import org.teamdeadbolts.PeriodicTasks;
+import org.teamdeadbolts.utils.PeriodicTasks;
 import org.teamdeadbolts.RobotState;
 import org.teamdeadbolts.constants.HopperConstants;
 import org.teamdeadbolts.constants.ZoneConstants;

@@ -33,7 +33,7 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import java.util.LinkedList;
 import java.util.List;
 import org.littletonrobotics.junction.Logger;
-import org.teamdeadbolts.PeriodicTasks;
+import org.teamdeadbolts.utils.PeriodicTasks;
 import org.teamdeadbolts.RobotState;
 import org.teamdeadbolts.constants.SwerveConstants;
 import org.teamdeadbolts.utils.tuning.Refreshable;

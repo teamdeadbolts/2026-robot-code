@@ -19,7 +19,7 @@ import edu.wpi.first.wpilibj.Timer;
 import java.util.List;
 import java.util.Optional;
 import org.littletonrobotics.junction.Logger;
-import org.teamdeadbolts.PeriodicTasks;
+import org.teamdeadbolts.utils.PeriodicTasks;
 import org.teamdeadbolts.constants.IntakeConstants;
 import org.teamdeadbolts.subsystems.logstructs.IntakeData;
 import org.teamdeadbolts.utils.MathUtils;

@@ -1,5 +1,5 @@
 /* The Deadbolts (C) 2026 */
-package org.teamdeadbolts;
+package org.teamdeadbolts.utils;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
