@@ -49,22 +49,6 @@ public class ShotCalculator implements Refreshable {
 
     private static final double G = 9.81;
 
-    public static double shooterMPSToRPM(final double mps) {
-        return ShooterConstants.SHOOTER_MPS_TO_RPM_MAP.get(mps);
-    }
-
-    private static double calculateFieldRelativeTurret(final Pose2d robotPose, final Translation2d targetLocation) {
-        final Transform2d turretOffset =
-                new Transform2d(ShooterConstants.SHOOTER_OFFSET.getTranslation().toTranslation2d(), new Rotation2d());
-        final Pose2d turretFieldPose = robotPose.transformBy(turretOffset);
-
-        final Translation2d relativeTrans = targetLocation.minus(turretFieldPose.getTranslation());
-        final Rotation2d fieldRelativeAngle = new Rotation2d(relativeTrans.getX(), relativeTrans.getY());
-
-        final Rotation2d robotRelAngle = fieldRelativeAngle.minus(robotPose.getRotation());
-        return MathUtil.inputModulus(robotRelAngle.getRadians(), -Math.PI, Math.PI);
-    }
-
     private Translation2d lastAcceptedVirtTarget2d = null;
     private ShotParametersAutoLogged lastAcceptedShot = null;
 
@@ -138,7 +122,7 @@ public class ShotCalculator implements Refreshable {
                 predictedPose2d.getX(),
                 predictedPose2d.getY(),
                 robotPose.getZ(),
-                new edu.wpi.first.math.geometry.Rotation3d(
+                new Rotation3d(
                         0, 0, predictedPose2d.getRotation().getRadians()));
 
         // 3. Calculate turret geometry based on the PREDICTED pose
@@ -164,6 +148,7 @@ public class ShotCalculator implements Refreshable {
         double ballVelocity = 0.0;
         double impactAngle = 0.0;
         double distFromPivotToTarget = 0.0;
+        double turretAngle = 0.0;
         final double heightFromPivotToTarget = targetZ - fieldRelTurret.getZ();
 
         // 4. Iteratively solve for flight time, target lead, and optimal impact angle (with Drag)
@@ -178,19 +163,33 @@ public class ShotCalculator implements Refreshable {
                 dy -= ShooterConstants.EXIT_RADIUS_METERS * Math.sin(hoodAngle);
             }
 
+
             final double k = dy / dx;
             final double idealAlphaRad = Math.atan(Math.sqrt(k * k + 1) - k);
             impactAngle = MathUtil.clamp(idealAlphaRad, minAlphaRad, maxAlphaRad);
 
             double[] simResults = new double[2]; // [0] = velocity, [1] = flightTime
             hoodAngle = findLaunchAngleWithDrag(relVirtTarget, impactAngle, maxAngle, simResults);
+
             ballVelocity = simResults[0];
             final double flightTimeSec = simResults[1];
+
+            Rotation2d shootingDirection = virtTarget2d.minus(turretPos2d).getAngle();
+
+            Translation2d ballVelVec = new Translation2d(
+              ballVelocity * Math.cos(hoodAngle) * shootingDirection.getCos(),
+              ballVelocity * Math.cos(hoodAngle) * shootingDirection.getSin()
+            );
+
+            Translation2d vRelative2d = ballVelVec.minus(turretVel);
+
+            final Rotation2d compensatedTurretFieldAngle = vRelative2d.getAngle();
+            turretAngle = MathUtil.angleModulus(compensatedTurretFieldAngle.minus(robotAngle).getRadians());
 
             virtTarget2d = target.toTranslation2d().minus(turretVel.times(flightTimeSec));
         }
 
-        final double turretAngle = calculateFieldRelativeTurret(predictedPose2d, virtTarget2d);
+        // final double turretAngle = calculateFieldRelativeTurret(predictedPose2d, virtTarget2d);
 
         final ShotParametersAutoLogged rawShot = new ShotParametersAutoLogged();
         rawShot.hoodAngle = Math.PI / 2 - hoodAngle;
@@ -220,9 +219,25 @@ public class ShotCalculator implements Refreshable {
         shotToUse.wheelSpeed = shooterMPSToRPM(shotToUse.ballVelocity);
         Logger.processInputs("ShotCalc/RealShot", shotToUse);
 
-        rawShot.isPossible = 5000.0 >= shotToUse.wheelSpeed;
+        rawShot.isPossible = ShooterConstants.SHOOTER_MAX_RPM >= shotToUse.wheelSpeed;
 
         return rawShot;
+    }
+
+    public static double shooterMPSToRPM(final double mps) {
+        return ShooterConstants.SHOOTER_MPS_TO_RPM_MAP.get(mps);
+    }
+
+    private static double calculateFieldRelativeTurret(final Pose2d robotPose, final Translation2d targetLocation) {
+        final Transform2d turretOffset =
+                new Transform2d(ShooterConstants.SHOOTER_OFFSET.getTranslation().toTranslation2d(), new Rotation2d());
+        final Pose2d turretFieldPose = robotPose.transformBy(turretOffset);
+
+        final Translation2d relativeTrans = targetLocation.minus(turretFieldPose.getTranslation());
+        final Rotation2d fieldRelativeAngle = new Rotation2d(relativeTrans.getX(), relativeTrans.getY());
+
+        final Rotation2d robotRelAngle = fieldRelativeAngle.minus(robotPose.getRotation());
+        return MathUtil.inputModulus(robotRelAngle.getRadians(), -Math.PI, Math.PI);
     }
 
     public double calculateLatancyOffsetTurretAngle(
@@ -241,8 +256,6 @@ public class ShotCalculator implements Refreshable {
         return calculateFieldRelativeTurret(predictedRobotPose, targetLocation);
     }
 
-    // --- NEW PHYSICS SIMULATION METHODS --- //
-
     /**
      * Simulates the trajectory of the ball using 2D quadratic drag and Euler integration.
      * Returns the exact interpolated Y height when the ball crosses the target X.
@@ -256,9 +269,9 @@ public class ShotCalculator implements Refreshable {
         double t = 0;
         double dt = simStepSize.get();
 
-        double area = Math.PI * Math.pow(Units.inchesToMeters(6) / 2.0, 2);
+        double area = Math.PI * Math.pow(ShooterConstants.BALL_RADIUS_METERS, 2);
         // k = (rho * Cd * A) / 2m
-        double k = 0.5 * airDensity.get() * dragCoefficient.get() * area / 0.226;
+        double k = 0.5 * airDensity.get() * dragCoefficient.get() * area / ShooterConstants.BALL_MASS_KG;
 
         while (x < target.getX() && y > -2.0 && t < 3.0) { // Safeties: ground strike or 3 sec max
             double v = Math.sqrt(vx * vx + vy * vy);

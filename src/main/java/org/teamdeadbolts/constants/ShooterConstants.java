@@ -26,7 +26,10 @@ public class ShooterConstants {
     public static final double TURRET_MIN_POSITION_DEGREES = 0.0;
     public static final double TURRET_MAX_POSITION_DEGREES = 360.0;
 
-    public static final double WHEEL_MAX_OMEGA_RAD_PER_SEC = 600.0 * 2.0 * Math.PI / 60.0; // 600 RPM
+    public static final double SHOOTER_MAX_RPM = 5500;
+
+    public static final double BALL_MASS_KG = 0.226;
+    public static final double BALL_RADIUS_METERS = Units.inchesToMeters(3);
 
     public static final double EXIT_SPEED_EFFICIENCY =
             0.95; // How well does the energy get transfered from the wheels to the ball
