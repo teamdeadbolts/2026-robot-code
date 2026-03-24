@@ -11,7 +11,6 @@ import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.math.util.Units;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.constants.ShooterConstants;
@@ -66,7 +65,8 @@ public class ShotCalculator implements Refreshable {
     private final SavedTunableNumber airDensity = SavedTunableNumber.get("Tuning/Shooter/AirDensity", 1.1);
     private final SavedTunableNumber simStepSize = SavedTunableNumber.get("Tuning/Shooter/SimStepSizeSec", 0.02);
 
-    private final SavedTunableNumber magnusCoefficient = SavedTunableNumber.get("Tuning/Shooter/MagnuxCoefficient", 0.015);
+    private final SavedTunableNumber magnusCoefficient =
+            SavedTunableNumber.get("Tuning/Shooter/MagnuxCoefficient", 0.015);
 
     private final TimedExtrapolatingDoubleMap vxMap = new TimedExtrapolatingDoubleMap(timeToKeepVel.get());
     private final TimedExtrapolatingDoubleMap vyMap = new TimedExtrapolatingDoubleMap(timeToKeepVel.get());
@@ -123,8 +123,7 @@ public class ShotCalculator implements Refreshable {
                 predictedPose2d.getX(),
                 predictedPose2d.getY(),
                 robotPose.getZ(),
-                new Rotation3d(
-                        0, 0, predictedPose2d.getRotation().getRadians()));
+                new Rotation3d(0, 0, predictedPose2d.getRotation().getRadians()));
 
         // 3. Calculate turret geometry based on the PREDICTED pose
         final Pose3d fieldRelTurret = predictedRobotPose.transformBy(ShooterConstants.SHOOTER_OFFSET);
@@ -164,7 +163,6 @@ public class ShotCalculator implements Refreshable {
                 dy -= ShooterConstants.EXIT_RADIUS_METERS * Math.sin(hoodAngle);
             }
 
-
             final double k = dy / dx;
             final double idealAlphaRad = Math.atan(Math.sqrt(k * k + 1) - k);
             impactAngle = MathUtil.clamp(idealAlphaRad, minAlphaRad, maxAlphaRad);
@@ -178,14 +176,14 @@ public class ShotCalculator implements Refreshable {
             Rotation2d shootingDirection = virtTarget2d.minus(turretPos2d).getAngle();
 
             Translation2d ballVelVec = new Translation2d(
-              ballVelocity * Math.cos(hoodAngle) * shootingDirection.getCos(),
-              ballVelocity * Math.cos(hoodAngle) * shootingDirection.getSin()
-            );
+                    ballVelocity * Math.cos(hoodAngle) * shootingDirection.getCos(),
+                    ballVelocity * Math.cos(hoodAngle) * shootingDirection.getSin());
 
             Translation2d vRelative2d = ballVelVec.minus(turretVel);
 
             final Rotation2d compensatedTurretFieldAngle = vRelative2d.getAngle();
-            turretAngle = MathUtil.angleModulus(compensatedTurretFieldAngle.minus(robotAngle).getRadians());
+            turretAngle = MathUtil.angleModulus(
+                    compensatedTurretFieldAngle.minus(robotAngle).getRadians());
 
             virtTarget2d = target.toTranslation2d().minus(turretVel.times(flightTimeSec));
         }
