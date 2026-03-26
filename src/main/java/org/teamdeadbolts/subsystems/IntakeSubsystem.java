@@ -71,12 +71,19 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
 
     private final SavedTunableNumber armControllerP = SavedTunableNumber.get("Tuning/Intake/ArmController/kP", 0.1);
     private final SavedTunableNumber armControllerI = SavedTunableNumber.get("Tuning/Intake/ArmController/kI", 0.0);
+    private final SavedTunableNumber armControllerIZone =
+            SavedTunableNumber.get("Tuning/Intake/ArmController/IZone/IZone", 20.0); // Deggress
+    private final SavedTunableNumber armControllerIMax =
+            SavedTunableNumber.get("Tuning/Intake/ArmController/IZone/IMax", 0.0); // Volts
+
     private final SavedTunableNumber armControllerMaxVel =
             SavedTunableNumber.get("Tuning/Intake/ArmController/MaxVel", 0.0);
     private final SavedTunableNumber armControllerMaxAccel =
             SavedTunableNumber.get("Tuning/Intake/ArmController/MaxAccel", 0.0);
     private final SavedTunableNumber armControllerTol =
             SavedTunableNumber.get("Tuning/Intake/ArmController/TolDeg", 10);
+
+    private final SavedTunableNumber armDropTol = SavedTunableNumber.get("Tuning/Intake/ArmDropTol", 45.0);
 
     private final SavedTunableNumber wheelIntakeVoltage =
             SavedTunableNumber.get("Tuning/Intake/WheelIntakeVoltage", 6.0);
@@ -114,12 +121,14 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
                 ? State.STOWED
                 : State.DEPLOYED; // TODO: A little janky but ok
 
-        armController.enableContinuousInput(0, Math.PI * 2);
+        armController.enableContinuousInput(-Math.PI, Math.PI);
 
         // Register refreshables for real-time tuning
         armControllerP.addRefreshable(this);
         armControllerI.addRefreshable(this);
         armControllerTol.addRefreshable(this);
+        armControllerIZone.addRefreshable(this);
+        armControllerIMax.addRefreshable(this);
         armControllerMaxVel.addRefreshable(this);
         armControllerMaxAccel.addRefreshable(this);
         wheelIntakeVoltage.addRefreshable(this);
@@ -133,8 +142,11 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
         armController.setConstraints(new TrapezoidProfile.Constraints(
                 Units.degreesToRadians(armControllerMaxVel.get()),
                 Units.degreesToRadians(armControllerMaxAccel.get())));
-
         armController.setTolerance(Units.degreesToRadians(armControllerTol.get()));
+
+        armController.setIZone(armControllerIZone.get());
+        armController.setIntegratorRange(0, armControllerIMax.get());
+
         armFeedforward.setKs(armFeedforwardKs.get());
         armFeedforward.setKg(armFeedforwardKg.get());
 
@@ -158,8 +170,8 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
         currentAngle = MathUtil.inputModulus(
                 Units.rotationsToRadians(absEncoderAngleSignal.getValueAsDouble())
                         - Units.degreesToRadians(armOffsetDeg.get()),
-                0,
-                Math.PI * 2);
+                -Math.PI,
+                Math.PI);
 
         Optional<Double> targetAngle = Optional.empty();
         switch (targetState) {
@@ -173,9 +185,8 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
             }
             case INTAKE -> {
                 targetAngle = Optional.of(Units.degreesToRadians(intakeDeployedAngle.get()));
-                // Math.
-                // if (Math.abs(targetAngle.get() - currentAngle) < Math.PI / 4) {
-                if (Math.abs(armController.getPositionError()) < Units.degreesToRadians(intakeWheelStartTol.get())) {
+                if (Math.abs(MathUtils.getShortestDistance(currentAngle, targetAngle.get()))
+                        <= Units.degreesToRadians(intakeWheelStartTol.get())) {
                     wheelMotor.setVoltage(wheelIntakeVoltage.get());
                 } else {
                     wheelMotor.setVoltage(0);
@@ -221,13 +232,20 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
             disturbanceAccumulator =
                     MathUtil.clamp(disturbanceAccumulator, -maxObserverVolts.get(), maxObserverVolts.get());
             final double totalVolts = feedforward + pidVolts + disturbanceAccumulator;
-
-            if (targetState != State.SHOOT && armController.atGoal()) {
+            final boolean shouldDrop = Math.abs(MathUtils.getShortestDistance(currentAngle, targetAngle.get()))
+                            <= Units.degreesToRadians(armDropTol.get())
+                    && (targetState == State.INTAKE || targetState == State.DEPLOYED);
+            if (shouldDrop) {
                 armMotor.setVoltage(0);
             } else {
-                armMotor.set(totalVolts);
+                armMotor.setVoltage(totalVolts);
             }
+
+            Logger.recordOutput(
+                    "IntakeSubsystem/Arm/ShortestDistance",
+                    Units.radiansToDegrees(MathUtils.getShortestDistance(currentAngle, targetAngle.get())));
             Logger.recordOutput("IntakeSubsystem/Arm/AtGoal", armController.atGoal());
+            Logger.recordOutput("IntakeSubsystem/Arm/ShouldDrop", shouldDrop);
             Logger.recordOutput("IntakeSubsystem/Arm/SetpointPos", Units.radiansToDegrees(setpoint.position));
             Logger.recordOutput("IntakeSubsystem/Arm/SetpointVel", Units.radiansToDegrees(setpoint.velocity));
             Logger.recordOutput(
@@ -242,8 +260,8 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
             Logger.recordOutput("IntakeSubsystem/Arm/Effort/PIDVolts", pidVolts);
             Logger.recordOutput("IntakeSubsystem/Arm/Effort/FFVolts", feedforward);
             Logger.recordOutput("IntakeSubsystem/Arm/Effort/ObserverVolts", disturbanceAccumulator);
+            Logger.recordOutput("IntakeSubsystem/Arm/Effort/TotalVolts", totalVolts);
         }
-        Logger.recordOutput("IntakeSubsystem/TargetState", targetState);
         Logger.recordOutput("IntakeSubsystem/Arm/CurrentAngle", Units.radiansToDegrees(currentAngle));
         Logger.recordOutput("IntakeSubsystem/Arm/OutputVolts", armMotorVoltageSignal.getValueAsDouble());
 

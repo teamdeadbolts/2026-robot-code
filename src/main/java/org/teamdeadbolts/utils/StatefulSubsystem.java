@@ -2,6 +2,7 @@
 package org.teamdeadbolts.utils;
 
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import org.littletonrobotics.junction.Logger;
 
 /**
  * An abstract base class for subsystems that operate on a finite set of discrete states.
@@ -44,6 +45,7 @@ public abstract class StatefulSubsystem<S extends Enum<S>> extends SubsystemBase
         if (currentPriority == null || priority.ordinal() >= currentPriority.ordinal()) {
             this.requestedState = newState;
             this.currentPriority = priority;
+            Logger.recordOutput(this.getName() + "/StatePrio", this.currentPriority);
         }
     }
 
@@ -71,6 +73,7 @@ public abstract class StatefulSubsystem<S extends Enum<S>> extends SubsystemBase
 
     @Override
     public final void periodic() {
+        Logger.recordOutput(this.getName() + "/State", this.targetState);
         subsystemPeriodic();
         if (requestedState != null && requestedState != targetState) {
             onStateChange(requestedState, targetState);

@@ -263,7 +263,6 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
         BaseStatusSignal.refreshAll(rioSignals);
         BaseStatusSignal.refreshAll(canivoreSignals);
 
-        Logger.recordOutput("ShooterSubsystem/TargetState", targetState);
         final double currentHoodAngle = Units.rotationsToRadians(hoodAngleSignal.getValueAsDouble());
         Optional<Double> targetHoodAngle = Optional.empty();
         Optional<Translation3d> currentTargetTranslation = Optional.empty();
@@ -537,24 +536,16 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
         final double minLimitRad = Math.toRadians(ShooterConstants.TURRET_MIN_POSITION_DEGREES);
 
         if (setpoint > maxLimitRad) {
-            // We overshot the positive limit. Can we reach the target by spinning the long
-            // way around?
             if (setpoint - (2 * Math.PI) >= minLimitRad) {
                 setpoint -= (2 * Math.PI);
             } else {
-                // If wrapping the long way breaks the negative limit, we clamp to the max to
-                // avoid breaking the robot
-                // (should never happend)
                 setpoint = maxLimitRad;
                 Logger.recordOutput("ShooterSubsystem/Turret/LimitHit", "MAX");
             }
         } else if (setpoint < minLimitRad) {
-            // We overshot the negative limit. Can we reach it by spinning the long way
-            // around?
             if (setpoint + (2 * Math.PI) <= maxLimitRad) {
                 setpoint += (2 * Math.PI);
             } else {
-                // Clamped to minimum limit
                 setpoint = minLimitRad;
                 Logger.recordOutput("ShooterSubsystem/Turret/LimitHit", "MIN");
             }

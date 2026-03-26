@@ -86,7 +86,6 @@ public class IndexerSubsystem extends StatefulSubsystem<IndexerSubsystem.State> 
             }
         }
 
-        Logger.recordOutput("IndexerSubsystem/TargetState", this.targetState);
         // Current
         Logger.recordOutput("Debug/Current/Indexer/Floor", floorMotorCurrentSignal.getValueAsDouble());
         Logger.recordOutput("Debug/Current/Indexer/Kicker", kickerMotorCurrentSignal.getValueAsDouble());

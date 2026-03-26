@@ -3,6 +3,7 @@ package org.teamdeadbolts.commands;
 
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj2.command.Command;
+import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.RobotState;
 import org.teamdeadbolts.constants.ZoneConstants;
 import org.teamdeadbolts.subsystems.IntakeSubsystem;
@@ -25,6 +26,7 @@ public class DefaultIntakeCommand extends Command {
 
     @Override
     public void execute() {
+        Logger.recordOutput("DefaultIntakeCommand/State", intakeSubsystem.getState());
         if (isInUpZone(robotState.getRobotPose().toPose2d().getTranslation())
                 && intakeSubsystem.getState() != IntakeSubsystem.State.STOWED) {
             intakeSubsystem.setState(IntakeSubsystem.State.HALF_HOLD, Priority.LOW);
@@ -32,6 +34,8 @@ public class DefaultIntakeCommand extends Command {
         }
 
         if (this.prevIntakeState == IntakeSubsystem.State.OUTTAKE) this.prevIntakeState = IntakeSubsystem.State.OFF;
+        if (this.prevIntakeState == IntakeSubsystem.State.INTAKE || this.prevIntakeState == IntakeSubsystem.State.SHOOT)
+            this.prevIntakeState = IntakeSubsystem.State.DEPLOYED;
         this.intakeSubsystem.setState(this.prevIntakeState, Priority.LOW);
     }
 

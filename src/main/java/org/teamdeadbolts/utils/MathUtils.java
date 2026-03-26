@@ -50,4 +50,19 @@ public class MathUtils {
     public static boolean inRange(double value, double min, double max) {
         return value >= min && value <= max;
     }
+
+    /**
+     * Calculates the shortest distance between two angles in radians. (-pi to pi)
+     * @param current The current encoder position
+     * @param target The desired position
+     * @return The shortest distance
+     */
+    public static double getShortestDistance(double current, double target) {
+        double diff = target - current;
+
+        while (diff > Math.PI) diff -= 2 * Math.PI;
+        while (diff <= -Math.PI) diff += 2 * Math.PI;
+
+        return diff;
+    }
 }

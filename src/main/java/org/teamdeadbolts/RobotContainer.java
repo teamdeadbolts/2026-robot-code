@@ -115,12 +115,8 @@ public class RobotContainer {
                         true,
                         slowDriveScaler::get)));
 
-        primaryController
-                .rightBumper()
-                .whileTrue(new IntakeCommand(intakeSubsystem, hopperSubsystem, IntakeCommand.Target.INTAKE));
-        primaryController
-                .leftBumper()
-                .whileTrue(new IntakeCommand(intakeSubsystem, hopperSubsystem, IntakeCommand.Target.STOW));
+        primaryController.rightBumper().whileTrue(new IntakeCommand(intakeSubsystem, IntakeCommand.Target.INTAKE));
+        primaryController.leftBumper().whileTrue(new IntakeCommand(intakeSubsystem, IntakeCommand.Target.STOW));
 
         primaryController.a().whileTrue(new RunCommand((() -> {
             for (PhotonVisionIO camera : visionSubsystem.getCameras()) {
@@ -164,9 +160,7 @@ public class RobotContainer {
                 .whileTrue(new RunCommand(
                         () -> shooterSubsystem.setState(ShooterSubsystem.State.SPINUP, Priority.NORMAL),
                         shooterSubsystem));
-        secondaryController
-                .leftTrigger(0.4)
-                .whileTrue(new IntakeCommand(intakeSubsystem, hopperSubsystem, IntakeCommand.Target.SHOOT));
+        secondaryController.leftTrigger(0.4).whileTrue(new IntakeCommand(intakeSubsystem, IntakeCommand.Target.SHOOT));
         secondaryController
                 .leftBumper()
                 .whileTrue(new RunCommand(
@@ -225,7 +219,7 @@ public class RobotContainer {
         new EventTrigger("Shoot")
                 .onTrue(new ParallelCommandGroup(
                         new ShootCommand(indexerSubsystem, shooterSubsystem, hopperSubsystem, false),
-                        new IntakeCommand(intakeSubsystem, hopperSubsystem, IntakeCommand.Target.SHOOT)));
+                        new IntakeCommand(intakeSubsystem, IntakeCommand.Target.SHOOT)));
         new EventTrigger("SpinUp")
                 .onTrue(new RunCommand(
                         () -> shooterSubsystem.setState(ShooterSubsystem.State.SPINUP, Priority.NORMAL),
