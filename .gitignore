@@ -359,6 +359,3 @@ compile_commands.json
 # Direnv
 .direnv
 configs
-
-# profiling file
-.profileconfig.json
