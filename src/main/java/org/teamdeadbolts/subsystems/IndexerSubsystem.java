@@ -6,7 +6,7 @@ import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.hardware.TalonFX;
 import edu.wpi.first.units.measure.Current;
-import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.units.measure.Voltage;
 import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.constants.IndexerConstants;
 import org.teamdeadbolts.utils.StatefulSubsystem;
@@ -32,9 +32,10 @@ public class IndexerSubsystem extends StatefulSubsystem<IndexerSubsystem.State> 
 
     private final StatusSignal<Current> floorMotorCurrentSignal = floorMotor.getSupplyCurrent();
     private final StatusSignal<Current> kickerMotorCurrentSignal = kickerMotor.getSupplyCurrent();
+    private final StatusSignal<Voltage> floorMotorVoltageSignal = floorMotor.getSupplyVoltage();
 
     private final BaseStatusSignal[] signals =
-            new BaseStatusSignal[] {floorMotorCurrentSignal, kickerMotorCurrentSignal};
+            new BaseStatusSignal[] {floorMotorCurrentSignal, kickerMotorCurrentSignal, floorMotorVoltageSignal};
 
     /* --- Tuning Parameters --- */
     private final SavedTunableNumber floorMotorIntakeVolts =
@@ -45,9 +46,6 @@ public class IndexerSubsystem extends StatefulSubsystem<IndexerSubsystem.State> 
             SavedTunableNumber.get("Tuning/Indexer/IndexerFloorMotorJiggleVolts", 3.0);
     private final SavedTunableNumber kickerMotorShootVolts =
             SavedTunableNumber.get("Tuning/Indexer/IndexerKickerMotorShootVolts", 6.0);
-    private final SavedTunableNumber kickerShootFreq = SavedTunableNumber.get("Tuning/Indexer/Shoot/Freq", 10);
-    private final SavedTunableNumber kickerShootDutyCycle =
-            SavedTunableNumber.get("Tuning/Indexer/Shoot/DutyCycle", 0.5);
     private final SavedTunableNumber jiggleFrequency =
             SavedTunableNumber.get("Tuning/Indexer/IndexerJiggleFrequency", 1.0);
 
@@ -81,21 +79,16 @@ public class IndexerSubsystem extends StatefulSubsystem<IndexerSubsystem.State> 
                                 * floorMotorJiggleVolts.get();
                 floorMotor.setVoltage(jiggleVolts);
                 // kickerMotor.setVoltage(0);
-                if (targetState == State.REVERSE) floorMotor.setVoltage(-floorMotorIntakeVolts.get());
-                else floorMotor.setVoltage(0);
+                if (targetState == State.REVERSE) kickerMotor.setVoltage(-floorMotorIntakeVolts.get());
+                else kickerMotor.setVoltage(0);
             }
             case SHOOT -> {
-                double time = Timer.getFPGATimestamp();
-                double phase = (time * kickerShootFreq.get()) % 1;
-
-                if (phase < kickerShootDutyCycle.get()) {
-                    floorMotor.setVoltage(kickerMotorShootVolts.get());
-                } else {
-                    floorMotor.setVoltage(-kickerMotorShootVolts.get());
-                }
+                floorMotor.setVoltage(floorMotorShootVolts.get());
                 kickerMotor.setVoltage(kickerMotorShootVolts.get());
             }
         }
+
+        Logger.recordOutput("IndxerSubsystem/Floor/OutputVolts", floorMotorVoltageSignal.getValueAsDouble());
 
         // Current
         Logger.recordOutput("Debug/Current/Indexer/Floor", floorMotorCurrentSignal.getValueAsDouble());

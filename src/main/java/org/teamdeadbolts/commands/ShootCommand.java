@@ -74,7 +74,7 @@ public class ShootCommand extends Command {
                 && turretReady) {
             feedShooter();
         } else {
-            indexerSubsystem.setState(IndexerSubsystem.State.JIGGLE, Priority.NORMAL);
+            indexerSubsystem.setState(IndexerSubsystem.State.OFF, Priority.NORMAL);
         }
 
         // shooterSubsystem.setState(ShooterSubsystem.State.SPINUP);

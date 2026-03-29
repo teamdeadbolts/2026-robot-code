@@ -207,6 +207,10 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
         double positionError = getTurretError();
         double currentVelocity = Math.abs(Units.rotationsToRadians(turretVelocitySignal.getValueAsDouble()));
 
+        Logger.recordOutput("ShooterSubsystem/Settled/Pos", positionError <= positionToleranceRad);
+        Logger.recordOutput("ShooterSubsystem/Settled/Vel", currentVelocity <= velocityToleranceRadPerSec);
+        Logger.recordOutput("ShooterSubsystem/Settled/PosError", Units.radiansToDegrees(positionError));
+
         return positionError <= positionToleranceRad && currentVelocity <= velocityToleranceRadPerSec;
     }
 
@@ -288,7 +292,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                 final Translation2d turretOffset =
                         ShooterConstants.SHOOTER_OFFSET.getTranslation().toTranslation2d();
                 final Rotation2d towardsCenterAngle = turretOffset.times(-1.0).getAngle();
-                final Translation2d shiftRobotRel = new Translation2d(Units.inchesToMeters(3.0), towardsCenterAngle);
+                final Translation2d shiftRobotRel = new Translation2d(0.2245, towardsCenterAngle);
                 final Translation2d vertexRobotRel = turretOffset.plus(shiftRobotRel);
 
                 final double dirX = Math.signum(turretOffset.getX());

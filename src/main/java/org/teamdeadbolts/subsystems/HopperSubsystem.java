@@ -128,7 +128,6 @@ public class HopperSubsystem extends StatefulSubsystem<HopperSubsystem.State> im
                 .toPose2d(); // Get the current robot pose from the state of the whole robot
 
         if (ZoneConstants.isInLowZone(robotPose.getTranslation())) {
-            System.out.println("Down!");
             this.setState(HopperSubsystem.State.DOWN, Priority.CRITICAL);
         }
         final double targetHeight =
