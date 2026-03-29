@@ -6,9 +6,12 @@ import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.hardware.TalonFX;
 import edu.wpi.first.units.measure.Current;
+import edu.wpi.first.wpilibj.Timer;
+import java.util.List;
 import edu.wpi.first.units.measure.Voltage;
 import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.constants.IndexerConstants;
+import org.teamdeadbolts.utils.PeriodicTasks;
 import org.teamdeadbolts.utils.StatefulSubsystem;
 import org.teamdeadbolts.utils.tuning.Refreshable;
 import org.teamdeadbolts.utils.tuning.SavedTunableNumber;
@@ -34,8 +37,7 @@ public class IndexerSubsystem extends StatefulSubsystem<IndexerSubsystem.State> 
     private final StatusSignal<Current> kickerMotorCurrentSignal = kickerMotor.getSupplyCurrent();
     private final StatusSignal<Voltage> floorMotorVoltageSignal = floorMotor.getSupplyVoltage();
 
-    private final BaseStatusSignal[] signals =
-            new BaseStatusSignal[] {floorMotorCurrentSignal, kickerMotorCurrentSignal, floorMotorVoltageSignal};
+    private final List<BaseStatusSignal> signals = List.of(floorMotorCurrentSignal, kickerMotorCurrentSignal, floorMotorVoltageSignal);
 
     /* --- Tuning Parameters --- */
     private final SavedTunableNumber floorMotorIntakeVolts =
@@ -64,9 +66,15 @@ public class IndexerSubsystem extends StatefulSubsystem<IndexerSubsystem.State> 
     @Override
     protected void onStateChange(final State to, final State from) {}
 
+    public List<BaseStatusSignal> getSignals() {
+        return signals;
+    }
+
     @Override
     public void subsystemPeriodic() {
-        BaseStatusSignal.refreshAll(signals);
+        if (PeriodicTasks.getInstance().shouldRefreshSignals()) {
+            BaseStatusSignal.refreshAll(signals);
+        }
         switch (targetState) {
             case OFF -> {
                 floorMotor.setVoltage(0);
@@ -88,10 +96,11 @@ public class IndexerSubsystem extends StatefulSubsystem<IndexerSubsystem.State> 
             }
         }
 
-        Logger.recordOutput("IndxerSubsystem/Floor/OutputVolts", floorMotorVoltageSignal.getValueAsDouble());
-
-        // Current
-        Logger.recordOutput("Debug/Current/Indexer/Floor", floorMotorCurrentSignal.getValueAsDouble());
-        Logger.recordOutput("Debug/Current/Indexer/Kicker", kickerMotorCurrentSignal.getValueAsDouble());
+        if (PeriodicTasks.getInstance().shouldLog()) {
+            // Current
+            Logger.recordOutput("Debug/Current/Indexer/Floor", floorMotorCurrentSignal.getValueAsDouble());
+            Logger.recordOutput("Debug/Current/Indexer/Kicker", kickerMotorCurrentSignal.getValueAsDouble());
+            Logger.recordOutput("IndxerSubsystem/Floor/OutputVolts", floorMotorVoltageSignal.getValueAsDouble());
+        }
     }
 }

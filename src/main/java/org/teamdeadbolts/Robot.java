@@ -7,6 +7,7 @@ import org.littletonrobotics.junction.LoggedRobot;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.NT4Publisher;
 import org.littletonrobotics.junction.wpilog.WPILOGWriter;
+import org.teamdeadbolts.utils.PeriodicTasks;
 import org.teamdeadbolts.utils.tuning.ConfigManager;
 
 public class Robot extends LoggedRobot {
@@ -37,7 +38,7 @@ public class Robot extends LoggedRobot {
 
     @Override
     public void robotPeriodic() {
-
+        PeriodicTasks.getInstance().recordCall();
         CommandScheduler.getInstance().run();
     }
 
