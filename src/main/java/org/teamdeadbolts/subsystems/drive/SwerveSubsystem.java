@@ -30,12 +30,9 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
-import java.util.LinkedList;
-import java.util.List;
 import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.RobotState;
 import org.teamdeadbolts.constants.SwerveConstants;
-import org.teamdeadbolts.utils.PeriodicTasks;
 import org.teamdeadbolts.utils.tuning.Refreshable;
 import org.teamdeadbolts.utils.tuning.SavedTunableNumber;
 
@@ -46,7 +43,7 @@ import org.teamdeadbolts.utils.tuning.SavedTunableNumber;
 public class SwerveSubsystem extends SubsystemBase implements Refreshable {
     private final AHRS gyro = new AHRS(NavXComType.kMXP_SPI);
     private final SwerveModule[] modules;
-    private final List<BaseStatusSignal> allSignals = new LinkedList<>();
+    private final BaseStatusSignal[] allSignals = new BaseStatusSignal[4 * 5];
     private final SwerveModuleState[] cachedModuleStates = new SwerveModuleState[4];
     private final SwerveModulePosition[] cachedModulePositions = new SwerveModulePosition[4];
     private SlewRateLimiter slewRateLimiterTranslationalX;
@@ -80,7 +77,9 @@ public class SwerveSubsystem extends SubsystemBase implements Refreshable {
 
         int i = 0;
         for (SwerveModule m : modules) {
-            allSignals.addAll(m.getSignals());
+            for (BaseStatusSignal signal : m.getSignals()) {
+                allSignals[i++] = signal;
+            }
         }
 
         trajHeadingController.enableContinuousInput(-Math.PI, Math.PI);
@@ -233,21 +232,11 @@ public class SwerveSubsystem extends SubsystemBase implements Refreshable {
         log.motor("Module0").voltage(Voltage.ofBaseUnits(m.getDriveVolts(), Volts));
     }
 
-    public List<BaseStatusSignal> getSignals() {
-        return allSignals;
-    }
-
     @Override
     public void periodic() {
-        if (PeriodicTasks.getInstance().shouldRefreshSignals()) {
-            BaseStatusSignal.refreshAll(allSignals);
-        }
-
+        BaseStatusSignal.refreshAll(allSignals);
         tracer.resetTimer();
-        if (PeriodicTasks.getInstance().shouldLog()) {
-            Logger.recordOutput("Swerve/GyroRotationDeg", getGyroRotation().getDegrees());
-        }
-
+        Logger.recordOutput("Swerve/GyroRotationDeg", getGyroRotation().getDegrees());
         for (final SwerveModule m : this.modules) {
             m.periodic();
         }
@@ -258,15 +247,12 @@ public class SwerveSubsystem extends SubsystemBase implements Refreshable {
         final ChassisSpeeds speeds = getFieldRelativeChassisSpeeds();
         state.setFieldRelativeVelocities(speeds);
         state.setRobotRelativeVelocities(getRobotRelativeChassisSpeeds());
-
-        if (PeriodicTasks.getInstance().shouldLog()) {
-            Logger.recordOutput("Swerve/RobotVelocities", speeds);
-            Logger.recordOutput(
-                    "Swerve/VelocityVector",
-                    new Pose2d(
-                            robotTranslation.getX() + speeds.vxMetersPerSecond,
-                            robotTranslation.getY() + speeds.vyMetersPerSecond,
-                            new Rotation2d()));
-        }
+        Logger.recordOutput("Swerve/RobotVelocities", speeds);
+        Logger.recordOutput(
+                "Swerve/VelocityVector",
+                new Pose2d(
+                        robotTranslation.getX() + speeds.vxMetersPerSecond,
+                        robotTranslation.getY() + speeds.vyMetersPerSecond,
+                        new Rotation2d()));
     }
 }
