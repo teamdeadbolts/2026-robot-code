@@ -36,6 +36,7 @@ import org.teamdeadbolts.RobotState;
 import org.teamdeadbolts.constants.ShooterConstants;
 import org.teamdeadbolts.constants.VisionConstants;
 import org.teamdeadbolts.constants.ZoneConstants;
+import org.teamdeadbolts.subsystems.logstructs.ShooterData;
 import org.teamdeadbolts.utils.PeriodicTasks;
 import org.teamdeadbolts.utils.StatefulSubsystem;
 import org.teamdeadbolts.utils.Zone;
@@ -288,6 +289,8 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
 
         final Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Red);
 
+        ShooterData shooterData = new ShooterData();
+
         switch (targetState) {
             case OFF -> {
                 systemTestCount = 0;
@@ -320,9 +323,15 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                 aprilTagTrackZone.setVertices(vertexFieldRel, forwardLegFieldRel, sideLegFieldRel);
 
                 if (periodicTasks.shouldLog()) {
-                    Logger.recordOutput("ShooterSubsystem/AprilTagTrack/RangeVertex", vertexFieldRel);
-                    Logger.recordOutput("ShooterSubsystem/AprilTagTrack/RangeForward", forwardLegFieldRel);
-                    Logger.recordOutput("ShooterSubsystem/AprilTagTrack/RangeSide", sideLegFieldRel);
+                    //                    Logger.recordOutput("ShooterSubsystem/AprilTagTrack/RangeVertex",
+                    // vertexFieldRel);
+                    //                    Logger.recordOutput("ShooterSubsystem/AprilTagTrack/RangeForward",
+                    // forwardLegFieldRel);
+                    //                    Logger.recordOutput("ShooterSubsystem/AprilTagTrack/RangeSide",
+                    // sideLegFieldRel);
+                    shooterData.aprilTagTrackRangeVertex = vertexFieldRel;
+                    shooterData.aprilTagTrackRangeForward = forwardLegFieldRel;
+                    shooterData.aprilTagTrackRangeSide = sideLegFieldRel;
                 }
 
                 Pose3d targetPose = null;
@@ -345,7 +354,9 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                     targetTurretPosition = Optional.of(shotCalculator.calculateLatancyOffsetTurretAngle(
                             robotPose2d, targetPose.toPose2d().getTranslation(), System.currentTimeMillis()));
                     if (periodicTasks.shouldLog()) {
-                        Logger.recordOutput("ShooterSubsystem/AprilTagTrack/TargetTagPose", targetPose);
+                        //                        Logger.recordOutput("ShooterSubsystem/AprilTagTrack/TargetTagPose",
+                        // targetPose);
+                        shooterData.aprilTagTrackTargetTagPose = targetPose;
                     }
                 }
             }
@@ -366,9 +377,10 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                 }
 
                 if (periodicTasks.shouldLog()) {
-                    Logger.recordOutput(
-                            "ShooterSubsystem/PassTargetPose",
-                            new Pose2d(passTargetPose.toTranslation2d(), new Rotation2d()));
+                    //                    Logger.recordOutput(
+                    //                            "ShooterSubsystem/PassTargetPose",
+                    //                            new Pose2d(passTargetPose.toTranslation2d(), new Rotation2d()));
+                    shooterData.passTargetPose = new Pose2d(passTargetPose.toTranslation2d(), new Rotation2d());
                 }
 
                 currentTargetTranslation = Optional.of(passTargetPose);
@@ -440,8 +452,11 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
             targetTurretPosition = Optional.empty();
 
             if (periodicTasks.shouldLog()) {
-                Logger.recordOutput("ShooterSubsystem/Fallback/Fallback", true);
-                Logger.recordOutput("ShooterSybsystem/Fallback/ChassisTarget", fallbackChassisTargetAngle.get());
+                //                Logger.recordOutput("ShooterSubsystem/Fallback/Fallback", true);
+                //                Logger.recordOutput("ShooterSybsystem/Fallback/ChassisTarget",
+                // fallbackChassisTargetAngle.get());
+                shooterData.fallBackFallBack = true;
+                shooterData.fallbackChassisTarget = fallbackChassisTargetAngle.get();
             }
         }
 
@@ -457,9 +472,12 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
             }
 
             if (periodicTasks.shouldLog()) {
-                Logger.recordOutput(
-                        "ShooterSubsystem/Hood/TargetHoodAngle", Units.radiansToDegrees(targetHoodAngle.get()));
-                Logger.recordOutput("ShooterSubsystem/Hood/HoodOutput", pidOutput);
+                //                Logger.recordOutput(
+                //                        "ShooterSubsystem/Hood/TargetHoodAngle",
+                // Units.radiansToDegrees(targetHoodAngle.get()));
+                //                Logger.recordOutput("ShooterSubsystem/Hood/HoodOutput", pidOutput);
+                shooterData.hoodTargetHoodAngle = Units.radiansToDegrees(targetHoodAngle.get());
+                shooterData.hoodHoodOutput = pidOutput;
             }
 
         } else if (targetState != State.ZERO) {
@@ -472,9 +490,13 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
             leftWheelMotor.setControl(new VoltageOut(wheelOutput));
 
             if (periodicTasks.shouldLog()) {
-                Logger.recordOutput("ShooterSubsystem/Wheel/Volts", wheelOutput);
-                Logger.recordOutput("ShooterSubsystem/Wheel/TargetSpeedRPM", targetWheelSpeed.get());
-                Logger.recordOutput("ShooterSubsystem/Wheel/RPMError", getRPMError());
+                //                Logger.recordOutput("ShooterSubsystem/Wheel/Volts", wheelOutput);
+                //                Logger.recordOutput("ShooterSubsystem/Wheel/TargetSpeedRPM", targetWheelSpeed.get());
+                //                Logger.recordOutput("ShooterSubsystem/Wheel/RPMError", getRPMError());
+
+                shooterData.wheelVolts = wheelOutput;
+                shooterData.wheelTargetSpeedRPM = targetWheelSpeed.get();
+                shooterData.wheelRPMError = getRPMError();
             }
         } else {
             leftWheelMotor.setVoltage(0);
@@ -500,16 +522,27 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
             turretMotor.setVoltage(turretPidOutput);
 
             if (periodicTasks.shouldLog()) {
-                Logger.recordOutput(
-                        "ShooterSubsystem/Turret/NormalizedSetpoint", Units.radiansToDegrees(normalizedTurretPosition));
-                Logger.recordOutput("ShooterSubsystem/Target/TurretPose", targetTurretFieldPose);
-                Logger.recordOutput("ShooterSubsystem/Turret/PidOutput", turretPidOutput);
-                Logger.recordOutput("ShooterSubsystem/Turret/PidError", turretController.getPositionError());
+                //                Logger.recordOutput(
+                //                        "ShooterSubsystem/Turret/NormalizedSetpoint",
+                // Units.radiansToDegrees(normalizedTurretPosition));
+                //                Logger.recordOutput("ShooterSubsystem/Target/TurretPose", targetTurretFieldPose);
+                //                Logger.recordOutput("ShooterSubsystem/Turret/PidOutput", turretPidOutput);
+                //                Logger.recordOutput("ShooterSubsystem/Turret/PidError",
+                // turretController.getPositionError());
                 final TrapezoidProfile.State state = turretController.getSetpoint();
-                Logger.recordOutput(
-                        "ShooterSubsystem/Turret/Trapizoid/SetpointPosDeg", Units.radiansToDegrees(state.position));
-                Logger.recordOutput(
-                        "ShooterSubsystem/Turret/Trapizoid/SetpointVelDeg", Units.radiansToDegrees(state.velocity));
+                //                Logger.recordOutput(
+                //                        "ShooterSubsystem/Turret/Trapizoid/SetpointPosDeg",
+                // Units.radiansToDegrees(state.position));
+                //                Logger.recordOutput(
+                //                        "ShooterSubsystem/Turret/Trapizoid/SetpointVelDeg",
+                // Units.radiansToDegrees(state.velocity));
+
+                shooterData.turretNormalizedSetpoint = Units.radiansToDegrees(normalizedTurretPosition);
+                shooterData.targetTurretPose = targetTurretFieldPose;
+                shooterData.turretPidOutput = turretPidOutput;
+                shooterData.turretPidError = turretController.getPositionError();
+                shooterData.turretTrapezoidSetpointPosDeg = Units.radiansToDegrees(state.position);
+                shooterData.turretTrapezoidSetpointVelDeg = Units.radiansToDegrees(state.velocity);
             }
 
         } else {
@@ -517,36 +550,51 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
         }
 
         if (periodicTasks.shouldLog()) {
-            // Hood
-            Logger.recordOutput("ShooterSubsystem/Hood/CurrentAngle", Units.radiansToDegrees(currentHoodAngle));
-            Logger.recordOutput("ShooterSubsystem/Hood/OutAmps", hoodCurrentSignal.getValueAsDouble());
-            Logger.recordOutput("ShooterSubsystem/Hood/UseAlternativeMinAngle", alternative);
+            //            // Hood
+            //            Logger.recordOutput("ShooterSubsystem/Hood/CurrentAngle",
+            // Units.radiansToDegrees(currentHoodAngle));
+            //            Logger.recordOutput("ShooterSubsystem/Hood/OutAmps", hoodCurrentSignal.getValueAsDouble());
+            //            Logger.recordOutput("ShooterSubsystem/Hood/UseAlternativeMinAngle", alternative);
+            //
+            //            // Turret
+            //            Logger.recordOutput("ShooterSubsystem/Turret/Pose", getFieldRelativeTurretPose());
+            //            Logger.recordOutput(
+            //                    "ShooterSubsystem/Turret/CurrentPosition",
+            // Units.radiansToDegrees(currentTurretPosition));
+            //
+            //            Logger.recordOutput(
+            //                    "ShooterSubsystem/Turret/VelocityDegPerSec",
+            //                    Units.rotationsToDegrees(turretVelocitySignal.getValueAsDouble()));
+            //
+            //            // Wheels
+            //            Logger.recordOutput(
+            //                    "ShooterSubsystem/Wheel/CurrentSpeed",
+            //                    Units.radiansPerSecondToRotationsPerMinute(currentWheelSpeed));
+            //
+            //            Logger.recordOutput(
+            //                    "ShooterSubsystem/Wheel/LeftMotorVolts",
+            //                    leftWheelMotor.getMotorVoltage().getValueAsDouble());
+            //            Logger.recordOutput(
+            //                    "ShooterSubsystem/Wheel/RightMotorVolts",
+            //                    rightWheelMotor.getMotorVoltage().getValueAsDouble());
+            //
+            //            // Current
+            //            Logger.recordOutput("Debug/Current/Shooter/Hood", hoodCurrentSignal.getValueAsDouble());
+            //            Logger.recordOutput("Debug/Current/Shooter/Turret", turretCurrentSignal.getValueAsDouble());
+            //            Logger.recordOutput("Debug/Current/Shooter/LeftWheel", wheelCurrentSignal.getValueAsDouble());
 
-            // Turret
-            Logger.recordOutput("ShooterSubsystem/Turret/Pose", getFieldRelativeTurretPose());
-            Logger.recordOutput(
-                    "ShooterSubsystem/Turret/CurrentPosition", Units.radiansToDegrees(currentTurretPosition));
+            shooterData.hoodCurrentAngle = Units.radiansToDegrees(currentHoodAngle);
+            shooterData.hoodOutAmps = hoodCurrentSignal.getValueAsDouble();
+            shooterData.hoodUseAlternativeMinAngle = alternative;
 
-            Logger.recordOutput(
-                    "ShooterSubsystem/Turret/VelocityDegPerSec",
-                    Units.rotationsToDegrees(turretVelocitySignal.getValueAsDouble()));
+            shooterData.turretPose = getFieldRelativeTurretPose();
+            shooterData.turretCurrentPosition = Units.radiansToDegrees(currentTurretPosition);
+            shooterData.turretVelocityDegPerSec = Units.rotationsToDegrees(turretVelocitySignal.getValueAsDouble());
+            shooterData.wheelCurrentSpeed = Units.radiansPerSecondToRotationsPerMinute(currentWheelSpeed);
+            shooterData.wheelLeftMotorVolts = leftWheelMotor.getMotorVoltage().getValueAsDouble();
+            shooterData.wheelRightMotorVolts = rightWheelMotor.getMotorVoltage().getValueAsDouble();
 
-            // Wheels
-            Logger.recordOutput(
-                    "ShooterSubsystem/Wheel/CurrentSpeed",
-                    Units.radiansPerSecondToRotationsPerMinute(currentWheelSpeed));
-
-            Logger.recordOutput(
-                    "ShooterSubsystem/Wheel/LeftMotorVolts",
-                    leftWheelMotor.getMotorVoltage().getValueAsDouble());
-            Logger.recordOutput(
-                    "ShooterSubsystem/Wheel/RightMotorVolts",
-                    rightWheelMotor.getMotorVoltage().getValueAsDouble());
-
-            // Current
-            Logger.recordOutput("Debug/Current/Shooter/Hood", hoodCurrentSignal.getValueAsDouble());
-            Logger.recordOutput("Debug/Current/Shooter/Turret", turretCurrentSignal.getValueAsDouble());
-            Logger.recordOutput("Debug/Current/Shooter/LeftWheel", wheelCurrentSignal.getValueAsDouble());
+            Logger.recordOutput("ShooterSubsystem", shooterData);
         }
     }
 

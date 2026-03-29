@@ -15,6 +15,7 @@ import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.RobotState;
 import org.teamdeadbolts.constants.HopperConstants;
 import org.teamdeadbolts.constants.ZoneConstants;
+import org.teamdeadbolts.subsystems.logstructs.HopperData;
 import org.teamdeadbolts.utils.PeriodicTasks;
 import org.teamdeadbolts.utils.StatefulSubsystem;
 import org.teamdeadbolts.utils.tuning.Refreshable;
@@ -163,17 +164,32 @@ public class HopperSubsystem extends StatefulSubsystem<HopperSubsystem.State> im
 
         if (PeriodicTasks.getInstance().shouldLog()) {
             // Logging
-            Logger.recordOutput("HopperSubsystem/TargetHeight", targetHeight);
-            Logger.recordOutput("HopperSubsystem/Left/CurrentHeight", getLeftLidHeight());
-            Logger.recordOutput("HopperSubsystem/Left/Output", leftOutput);
-            Logger.recordOutput("HopperSubsystem/Left/RawMotorPosition", leftLifterPositionSignal.getValueAsDouble());
+            //            Logger.recordOutput("HopperSubsystem/TargetHeight", targetHeight);
+            //            Logger.recordOutput("HopperSubsystem/Left/CurrentHeight", getLeftLidHeight());
+            //            Logger.recordOutput("HopperSubsystem/Left/Output", leftOutput);
+            //            Logger.recordOutput("HopperSubsystem/Left/RawMotorPosition",
+            // leftLifterPositionSignal.getValueAsDouble());
+            //
+            //            Logger.recordOutput("HopperSubsystem/Right/CurrentHeight", getRightLidHeight());
+            //            Logger.recordOutput("HopperSubsystem/Right/Output", rightOutput);
+            //            Logger.recordOutput("HopperSubsystem/Right/RawMotorPosition",
+            // rightLifterPositionSignal.getValueAsDouble());
+            //            // current
+            //            Logger.recordOutput("Debug/Current/Hopper/Left", leftLifterCurrentSignal.getValueAsDouble());
+            //            Logger.recordOutput("Debug/Current/Hopper/Right",
+            // rightLifterCurrentSignal.getValueAsDouble());
 
-            Logger.recordOutput("HopperSubsystem/Right/CurrentHeight", getRightLidHeight());
-            Logger.recordOutput("HopperSubsystem/Right/Output", rightOutput);
-            Logger.recordOutput("HopperSubsystem/Right/RawMotorPosition", rightLifterPositionSignal.getValueAsDouble());
-            // current
-            Logger.recordOutput("Debug/Current/Hopper/Left", leftLifterCurrentSignal.getValueAsDouble());
-            Logger.recordOutput("Debug/Current/Hopper/Right", rightLifterCurrentSignal.getValueAsDouble());
+            HopperData hopperData = new HopperData(
+                    targetHeight,
+                    getLeftLidHeight(),
+                    leftOutput,
+                    leftLifterPositionSignal.getValueAsDouble(),
+                    getRightLidHeight(),
+                    rightOutput,
+                    rightLifterPositionSignal.getValueAsDouble(),
+                    leftLifterCurrentSignal.getValueAsDouble(),
+                    rightLifterCurrentSignal.getValueAsDouble());
+            Logger.recordOutput("HopperSubsystem", hopperData);
         }
     }
 
