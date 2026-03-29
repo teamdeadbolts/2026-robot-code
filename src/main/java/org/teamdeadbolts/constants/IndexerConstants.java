@@ -3,6 +3,7 @@ package org.teamdeadbolts.constants;
 
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.signals.InvertedValue;
+import com.ctre.phoenix6.signals.NeutralModeValue;
 import org.teamdeadbolts.utils.tuning.ConfigManager;
 import org.teamdeadbolts.utils.tuning.SavedTunableNumber;
 
@@ -26,6 +27,7 @@ public class IndexerConstants {
     public static void init() {
         indexerFloorMotorCurrentLimit.initFromConfig();
         INDEXER_FLOOR_MOTOR_CONFIG.CurrentLimits.SupplyCurrentLimitEnable = true;
+        INDEXER_FLOOR_MOTOR_CONFIG.MotorOutput.NeutralMode = NeutralModeValue.Coast;
         INDEXER_FLOOR_MOTOR_CONFIG.CurrentLimits.SupplyCurrentLimit = indexerFloorMotorCurrentLimit.get();
 
         indexerKickerMotorCurrentLimit.initFromConfig();
