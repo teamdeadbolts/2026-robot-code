@@ -37,6 +37,7 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
         HALF_HOLD,
         DEPLOYED,
         SHOOT,
+        TEST,
         OFF,
     }
 
@@ -105,6 +106,7 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
     private final SavedTunableNumber intakeShootFreq = SavedTunableNumber.get("Tuning/Intake/Shoot/Freq", 0);
 
     private final SavedTunableNumber halfHoldAngle = SavedTunableNumber.get("Tuning/Intake/HalfHoldAngle", 0);
+    private final SavedTunableNumber intakeTestAngle = SavedTunableNumber.get("Tuning/Intake/TestAngle", 0);
 
     private double currentAngle = 0;
     private double disturbanceAccumulator = 0.0;
@@ -216,6 +218,10 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
 
                 targetAngle = Optional.of(target);
                 wheelMotor.setVoltage(wheelShootVoltage.get());
+            }
+            case TEST -> {
+                targetAngle = Optional.of(Units.degreesToRadians(intakeTestAngle.get()));
+                wheelMotor.setVoltage(0.0);
             }
         }
 
