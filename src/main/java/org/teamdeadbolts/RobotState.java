@@ -13,9 +13,11 @@ import edu.wpi.first.math.numbers.N4;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Timer;
+import java.util.HashMap;
 import java.util.Optional;
 import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.constants.SwerveConstants;
+import org.teamdeadbolts.subsystems.vision.PhotonVisionIOCtxAutoLogged;
 import org.teamdeadbolts.utils.tuning.SavedTunableNumber;
 
 /**
@@ -37,6 +39,8 @@ public class RobotState {
             SavedTunableNumber.get("Tuning/PoseEstimator/VisionHeadingStdDev", 0.05);
 
     private final Matrix<N4, N1> visionStdDevs = VecBuilder.fill(0, 0, 0, 0);
+
+    private HashMap<String, PhotonVisionIOCtxAutoLogged> ios = new HashMap<>();
 
     private SwerveDrivePoseEstimator3d poseEstimator3d;
     private ChassisSpeeds fieldRelativeVelocities = new ChassisSpeeds();
@@ -88,6 +92,10 @@ public class RobotState {
         return this.fieldRelativeVelocities;
     }
 
+    public HashMap<String, PhotonVisionIOCtxAutoLogged> getIos() {
+        return this.ios;
+    }
+
     /** @return Robot velocities in the robot-relative frame. */
     public ChassisSpeeds getRobotRelativeRobotVelocities() {
         return this.robotRelativeVelocities;
@@ -122,6 +130,10 @@ public class RobotState {
      */
     public void setEstimatedPose(Pose3d newPose) {
         this.poseEstimator3d.resetPose(newPose);
+    }
+
+    public void setIos(HashMap<String, PhotonVisionIOCtxAutoLogged> ios) {
+        this.ios = ios;
     }
 
     public void setRobotRelativeVelocities(ChassisSpeeds newVelocities) {

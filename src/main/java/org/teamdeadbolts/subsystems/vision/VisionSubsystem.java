@@ -36,9 +36,13 @@ public class VisionSubsystem extends SubsystemBase implements Refreshable {
     public VisionSubsystem(final SwerveSubsystem swerveSubsystem, final PhotonVisionIO... ios) {
         this.ios = ios;
         this.ctxs = new PhotonVisionIOCtxAutoLogged[ios.length];
+        HashMap<String, PhotonVisionIOCtxAutoLogged> stateList = new HashMap<>();
         for (int i = 0; i < ios.length; i++) {
             this.ctxs[i] = new PhotonVisionIOCtxAutoLogged();
+            stateList.put(ios[i].getName(), this.ctxs[i]);
         }
+
+        RobotState.getInstance().setIos(stateList);
 
         for (final PhotonVisionIO io : this.ios) {
             final SavedTunableBoolean bool =

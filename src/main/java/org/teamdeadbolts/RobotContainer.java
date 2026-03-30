@@ -158,14 +158,14 @@ public class RobotContainer {
         secondaryController
                 .rightBumper()
                 .whileTrue(new RunCommand(
-                        () -> shooterSubsystem.setState(ShooterSubsystem.State.SPINUP, Priority.NORMAL),
-                        shooterSubsystem));
+                        () -> indexerSubsystem.setState(IndexerSubsystem.State.JIGGLE, Priority.NORMAL),
+                        indexerSubsystem));
         secondaryController.leftTrigger(0.4).whileTrue(new IntakeCommand(intakeSubsystem, IntakeCommand.Target.SHOOT));
         secondaryController
                 .leftBumper()
                 .whileTrue(new RunCommand(
-                        () -> indexerSubsystem.setState(IndexerSubsystem.State.JIGGLE, Priority.NORMAL),
-                        indexerSubsystem));
+                        () -> intakeSubsystem.setState(IntakeSubsystem.State.INTAKE, Priority.NORMAL),
+                        intakeSubsystem));
         secondaryController
                 .a()
                 .whileTrue(new ParallelCommandGroup(
@@ -216,10 +216,10 @@ public class RobotContainer {
                 .onTrue(new RunCommand(
                         () -> intakeSubsystem.setState(IntakeSubsystem.State.DEPLOYED, Priority.NORMAL),
                         intakeSubsystem));
-        new EventTrigger("Shoot")
-                .onTrue(new ParallelCommandGroup(
-                        new ShootCommand(indexerSubsystem, shooterSubsystem, hopperSubsystem, false),
-                        new IntakeCommand(intakeSubsystem, IntakeCommand.Target.SHOOT)));
+        new EventTrigger("Shoot").onTrue(new ShootCommand(indexerSubsystem, shooterSubsystem, hopperSubsystem, false));
+        new EventTrigger("IntakeShoot")
+                .onTrue(new RunCommand(() -> intakeSubsystem.setState(IntakeSubsystem.State.SHOOT, Priority.NORMAL)));
+
         new EventTrigger("SpinUp")
                 .onTrue(new RunCommand(
                         () -> shooterSubsystem.setState(ShooterSubsystem.State.SPINUP, Priority.NORMAL),

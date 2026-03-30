@@ -199,6 +199,12 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                 new Follower(ShooterConstants.SHOOTER_WHEEL_MOTOR_LEFT_CAN_ID, MotorAlignmentValue.Opposed));
     }
 
+    public void rezeroTurret() {
+        //     HashMap<String, PhotonVisionIOCtxAutoLogged> ios =
+        //             RobotState.getInstance().getIos();
+        //     PhotonVisionIOCtxAutoLogged backCamIo = ios.get("Back Cam");
+    }
+
     public double getRPMError() {
         if (targetWheelSpeed.isEmpty()) return 0;
         return (targetWheelSpeed.get() - Units.radiansPerSecondToRotationsPerMinute(currentWheelSpeed));
