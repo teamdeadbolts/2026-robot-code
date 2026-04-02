@@ -65,7 +65,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
         PASS,
         ZERO,
         TEST,
-        SYSTEMS_TEST;
+        SYSTEMS_TEST
     }
 
     private final CANBus rio = new CANBus("rio");
@@ -90,7 +90,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
             List.of(hoodVelocitySignal, hoodAngleSignal, hoodCurrentSignal, wheelVelocitySignal, wheelCurrentSignal);
 
     private final List<BaseStatusSignal> canivoreSignals =
-            List.of(turretVelocitySignal, turretPositionSignal, turretCurrentSignal);
+            List.of(turretCurrentSignal, turretPositionSignal, turretCurrentSignal, turretVelocitySignal);
 
     private final PIDController hoodController = new PIDController(0.0, 0.0, 0.0);
     private final ProfiledPIDController turretController =
@@ -132,8 +132,9 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
             SavedTunableNumber.get("Tuning/Shooter/ShooterWheelSpinupSpeed", 5000.0);
 
     private final SavedTunableNumber testHoodAngle = SavedTunableNumber.get("Tuning/Shooter/TestHoodAngle", 45);
-
     private final SavedTunableNumber testShooterMPS = SavedTunableNumber.get("Tuning/Shooter/TestShooterRPM", 3);
+    private final SavedTunableNumber testTurretAngle = SavedTunableNumber.get("Tuning/Shooter/TestTurretAngle", 0);
+
     private final SavedTunableNumber aprilTagTrackRange =
             SavedTunableNumber.get("Tuning/Shooter/AprilTagTrackRange", 0);
 
@@ -183,9 +184,11 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
         hoodController.setPID(hoodControllerP.get(), hoodControllerI.get(), hoodControllerD.get());
         hoodController.setTolerance(Units.degreesToRadians(hoodControllerTol.get()));
         turretController.setPID(turretControllerP.get(), turretControllerI.get(), turretControllerD.get());
-        turretController.setConstraints(new TrapezoidProfile.Constraints(turretMaxVel.get(), turretMaxAccel.get()));
+        turretController.setConstraints(new TrapezoidProfile.Constraints(
+                Units.degreesToRadians(turretMaxVel.get()), Units.degreesToRadians(turretMaxAccel.get())));
         turretController.setIZone(turretIZone.get());
         turretController.setIntegratorRange(turretIMin.get(), turretIMax.get());
+        turretController.setTolerance(0);
         wheelFF.setKs(wheelFFS.get());
         wheelFF.setKv(wheelFFV.get());
         wheelFF.setKa(wheelFFA.get());
@@ -444,6 +447,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
             case TEST -> { // Slowly rotatte turret in a circle
                 targetWheelSpeed = Optional.of(testShooterMPS.get());
                 targetHoodAngle = Optional.of(Units.degreesToRadians(testHoodAngle.get()));
+                targetTurretPosition = Optional.of(Units.degreesToRadians(testTurretAngle.get()));
             }
             case ZERO -> {
                 hoodMotor.setVoltage(-hoodZeroVoltage.get());
