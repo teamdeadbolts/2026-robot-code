@@ -236,6 +236,7 @@ public class RobotContainer {
         new EventTrigger("HopperDown")
                 .onTrue(new RunCommand(
                         () -> hopperSubsystem.setState(HopperSubsystem.State.DOWN, Priority.NORMAL), hopperSubsystem));
+        new EventTrigger("Outtake").onTrue(new RunCommand(()-> intakeSubsystem.setState(IntakeSubsystem.State.OUTTAKE, Priority.NORMAL)));
 
         AutoBuilder.configure(
                 () -> state.getRobotPose().toPose2d(),

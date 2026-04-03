@@ -3,37 +3,79 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 7.795827333293499,
-        "y": 1.352999746056405
+        "x": 7.893657986111112,
+        "y": 1.4030991030092594
       },
       "prevControl": null,
       "nextControl": {
-        "x": 7.91910305628585,
-        "y": 2.0789640595124275
+        "x": 8.095935257523148,
+        "y": 2.648583839699074
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 7.9336619137067395,
-        "y": 3.459294028916211
+        "x": 7.332294270833334,
+        "y": 3.5795316840277778
       },
       "prevControl": {
-        "x": 8.06144000956023,
-        "y": 3.0530518791826
+        "x": 7.704914778906228,
+        "y": 3.7881668316553747
+      },
+      "nextControl": {
+        "x": 6.939155960648148,
+        "y": 3.359408347800926
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 6.656046513310185,
+        "y": 1.9491755642361115
+      },
+      "prevControl": {
+        "x": 6.811897232253362,
+        "y": 2.1446507631870135
       },
       "nextControl": null,
       "isLocked": false,
       "linkedName": null
     }
   ],
-  "rotationTargets": [],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.48505345394736843,
+      "rotationDegrees": 92.13471348952822
+    },
+    {
+      "waypointRelativePos": 0.6144120065789476,
+      "rotationDegrees": 122.04439668428458
+    },
+    {
+      "waypointRelativePos": 1.1670230263157892,
+      "rotationDegrees": -111.3221445284405
+    }
+  ],
   "constraintZones": [],
   "pointTowardsZones": [],
-  "eventMarkers": [],
+  "eventMarkers": [
+    {
+      "name": "Outtake",
+      "waypointRelativePos": 0.8381696428571435,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
+      "name": "Intake",
+      "waypointRelativePos": 1.039503737541528,
+      "endWaypointRelativePos": null,
+      "command": null
+    }
+  ],
   "globalConstraints": {
-    "maxVelocity": 1.1,
+    "maxVelocity": 1.3,
     "maxAcceleration": 3.0,
     "maxAngularVelocity": 540.0,
     "maxAngularAcceleration": 720.0,
@@ -41,8 +83,8 @@
     "unlimited": false
   },
   "goalEndState": {
-    "velocity": 1.3,
-    "rotation": 103.35640321245087
+    "velocity": 0.2,
+    "rotation": -101.61754389940644
   },
   "reversed": false,
   "folder": "Outpost Side",
