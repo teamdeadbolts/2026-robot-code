@@ -25,11 +25,17 @@ public class ShootCommand extends Command {
 
     private final SavedTunableNumber wheelRpmError = SavedTunableNumber.get("Tuning/ShootCommand/WheelRpmError", 200);
 
-    private final SavedTunableNumber turretPositionError =
-            SavedTunableNumber.get("Tuning/ShootCommand/TurretPositionError", 6);
+    private final SavedTunableNumber turretPositionErrorShooting =
+            SavedTunableNumber.get("Tuning/ShootCommand/TurretPositionErrorShooting", 9);
 
-    private final SavedTunableNumber turretVelocityError =
-            SavedTunableNumber.get("Tuning/ShootCommand/TurretVelocityErrorDegPerSec", 15);
+    private final SavedTunableNumber turretVelocityErrorShooting =
+            SavedTunableNumber.get("Tuning/ShootCommand/TurretVelocityErrorDegPerSecShooting", 180);
+
+    private final SavedTunableNumber turretPositionErrorPassing =
+            SavedTunableNumber.get("Tuning/ShootCommand/TurretPositionErrorShooting", 20);
+
+    private final SavedTunableNumber turretVelocityErrorPassing =
+            SavedTunableNumber.get("Tuning/ShootCommand/TurretVelocityErrorDegPerSecShooting", 360);
 
     private boolean fallback;
 
@@ -60,14 +66,13 @@ public class ShootCommand extends Command {
 
         shooterSubsystem.setAlternativeHoodMinAngle(hopperSubsystem.getState() == HopperSubsystem.State.UP);
 
-        if (passing) {
-            shooterSubsystem.setState(ShooterSubsystem.State.PASS, Priority.NORMAL);
-        } else {
-            shooterSubsystem.setState(ShooterSubsystem.State.SHOOT, Priority.NORMAL);
-        }
+        ShooterSubsystem.State targetState = passing ? ShooterSubsystem.State.PASS : ShooterSubsystem.State.SHOOT;
+
+        shooterSubsystem.setState(targetState, Priority.NORMAL);
 
         boolean turretReady = shooterSubsystem.isTurretSettled(
-                Units.degreesToRadians(turretPositionError.get()), Units.degreesToRadians(turretVelocityError.get()));
+                Units.degreesToRadians(passing ? turretPositionErrorPassing.get() : turretPositionErrorShooting.get()),
+                Units.degreesToRadians(passing ? turretVelocityErrorPassing.get() : turretVelocityErrorShooting.get()));
 
         if (Math.abs(shooterSubsystem.getRPMError()) <= wheelRpmError.get()
                 && shooterSubsystem.isPossibleShot()

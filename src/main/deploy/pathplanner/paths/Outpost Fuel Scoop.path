@@ -3,25 +3,25 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 7.589366619053173,
-        "y": 1.3639585033815296
+        "x": 7.795827333293499,
+        "y": 1.352999746056405
       },
       "prevControl": null,
       "nextControl": {
-        "x": 7.634423720559844,
-        "y": 1.960546882995792
+        "x": 7.91910305628585,
+        "y": 2.0789640595124275
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 7.771556785300925,
-        "y": 3.39221361400463
+        "x": 7.9336619137067395,
+        "y": 3.459294028916211
       },
       "prevControl": {
-        "x": 7.783301070601853,
-        "y": 3.0942761863425927
+        "x": 8.06144000956023,
+        "y": 3.0530518791826
       },
       "nextControl": null,
       "isLocked": false,
@@ -33,7 +33,7 @@
   "pointTowardsZones": [],
   "eventMarkers": [],
   "globalConstraints": {
-    "maxVelocity": 1.3,
+    "maxVelocity": 1.1,
     "maxAcceleration": 3.0,
     "maxAngularVelocity": 540.0,
     "maxAngularAcceleration": 720.0,
@@ -42,7 +42,7 @@
   },
   "goalEndState": {
     "velocity": 1.3,
-    "rotation": 94.93898872516267
+    "rotation": 103.35640321245087
   },
   "reversed": false,
   "folder": "Outpost Side",
