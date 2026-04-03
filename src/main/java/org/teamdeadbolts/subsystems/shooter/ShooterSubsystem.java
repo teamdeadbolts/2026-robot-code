@@ -179,7 +179,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                 Units.degreesToRadians(turretMaxVel.get()), Units.degreesToRadians(turretMaxAccel.get())));
         turretController.setIZone(turretIZone.get());
         turretController.setIntegratorRange(turretIMin.get(), turretIMax.get());
-        turretController.setTolerance();
+        turretController.setTolerance(0);
         wheelFF.setKs(wheelFFS.get());
         wheelFF.setKv(wheelFFV.get());
         wheelFF.setKa(wheelFFA.get());
@@ -372,7 +372,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                         robotPose,
                         passTargetPose,
                         System.currentTimeMillis(),
-                        1.0,
+                        1.5,
                         Units.degreesToRadians(
                                 alternative
                                         ? alternativeMinHoodAngle.get()
@@ -471,7 +471,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
             final double normalizedTurretPosition =
                     calculateTurretSetpoint(currentTurretPosition, targetTurretPosition.get());
 
-            final double turretPidOutput = turretController.calculate(currentTurretPosition, normalizedTurretPosition);
+            double turretPidOutput = turretController.calculate(currentTurretPosition, normalizedTurretPosition);
 
             // Calculate field pose for logging
             final Transform2d targetTurretTransform = new Transform2d(

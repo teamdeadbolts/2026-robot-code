@@ -67,6 +67,7 @@ public class RobotContainer {
     private final SavedTunableNumber fastDriveScaler = SavedTunableNumber.get("Tuning/Drive/FastDriveScaler", 1.5);
     private final SavedTunableNumber slowDriveScaler = SavedTunableNumber.get("Tuning/Drive/SlowDriveScaler", 0.28);
     private final SavedTunableNumber shootDriveScaler = SavedTunableNumber.get("Tuning/Drive/ShootDriveScaler", 0.1);
+    private final SavedTunableNumber passDriveScaler = SavedTunableNumber.get("Tuning/Drive/PassDriveScaler", 0.28);
 
     public RobotContainer() {
         robotState.initPoseEstimator(
@@ -118,7 +119,7 @@ public class RobotContainer {
         primaryController.rightBumper().whileTrue(new IntakeCommand(intakeSubsystem, IntakeCommand.Target.INTAKE));
         primaryController.leftBumper().whileTrue(new IntakeCommand(intakeSubsystem, IntakeCommand.Target.STOW));
 
-        primaryController.a().whileTrue(new RunCommand((() -> {
+        primaryController.b().whileTrue(new RunCommand((() -> {
             for (PhotonVisionIO camera : visionSubsystem.getCameras()) {
                 camera.findTransform();
             }
@@ -134,9 +135,8 @@ public class RobotContainer {
 
         primaryController
                 .a()
-                .whileTrue(new RunCommand(
-                        () -> shooterSubsystem.setState(ShooterSubsystem.State.TEST, Priority.NORMAL),
-                        shooterSubsystem));
+                .whileTrue(
+                        new RunCommand(() -> intakeSubsystem.setState(IntakeSubsystem.State.OUTTAKE, Priority.NORMAL)));
         primaryController
                 .y()
                 .whileTrue(new RunCommand(
@@ -176,7 +176,9 @@ public class RobotContainer {
                                 primaryController::getLeftX,
                                 primaryController::getRightX,
                                 true,
-                                shootDriveScaler::get),
+                                () -> shooterSubsystem.getState() == ShooterSubsystem.State.PASS
+                                        ? passDriveScaler.get()
+                                        : shootDriveScaler.get()),
                         new ShootCommand(indexerSubsystem, shooterSubsystem, hopperSubsystem, false)));
         secondaryController
                 .povLeft()
