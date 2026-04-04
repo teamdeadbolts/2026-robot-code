@@ -59,7 +59,7 @@ wpi.java.debugJni = false
 
 // Set this to true to enable desktop support.
 //noinspection GroovyUnusedAssignment
-def includeDesktopSupport = false
+def includeDesktopSupport = true
 
 dependencies {
 	annotationProcessor wpi.java.deps.wpilibAnnotations()

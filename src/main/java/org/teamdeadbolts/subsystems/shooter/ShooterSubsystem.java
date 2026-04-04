@@ -9,7 +9,6 @@ import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -59,6 +58,7 @@ import org.teamdeadbolts.utils.tuning.SavedTunableNumber;
 public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> implements Refreshable {
     public enum State {
         OFF,
+        DOWN,
         APRILTAG_TRACK,
         SPINUP,
         SHOOT,
@@ -80,19 +80,20 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
     private final StatusSignal<Current> turretCurrentSignal = turretMotor.getSupplyCurrent();
 
     private final StatusSignal<AngularVelocity> hoodVelocitySignal = hoodMotor.getVelocity();
-    private final StatusSignal<Angle> hoodAngleSignal = hoodMotor.getPosition();
+    private final StatusSignal<Angle> hoodPositionSignal = hoodMotor.getPosition();
     private final StatusSignal<Current> hoodCurrentSignal = hoodMotor.getSupplyCurrent();
 
     private final StatusSignal<AngularVelocity> wheelVelocitySignal = leftWheelMotor.getVelocity();
     private final StatusSignal<Current> wheelCurrentSignal = leftWheelMotor.getSupplyCurrent();
 
     private final List<BaseStatusSignal> rioSignals =
-            List.of(hoodVelocitySignal, hoodAngleSignal, hoodCurrentSignal, wheelVelocitySignal, wheelCurrentSignal);
+            List.of(hoodVelocitySignal, hoodPositionSignal, hoodCurrentSignal, wheelVelocitySignal, wheelCurrentSignal);
 
     private final List<BaseStatusSignal> canivoreSignals =
             List.of(turretCurrentSignal, turretPositionSignal, turretCurrentSignal, turretVelocitySignal);
 
-    private final PIDController hoodController = new PIDController(0.0, 0.0, 0.0);
+    private final ProfiledPIDController hoodController =
+            new ProfiledPIDController(0.0, 0.0, 0.0, new TrapezoidProfile.Constraints(0.0, 0.0));
     private final ProfiledPIDController turretController =
             new ProfiledPIDController(0.0, 0.0, 0.0, new TrapezoidProfile.Constraints(0.0, 0.0));
     private final SimpleMotorFeedforward wheelFF = new SimpleMotorFeedforward(0, 0, 0);
@@ -101,6 +102,10 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
     private final SavedTunableNumber hoodControllerP = SavedTunableNumber.get("Tuning/Shooter/HoodController/kP", 0.1);
     private final SavedTunableNumber hoodControllerI = SavedTunableNumber.get("Tuning/Shooter/HoodController/kI", 0.0);
     private final SavedTunableNumber hoodControllerD = SavedTunableNumber.get("Tuning/Shooter/HoodController/kD", 0.0);
+    private final SavedTunableNumber hoodControllerMaxVel =
+            SavedTunableNumber.get("Tuning/Shooter/HoodController/MaxVel", 720);
+    private final SavedTunableNumber hoodControllermAccel =
+            SavedTunableNumber.get("Tuning/Shooter/HoodController/MaxAccel", 360);
     private final SavedTunableNumber hoodControllerTol =
             SavedTunableNumber.get("Tuning/Shooter/HoodController/ToleranceDeg", 0.0);
     private final SavedTunableNumber hoodFeedforwardKs = SavedTunableNumber.get("Tuning/Shooter/HoodFeedforward/Ks", 0);
@@ -155,16 +160,18 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
     private Optional<Rotation2d> fallbackChassisTargetAngle = Optional.empty();
 
     public ShooterSubsystem() {
-        super(State.OFF);
+        super(State.DOWN);
         this.shotCalculator = new ShotCalculator();
 
-        hoodMotor.setPosition(Units.degreesToRotations(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES - 1));
+        hoodMotor.setPosition(Units.degreesToRotations(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
         resetTurretPosition();
 
         hoodControllerP.addRefreshable(this);
         hoodControllerI.addRefreshable(this);
         hoodControllerD.addRefreshable(this);
         hoodControllerTol.addRefreshable(this);
+        hoodControllerMaxVel.addRefreshable(this);
+        hoodControllermAccel.addRefreshable(this);
         hoodFeedforwardKs.addRefreshable(this);
         turretControllerP.addRefreshable(this);
         turretControllerI.addRefreshable(this);
@@ -183,6 +190,10 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
     public void refresh() {
         hoodController.setPID(hoodControllerP.get(), hoodControllerI.get(), hoodControllerD.get());
         hoodController.setTolerance(Units.degreesToRadians(hoodControllerTol.get()));
+        hoodController.setConstraints(new TrapezoidProfile.Constraints(
+                Units.degreesToRadians(hoodControllerMaxVel.get()),
+                Units.degreesToRadians(hoodControllermAccel.get())));
+
         turretController.setPID(turretControllerP.get(), turretControllerI.get(), turretControllerD.get());
         turretController.setConstraints(new TrapezoidProfile.Constraints(
                 Units.degreesToRadians(turretMaxVel.get()), Units.degreesToRadians(turretMaxAccel.get())));
@@ -273,11 +284,14 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
 
     @Override
     protected void onStateChange(final State from, final State to) {
-        hoodController.reset();
+        final double hoodPosition = Units.rotationsToRadians(hoodPositionSignal.getValueAsDouble());
+        final double hoodVelocity = Units.rotationsToRadians(hoodVelocitySignal.getValueAsDouble());
 
-        final double position = Units.rotationsToRadians(turretPositionSignal.getValueAsDouble());
-        final double velocity = Units.rotationsToRadians(turretVelocitySignal.getValueAsDouble());
-        turretController.reset(new TrapezoidProfile.State(position, velocity));
+        hoodController.reset(hoodPosition, hoodVelocity);
+
+        final double turretPosition = Units.rotationsToRadians(turretPositionSignal.getValueAsDouble());
+        final double turretVelocity = Units.rotationsToRadians(turretVelocitySignal.getValueAsDouble());
+        turretController.reset(new TrapezoidProfile.State(turretPosition, turretVelocity));
     }
 
     public List<BaseStatusSignal> getSignals() {
@@ -295,7 +309,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
             BaseStatusSignal.refreshAll(canivoreSignals);
         }
 
-        final double currentHoodAngle = Units.rotationsToRadians(hoodAngleSignal.getValueAsDouble());
+        final double currentHoodAngle = Units.rotationsToRadians(hoodPositionSignal.getValueAsDouble());
         Optional<Double> targetHoodAngle = Optional.empty();
         Optional<Translation3d> currentTargetTranslation = Optional.empty();
 
@@ -311,6 +325,9 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
 
         switch (targetState) {
             case OFF -> {
+                // Do nothing
+            }
+            case DOWN -> {
                 systemTestCount = 0;
                 targetHoodAngle = Optional.of(Units.degreesToRadians(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
             }
@@ -450,11 +467,12 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                 targetTurretPosition = Optional.of(Units.degreesToRadians(testTurretAngle.get()));
             }
             case ZERO -> {
+                targetHoodAngle = Optional.empty();
                 hoodMotor.setVoltage(-hoodZeroVoltage.get());
-                if (hoodCurrentSignal.getValueAsDouble() >= hoodZeroCurrent.get()
+                if (Math.abs(hoodCurrentSignal.getValueAsDouble()) >= hoodZeroCurrent.get()
                         && Math.abs(hoodVelocitySignal.getValueAsDouble())
                                 <= Units.degreesToRotations(hoodZeroVelTol.get())) {
-                    targetState = State.OFF;
+                    this.setState(State.DOWN, Priority.HIGH);
                     hoodMotor.setPosition(Units.degreesToRotations(ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
                 }
             }
@@ -680,7 +698,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                     Units.radiansToDegrees(targetRobotRelativeRad),
                     Units.radiansToDegrees(targetEncoderRad),
                     Units.radiansToDegrees(error),
-                    limitHit);
+                    Units.rotationsToRadians(hoodMotor.getPosition().getValueAsDouble()));
             Logger.recordOutput("ShooterSubsystem/Turret/CalData", (WPISerializable) turretCalData);
         }
 

@@ -8,8 +8,8 @@
       },
       "prevControl": null,
       "nextControl": {
-        "x": 8.095935257523148,
-        "y": 2.648583839699074
+        "x": 8.187204006300648,
+        "y": 2.6909566532299056
       },
       "isLocked": false,
       "linkedName": null
@@ -20,24 +20,24 @@
         "y": 3.5795316840277778
       },
       "prevControl": {
-        "x": 7.704914778906228,
-        "y": 3.7881668316553747
+        "x": 7.969176388415621,
+        "y": 3.842902928551757
       },
       "nextControl": {
-        "x": 6.939155960648148,
-        "y": 3.359408347800926
+        "x": 7.082447669578184,
+        "y": 3.4762120766843463
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 6.656046513310185,
-        "y": 1.9491755642361115
+        "x": 6.636888269865665,
+        "y": 2.2232671618852464
       },
       "prevControl": {
-        "x": 6.811897232253362,
-        "y": 2.1446507631870135
+        "x": 6.847087714537286,
+        "y": 2.53260553656641
       },
       "nextControl": null,
       "isLocked": false,
@@ -47,7 +47,7 @@
   "rotationTargets": [
     {
       "waypointRelativePos": 0.48505345394736843,
-      "rotationDegrees": 92.13471348952822
+      "rotationDegrees": 98.59618397078545
     },
     {
       "waypointRelativePos": 0.6144120065789476,
@@ -60,20 +60,7 @@
   ],
   "constraintZones": [],
   "pointTowardsZones": [],
-  "eventMarkers": [
-    {
-      "name": "Outtake",
-      "waypointRelativePos": 0.8381696428571435,
-      "endWaypointRelativePos": null,
-      "command": null
-    },
-    {
-      "name": "Intake",
-      "waypointRelativePos": 1.039503737541528,
-      "endWaypointRelativePos": null,
-      "command": null
-    }
-  ],
+  "eventMarkers": [],
   "globalConstraints": {
     "maxVelocity": 1.3,
     "maxAcceleration": 3.0,
@@ -84,7 +71,7 @@
   },
   "goalEndState": {
     "velocity": 0.2,
-    "rotation": -101.61754389940644
+    "rotation": -96.47119044624112
   },
   "reversed": false,
   "folder": "Outpost Side",

@@ -6,7 +6,7 @@ import edu.wpi.first.util.struct.StructGenerator;
 import edu.wpi.first.util.struct.StructSerializable;
 
 public record ShooterTurretCalData(
-        double rawTargetAngle, double targetEncoderDeg, double shortestPathError, String limitHit)
+        double rawTargetAngle, double targetEncoderDeg, double shortestPathError, double limitHit)
         implements StructSerializable {
     public static final Struct<ShooterTurretCalData> struct = StructGenerator.genRecord(ShooterTurretCalData.class);
 }

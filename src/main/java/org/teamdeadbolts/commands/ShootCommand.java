@@ -6,6 +6,7 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
+import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.RobotState;
 import org.teamdeadbolts.constants.ZoneConstants;
 import org.teamdeadbolts.subsystems.HopperSubsystem;
@@ -81,6 +82,10 @@ public class ShootCommand extends Command {
         } else {
             indexerSubsystem.setState(IndexerSubsystem.State.OFF, Priority.NORMAL);
         }
+
+        Logger.recordOutput("ShootCommand/Ready/Rpm", Math.abs(shooterSubsystem.getRPMError()) <= wheelRpmError.get());
+        Logger.recordOutput("ShootCommand/Ready/ShotPosible", shooterSubsystem.isPossibleShot());
+        Logger.recordOutput("ShootCommand/Ready/TurretReady", turretReady);
 
         // shooterSubsystem.setState(ShooterSubsystem.State.SPINUP);
     }
