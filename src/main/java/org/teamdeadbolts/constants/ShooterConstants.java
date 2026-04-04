@@ -21,7 +21,7 @@ public class ShooterConstants {
     public static final int SHOOTER_WHEEL_MOTOR_RIGHT_CAN_ID = 23;
 
     public static final double SHOOTER_HOOD_MIN_ANGLE_DEGREES = 10.2;
-    public static final double SHOOTER_HOOD_MAX_ANGLE_DEGREES = 43.0; // TODO fix!!
+    public static final double SHOOTER_HOOD_MAX_ANGLE_DEGREES = 41.0; // TODO fix!!
 
     public static final double TURRET_MIN_POSITION_DEGREES = 0.0;
     public static final double TURRET_MAX_POSITION_DEGREES = 360.0;
@@ -96,6 +96,9 @@ public class ShooterConstants {
         SHOOTER_HOOD_MOTOR_CONFIG.Feedback.SensorToMechanismRatio = HOOD_GEAR_RATIO;
         SHOOTER_HOOD_MOTOR_CONFIG.MotorOutput.NeutralMode = NeutralModeValue.Coast;
         SHOOTER_HOOD_MOTOR_CONFIG.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
+        // SHOOTER_HOOD_MOTOR_CONFIG.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
+        // SHOOTER_HOOD_MOTOR_CONFIG.SoftwareLimitSwitch.ForwardSoftLimitEnable =
+        //         Units.degreesToRadians(ShooterConstants.SHOOTER_HOOD_MAX_ANGLE_DEGREES);
 
         shooterWheelMotorCurrentLimit.initFromConfig();
         SHOOTER_WHEEL_MOTOR_CONFIG.CurrentLimits.SupplyCurrentLimitEnable = true;

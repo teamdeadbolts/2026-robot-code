@@ -42,7 +42,7 @@ public class SwerveConstants {
     public static final SwerveModuleConfig FRONT_RIGHT_CONFIG =
             new SwerveModuleConfig(1, Rotation2d.fromDegrees(99.668), 3, 4, 5);
     public static final SwerveModuleConfig BACK_LEFT_CONFIG =
-            new SwerveModuleConfig(2, Rotation2d.fromDegrees(140.977), 6, 7, 8);
+            new SwerveModuleConfig(2, Rotation2d.fromDegrees(-39.023 + 180), 6, 7, 8);
     public static final SwerveModuleConfig BACK_RIGHT_CONFIG =
             new SwerveModuleConfig(3, Rotation2d.fromDegrees(125.068), 9, 10, 11);
 

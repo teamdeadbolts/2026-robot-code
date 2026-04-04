@@ -31,7 +31,7 @@ public class DefaultShooterCommand extends Command {
         // If in a low zone (e.g., trench or tower), disable the shooter to avoid collisions.
         // Otherwise, track april tags
         if (ZoneConstants.isInLowZone(robotPose.getTranslation())) {
-            shooterSubsystem.setState(ShooterSubsystem.State.OFF, Priority.NORMAL);
+            shooterSubsystem.setState(ShooterSubsystem.State.DOWN, Priority.CRITICAL);
         } else {
             shooterSubsystem.setState(ShooterSubsystem.State.APRILTAG_TRACK, Priority.NORMAL);
         }

@@ -52,6 +52,7 @@ public class RobotContainer {
     private CommandXboxController primaryController = new CommandXboxController(0);
     private CommandXboxController secondaryController = new CommandXboxController(1);
 
+    
     private RobotState robotState = RobotState.getInstance();
 
     private SendableChooser<Command> autoChooser = new SendableChooser<>();
@@ -146,6 +147,10 @@ public class RobotContainer {
                         },
                         shooterSubsystem));
 
+        primaryController.povDown().whileTrue(new RunCommand(() -> {
+            shooterSubsystem.setState(ShooterSubsystem.State.ZERO, Priority.HIGH);
+        }));
+
         // Secondary Controller
         secondaryController
                 .povUp()
@@ -236,7 +241,8 @@ public class RobotContainer {
         new EventTrigger("HopperDown")
                 .onTrue(new RunCommand(
                         () -> hopperSubsystem.setState(HopperSubsystem.State.DOWN, Priority.NORMAL), hopperSubsystem));
-        new EventTrigger("Outtake").onTrue(new RunCommand(()-> intakeSubsystem.setState(IntakeSubsystem.State.OUTTAKE, Priority.NORMAL)));
+        new EventTrigger("Outtake")
+                .onTrue(new RunCommand(() -> intakeSubsystem.setState(IntakeSubsystem.State.OUTTAKE, Priority.NORMAL)));
 
         AutoBuilder.configure(
                 () -> state.getRobotPose().toPose2d(),

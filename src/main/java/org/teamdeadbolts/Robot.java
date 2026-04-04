@@ -1,6 +1,7 @@
 /* The Deadbolts (C) 2025 */
 package org.teamdeadbolts;
 
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import org.littletonrobotics.junction.LoggedRobot;
@@ -82,6 +83,7 @@ public class Robot extends LoggedRobot {
     @Override
     public void teleopPeriodic() {
         robotState.updateActiveAlliance();
+        SmartDashboard.putNumber("AllianceShiftTime", RobotState.getInstance().getTimeUntilActiveSwitch());
     }
 
     @Override
