@@ -36,8 +36,8 @@ public class IndexerSubsystem extends StatefulSubsystem<IndexerSubsystem.State> 
     private final StatusSignal<Current> kickerMotorCurrentSignal = kickerMotor.getSupplyCurrent();
     private final StatusSignal<Voltage> floorMotorVoltageSignal = floorMotor.getSupplyVoltage();
 
-    private final List<BaseStatusSignal> signals =
-            List.of(floorMotorCurrentSignal, kickerMotorCurrentSignal, floorMotorVoltageSignal, floorMotorVoltageSignal);
+    private final List<BaseStatusSignal> signals = List.of(
+            floorMotorCurrentSignal, kickerMotorCurrentSignal, floorMotorVoltageSignal, floorMotorVoltageSignal);
 
     /* --- Tuning Parameters --- */
     private final SavedTunableNumber floorMotorIntakeVolts =

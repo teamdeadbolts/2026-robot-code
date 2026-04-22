@@ -52,7 +52,6 @@ public class RobotContainer {
     private CommandXboxController primaryController = new CommandXboxController(0);
     private CommandXboxController secondaryController = new CommandXboxController(1);
 
-    
     private RobotState robotState = RobotState.getInstance();
 
     private SendableChooser<Command> autoChooser = new SendableChooser<>();
