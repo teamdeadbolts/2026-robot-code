@@ -119,9 +119,10 @@ task runVisualizer(type: Test) {
 // 3. Tell WPILib to inject the native JNI libraries into our new task!
 wpi.java.configureTestTasks(runVisualizer)
 
-// Simulation configuration (e.g. environment variables).
+// Simulation configuration
 wpi.sim.addGui().defaultEnabled = true
 wpi.sim.addDriverstation()
+
 
 // Setting up my Jar File. In this case, adding all libraries into the main jar ('fat jar')
 // in order to make them all available at runtime. Also adding the manifest so WPILib

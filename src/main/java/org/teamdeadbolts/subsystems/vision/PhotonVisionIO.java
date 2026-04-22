@@ -102,6 +102,10 @@ public class PhotonVisionIO {
         this.enabled = enabled;
     }
 
+    public boolean isConnected() {
+        return camera.isConnected();
+    }
+
     public void findTransform() {
         final Pose3d robotPose = new Pose3d(
                 new Translation3d(testRobotPoseX.get(), testRobotPoseY.get(), 0),

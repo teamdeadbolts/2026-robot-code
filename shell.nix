@@ -9,6 +9,8 @@ pkgs.mkShell {
     openjdk17
     nixfmt
     visualvm
+    libGL
+    libglvnd
   ];
 
   shellHook = ''

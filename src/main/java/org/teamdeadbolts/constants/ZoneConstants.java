@@ -119,4 +119,11 @@ public class ZoneConstants {
                 || ZoneConstants.RED_TOWER_CLEARANCE_ZONE.contains(robotPosMeters)
                 || ZoneConstants.BLUE_TOWER_CLEARANCE_ZONE.contains(robotPosMeters);
     }
+
+    public static boolean isUnderTrench(Translation2d robotPose) {
+        return ZoneConstants.BLUE_BOTTOM_TRENCH_ZONE.contains(robotPose)
+                || ZoneConstants.RED_BOTTOM_TRENCH_ZONE.contains(robotPose)
+                || ZoneConstants.BLUE_TOP_TRENCH_ZONE.contains(robotPose)
+                || ZoneConstants.RED_TOP_TRENCH_ZONE.contains(robotPose);
+    }
 }
