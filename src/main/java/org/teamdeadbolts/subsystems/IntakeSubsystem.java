@@ -16,10 +16,13 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.Timer;
+import java.util.List;
 import java.util.Optional;
 import org.littletonrobotics.junction.Logger;
 import org.teamdeadbolts.constants.IntakeConstants;
+import org.teamdeadbolts.subsystems.logstructs.IntakeData;
 import org.teamdeadbolts.utils.MathUtils;
+import org.teamdeadbolts.utils.PeriodicTasks;
 import org.teamdeadbolts.utils.StatefulSubsystem;
 import org.teamdeadbolts.utils.tuning.Refreshable;
 import org.teamdeadbolts.utils.tuning.SavedTunableNumber;
@@ -53,14 +56,13 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
     private final StatusSignal<Voltage> armMotorVoltageSignal = armMotor.getSupplyVoltage();
     private final StatusSignal<Voltage> wheelMotorVoltageSignal = wheelMotor.getSupplyVoltage();
 
-    private final BaseStatusSignal[] signals = new BaseStatusSignal[] {
-        armMotorCurrentSignal,
-        wheelMotorCurrentSignal,
-        absEncoderAngleSignal,
-        absEncoderVelocitySignal,
-        armMotorVoltageSignal,
-        wheelMotorVoltageSignal
-    };
+    private final List<BaseStatusSignal> signals = List.of(
+            armMotorCurrentSignal,
+            wheelMotorCurrentSignal,
+            absEncoderAngleSignal,
+            absEncoderVelocitySignal,
+            armMotorVoltageSignal,
+            wheelMotorVoltageSignal);
 
     private final ProfiledPIDController armController =
             new ProfiledPIDController(0.0, 0.0, 0.0, new TrapezoidProfile.Constraints(0.0, 0.0));
@@ -166,9 +168,16 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
         disturbanceAccumulator = 0.0;
     }
 
+    public List<BaseStatusSignal> getSignals() {
+        return signals;
+    }
+
     @Override
     public void subsystemPeriodic() {
-        BaseStatusSignal.refreshAll(signals);
+        if (PeriodicTasks.getInstance().shouldRefreshSignals()) {
+            BaseStatusSignal.refreshAll(signals);
+        }
+
         currentAngle = MathUtil.inputModulus(
                 Units.rotationsToRadians(absEncoderAngleSignal.getValueAsDouble())
                         - Units.degreesToRadians(armOffsetDeg.get()),
@@ -225,6 +234,8 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
             }
         }
 
+        IntakeData intakeData = new IntakeData();
+
         if (targetAngle.isPresent()) {
             final double pidVolts = armController.calculate(currentAngle, targetAngle.get());
             final TrapezoidProfile.State setpoint = armController.getSetpoint();
@@ -247,35 +258,66 @@ public class IntakeSubsystem extends StatefulSubsystem<IntakeSubsystem.State> im
                 armMotor.setVoltage(totalVolts);
             }
 
-            Logger.recordOutput(
-                    "IntakeSubsystem/Arm/ShortestDistance",
-                    Units.radiansToDegrees(MathUtils.getShortestDistance(currentAngle, targetAngle.get())));
-            Logger.recordOutput("IntakeSubsystem/Arm/AtGoal", armController.atGoal());
-            Logger.recordOutput("IntakeSubsystem/Arm/ShouldDrop", shouldDrop);
-            Logger.recordOutput("IntakeSubsystem/Arm/SetpointPos", Units.radiansToDegrees(setpoint.position));
-            Logger.recordOutput("IntakeSubsystem/Arm/SetpointVel", Units.radiansToDegrees(setpoint.velocity));
-            Logger.recordOutput(
-                    "IntakeSubsystem/Arm/PidPosError", Units.radiansToDegrees(armController.getPositionError()));
-            Logger.recordOutput("IntakeSubsystem/Arm/CurrVelocity", Units.radiansToDegrees(actualVelocity));
-            Logger.recordOutput("IntakeSubsystem/Arm/TargetAngle", Units.radiansToDegrees(targetAngle.get()));
+            //            Logger.recordOutput("IntakeSubsystem/Arm/AtGoal", armController.atGoal());
+            //            Logger.recordOutput("IntakeSubsystem/Arm/SetpointPos",
+            // Units.radiansToDegrees(setpoint.position));
+            //            Logger.recordOutput("IntakeSubsystem/Arm/SetpointVel",
+            // Units.radiansToDegrees(setpoint.velocity));
+            //            Logger.recordOutput(
+            //                    "IntakeSubsystem/Arm/PidPosError",
+            // Units.radiansToDegrees(armController.getPositionError()));
+            //            Logger.recordOutput("IntakeSubsystem/Arm/CurrVelocity",
+            // Units.radiansToDegrees(actualVelocity));
+            //            Logger.recordOutput("IntakeSubsystem/Arm/TargetAngle",
+            // Units.radiansToDegrees(targetAngle.get()));
+            //            final TrapezoidProfile.State state = armController.getSetpoint();
+            //            Logger.recordOutput("IntakeSubsystem/Arm/Trapizoid/SetpointPos",
+            // Units.radiansToDegrees(state.position));
+            //            Logger.recordOutput("IntakeSubsystem/Arm/Trapizoid/SetpointVel",
+            // Units.radiansToDegrees(state.velocity));
+            //
+            //            // Log control effort breakdown
+            //            Logger.recordOutput("IntakeSubsystem/Arm/Effort/PIDVolts", pidVolts);
+            //            Logger.recordOutput("IntakeSubsystem/Arm/Effort/FFVolts", feedforward);
+            //            Logger.recordOutput("IntakeSubsystem/Arm/Effort/ObserverVolts", disturbanceAccumulator);
+
+            intakeData.armAtGoal = armController.atGoal();
+            intakeData.armSetpointPos = Units.radiansToDegrees(setpoint.position);
+            intakeData.armSetpointVel = Units.radiansToDegrees(setpoint.velocity);
+            intakeData.armPidPosError = Units.radiansToDegrees(armController.getPositionError());
+            intakeData.armCurrVelocity = Units.radiansToDegrees(actualVelocity);
+            intakeData.armTargetAngle = Units.radiansToDegrees(targetAngle.get());
+
             final TrapezoidProfile.State state = armController.getSetpoint();
-            Logger.recordOutput("IntakeSubsystem/Arm/Trapizoid/SetpointPos", Units.radiansToDegrees(state.position));
-            Logger.recordOutput("IntakeSubsystem/Arm/Trapizoid/SetpointVel", Units.radiansToDegrees(state.velocity));
+            intakeData.armTrapizoidSetpointPos = Units.radiansToDegrees(state.position);
+            intakeData.armTrapizoidSetpointVel = Units.radiansToDegrees(state.velocity);
 
             // Log control effort breakdown
-            Logger.recordOutput("IntakeSubsystem/Arm/Effort/PIDVolts", pidVolts);
-            Logger.recordOutput("IntakeSubsystem/Arm/Effort/FFVolts", feedforward);
-            Logger.recordOutput("IntakeSubsystem/Arm/Effort/ObserverVolts", disturbanceAccumulator);
-            Logger.recordOutput("IntakeSubsystem/Arm/Effort/TotalVolts", totalVolts);
+            intakeData.armEffortPIDVolts = pidVolts;
+            intakeData.armEffortFFVolts = feedforward;
+            intakeData.armEffortObserverVolts = disturbanceAccumulator;
         }
-        Logger.recordOutput("IntakeSubsystem/Arm/CurrentAngle", Units.radiansToDegrees(currentAngle));
-        Logger.recordOutput("IntakeSubsystem/Arm/OutputVolts", armMotorVoltageSignal.getValueAsDouble());
 
-        Logger.recordOutput("IntakeSubsystem/Wheels/Voltage", wheelMotorVoltageSignal.getValueAsDouble());
+        if (PeriodicTasks.getInstance().shouldLog()) {
+            Logger.recordOutput("IntakeSubsystem/TargetState", targetState);
+        }
 
-        // Current monitoring
-        Logger.recordOutput("Debug/Current/Intake/Arm", armMotorCurrentSignal.getValueAsDouble());
-        Logger.recordOutput("Debug/Current/Intake/Wheel", wheelMotorCurrentSignal.getValueAsDouble());
+        //        Logger.recordOutput("IntakeSubsystem/Arm/CurrentAngle", Units.radiansToDegrees(currentAngle));
+        //        Logger.recordOutput("IntakeSubsystem/Arm/OutputVolts", armMotorVoltageSignal.getValueAsDouble());
+        //
+        //        Logger.recordOutput("IntakeSubsystem/Wheels/Voltage", wheelMotorVoltageSignal.getValueAsDouble());
+
+        intakeData.armCurrentAngle = Units.radiansToDegrees(currentAngle);
+        intakeData.armOutputVolts = armMotorVoltageSignal.getValueAsDouble();
+        intakeData.wheelsVoltage = wheelMotorVoltageSignal.getValueAsDouble();
+
+        if (PeriodicTasks.getInstance().shouldLog()) {
+            Logger.recordOutput("IntakeSubsystem", intakeData);
+
+            // Current monitoring
+            Logger.recordOutput("Debug/Current/Intake/Arm", armMotorCurrentSignal.getValueAsDouble());
+            Logger.recordOutput("Debug/Current/Intake/Wheel", wheelMotorCurrentSignal.getValueAsDouble());
+        }
     }
 
     public boolean armAtGoal() {
