@@ -42,8 +42,8 @@ public class ShooterConstants {
     public static final Translation3d PASS_TOP_POSE_BLUE = new Translation3d(1.746, 6.05, 0);
     public static final Translation3d PASS_BOTTOM_POSE_RED = new Translation3d(14.485, 1.54, 0);
     public static final Translation3d PASS_BOTTOM_POSE_BLUE = new Translation3d(1.746, 1.54, 0);
-    public static final Translation3d SHOOT_POSE_RED = new Translation3d(11.933, 4.030247, 1.7888);
-    public static final Translation3d SHOOT_POSE_BLUE = new Translation3d(4.64, 4.030247, 1.7888);
+    public static final Translation3d SHOOT_POSE_RED = new Translation3d(11.883, 4.030247, 1.8988);
+    public static final Translation3d SHOOT_POSE_BLUE = new Translation3d(4.69, 4.030247, 1.8988);
 
     public static final Transform3d SHOOTER_OFFSET = new Transform3d(
             Units.inchesToMeters(-27.5 / 2 + 6.125),

@@ -75,6 +75,7 @@ public class ShotCalculator implements Refreshable {
             SavedTunableNumber.get("Tuning/Shooter/MinImpactAngleDegrees", 10);
     private final SavedTunableNumber maxImpactAngle =
             SavedTunableNumber.get("Tuning/Shooter/MaxImpactAngleDegrees", 45);
+    private final SavedTunableNumber impactBias = SavedTunableNumber.get("Tuning/Shooter/LowImpactBias", 0);
     private final SavedTunableNumber shootLatancyMs = SavedTunableNumber.get("Tuning/Shooter/ShootLatancyMs", 0);
     private final SavedTunableNumber timeToKeepVel = SavedTunableNumber.get("Tuning/Shooter/TimeToKeepVelMs", 1000);
     private final SavedTunableNumber linerFilter = SavedTunableNumber.get("Tuning/Shooter/LinearFilter", 5);
@@ -215,8 +216,9 @@ public class ShotCalculator implements Refreshable {
             }
 
             double k = dy / dx;
-            double idealAlphaRad = Math.atan(Math.sqrt(k * k + 1) - k);
-            impactAngle = MathUtil.clamp(idealAlphaRad, minAlphaRad, maxAlphaRad);
+            double bestAngle = Math.atan(Math.sqrt(k * k + 1) - k);
+            double balanced = (bestAngle * (1.0 - impactBias.get())) + (minAlphaRad * impactBias.get());
+            impactAngle = MathUtil.clamp(balanced, minAlphaRad, maxAlphaRad);
 
             double[] simResults = new double[2];
             hoodAngle = findLaunchAngleWithDrag(relVirtTarget, impactAngle, maxAngle, simResults);
