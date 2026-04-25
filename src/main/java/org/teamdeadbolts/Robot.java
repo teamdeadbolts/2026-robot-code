@@ -23,13 +23,15 @@ public class Robot extends LoggedRobot {
         if (isReal()) {
             Logger.addDataReceiver(new WPILOGWriter("/home/lvuser/logs/advantage"));
             Logger.addDataReceiver(new NT4Publisher());
-        } else {
+        } else if (isSimulation()) {
             setUseTiming(false);
             Logger.addDataReceiver(new NT4Publisher());
 
             //     String logPath = LogFileUtil.findReplayLog();
             //     Logger.setReplaySource(new WPILOGReader(logPath));
             //     Logger.addDataReceiver(new WPILOGWriter(LogFileUtil.addPathSuffix(logPath, "_sim")));
+        } else {
+            Logger.addDataReceiver(new NT4Publisher());
         }
         // LoggedPowerDistribution.getInstance(50, ModuleType.kRev);
         Logger.start();

@@ -73,6 +73,8 @@ public class RobotContainer {
         robotState.initPoseEstimator(
                 new Rotation3d(swerveSubsystem.getGyroRotation()), swerveSubsystem.getModulePositions());
 
+        DriverStation.silenceJoystickConnectionWarning(true);
+
         configureAuto();
         configureBindings();
     }

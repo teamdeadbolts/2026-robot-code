@@ -73,13 +73,22 @@ public class VisionSubsystem extends SubsystemBase implements Refreshable {
 
         // Update IO interfaces
         for (int i = 0; i < ios.length; i++) {
-            ios[i].update(ctxs[i]);
-            Logger.processInputs("Vision/Camera " + ios[i].getName() + "/Ctx", ctxs[i]);
+            PhotonVisionIO io = ios[i];
+            Logger.recordOutput("Vision/Camera " + io.getName() + "/Connected", io.isConnected());
+            if (!io.isConnected()) {
+                continue;
+            }
+            io.update(ctxs[i]);
+            Logger.processInputs("Vision/Camera " + io.getName() + "/Ctx", ctxs[i]);
         }
 
         tracer.addEpoch("Process Inputs");
 
         for (int index = 0; index < ctxs.length; index++) {
+            if (!ios[index].isConnected()) {
+                continue;
+            }
+
             // Retrieve tag poses from layout for debugging
             for (final int tId : ctxs[index].tagIds) {
                 VisionConstants.FIELD_LAYOUT.getTagPose(tId).ifPresent(tagPoses::add);

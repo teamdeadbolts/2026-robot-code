@@ -96,6 +96,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
             new ProfiledPIDController(0.0, 0.0, 0.0, new TrapezoidProfile.Constraints(0.0, 0.0));
     private final ProfiledPIDController turretController =
             new ProfiledPIDController(0.0, 0.0, 0.0, new TrapezoidProfile.Constraints(0.0, 0.0));
+    private final SimpleMotorFeedforward turretFF = new SimpleMotorFeedforward(0, 0, 0);
     private final SimpleMotorFeedforward wheelFF = new SimpleMotorFeedforward(0, 0, 0);
 
     /* --- Tuning Parameters --- */
@@ -119,6 +120,10 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
             SavedTunableNumber.get("Tuning/Shooter/TurretController/kI", 0.0);
     private final SavedTunableNumber turretControllerD =
             SavedTunableNumber.get("Tuning/Shooter/TurretController/kD", 0.0);
+    private final SavedTunableNumber turretFFS = SavedTunableNumber.get("Tuning/Shooter/TurretController/kS", 0.0);
+    private final SavedTunableNumber turretFFV = SavedTunableNumber.get("Tuning/Shooter/TurretController/kV", 0.0);
+    private final SavedTunableNumber turretFFA = SavedTunableNumber.get("Tuning/Shooter/TurretController/kA", 0.0);
+
     private final SavedTunableNumber turretMaxVel = SavedTunableNumber.get("Tuning/Shooter/TurretController/MaxVel", 0);
     private final SavedTunableNumber turretMaxAccel =
             SavedTunableNumber.get("Tuning/Shooter/TurretController/MaxAccel", 0);
@@ -176,6 +181,9 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
         turretControllerP.addRefreshable(this);
         turretControllerI.addRefreshable(this);
         turretControllerD.addRefreshable(this);
+        turretFFS.addRefreshable(this);
+        turretFFV.addRefreshable(this);
+        turretFFA.addRefreshable(this);
         turretIMin.addRefreshable(this);
         turretIMax.addRefreshable(this);
         turretIZone.addRefreshable(this);
@@ -200,6 +208,10 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
         turretController.setIZone(turretIZone.get());
         turretController.setIntegratorRange(turretIMin.get(), turretIMax.get());
         turretController.setTolerance(0);
+        turretFF.setKs(turretFFS.get());
+        turretFF.setKv(turretFFV.get());
+        turretFF.setKa(turretFFA.get());
+
         wheelFF.setKs(wheelFFS.get());
         wheelFF.setKv(wheelFFV.get());
         wheelFF.setKa(wheelFFA.get());
@@ -316,6 +328,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
         currentWheelSpeed = Units.rotationsToRadians(wheelVelocitySignal.getValueAsDouble());
         targetWheelSpeed = Optional.empty();
         targetTurretPosition = Optional.empty();
+        Optional<Double> targetTurretVelocity = Optional.empty();
 
         final Pose3d robotPose = RobotState.getInstance().getRobotPose();
         final ChassisSpeeds robotSpeeds = RobotState.getInstance().getFieldRelativeRobotVelocities();
@@ -436,6 +449,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                                         : ShooterConstants.SHOOTER_HOOD_MIN_ANGLE_DEGREES));
                 targetHoodAngle = Optional.of(passShot.hoodAngle);
                 targetTurretPosition = Optional.of(passShot.turretAngle);
+                targetTurretVelocity = Optional.of(passShot.turretVelocity);
                 targetWheelSpeed = Optional.of(passShot.wheelSpeed);
                 isPossibleShot = passShot.isPossible;
             }
@@ -455,6 +469,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                 targetWheelSpeed = Optional.of(shootShot.wheelSpeed);
                 targetHoodAngle = Optional.of(shootShot.hoodAngle);
                 targetTurretPosition = Optional.of(shootShot.turretAngle);
+                targetTurretVelocity = Optional.of(shootShot.turretVelocity);
                 isPossibleShot = shootShot.isPossible;
             }
             case SPINUP -> {
@@ -553,7 +568,13 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
             final double normalizedTurretPosition =
                     calculateTurretSetpoint(currentTurretPosition, targetTurretPosition.get());
 
-            double turretPidOutput = turretController.calculate(currentTurretPosition, normalizedTurretPosition);
+            // double turretPidOutput = turretController.calculate(currentTurretPosition, normalizedTurretPosition);
+            double turretPidOutput = turretController.calculate(
+                    currentTurretPosition,
+                    new TrapezoidProfile.State(normalizedTurretPosition, targetTurretVelocity.orElse(0.0)));
+            double velSetpoint = turretController.getSetpoint().velocity;
+            double turretFFOutput = turretFF.calculate(velSetpoint);
+            double combinedOutput = turretPidOutput + turretFFOutput;
 
             // Calculate field pose for logging
             final Transform2d targetTurretTransform = new Transform2d(
@@ -562,7 +583,7 @@ public class ShooterSubsystem extends StatefulSubsystem<ShooterSubsystem.State> 
                             + ShooterConstants.SHOOTER_OFFSET.getRotation().getZ()));
             final Pose2d targetTurretFieldPose = robotPose.toPose2d().transformBy(targetTurretTransform);
 
-            turretMotor.setVoltage(turretPidOutput);
+            turretMotor.setVoltage(combinedOutput);
 
             if (periodicTasks.shouldLog()) {
                 //                Logger.recordOutput(
