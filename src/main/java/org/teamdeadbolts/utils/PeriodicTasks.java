@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class PeriodicTasks {
     private static final int LOG_AFTER_N_CALLS = 10;
-    private static final int REFRESH_SIGNALS_AFTER_N_CALLS = 10;
+    private static final int REFRESH_SIGNALS_AFTER_N_CALLS = 1;
     private static final PeriodicTasks INSTANCE = new PeriodicTasks();
 
     private final AtomicInteger callCount = new AtomicInteger(0);
@@ -25,7 +25,7 @@ public class PeriodicTasks {
 
     public void recordCall() {
         callCount.incrementAndGet();
-        updateFlag(LOG_AFTER_N_CALLS, shouldLog, false);
+        updateFlag(LOG_AFTER_N_CALLS, shouldLog, true);
         updateFlag(REFRESH_SIGNALS_AFTER_N_CALLS, shouldRefreshSignals, true);
     }
 

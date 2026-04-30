@@ -23,15 +23,15 @@ public class ZoneConstants {
     // Zone for the bottom blue trench
     public static final Zone BLUE_BOTTOM_TRENCH_ZONE = new Zone(
             new Translation2d(3.63, 1.42),
-            new Translation2d(3.63, -0.32),
-            new Translation2d(5.586, -0.32),
+            new Translation2d(3.63, -1),
+            new Translation2d(5.586, -1),
             new Translation2d(5.586, 1.42));
     // Zone for the top blue trench
     public static final Zone BLUE_TOP_TRENCH_ZONE = new Zone(
-            new Translation2d(3.63, 7.72),
+            new Translation2d(3.63, 9.72),
             new Translation2d(3.63, 6.61),
             new Translation2d(5.586, 6.61),
-            new Translation2d(5.586, 7.72));
+            new Translation2d(5.586, 9.72));
     // Zone for the top red bump
     public static final Zone RED_TOP_BUMP_ZONE = new Zone(
             new Translation2d(11.05, 6.625),
@@ -47,15 +47,15 @@ public class ZoneConstants {
     // Zone for the bottom red trench
     public static final Zone RED_BOTTOM_TRENCH_ZONE = new Zone(
             new Translation2d(10.95, 1.437),
-            new Translation2d(10.95, 0.384),
-            new Translation2d(12.8, 0.384),
+            new Translation2d(10.95, -1),
+            new Translation2d(12.8, -1),
             new Translation2d(12.8, 1.437));
     // Zone for the top red trench
     public static final Zone RED_TOP_TRENCH_ZONE = new Zone(
-            new Translation2d(10.91, 8.4),
+            new Translation2d(10.91, 9.4),
             new Translation2d(10.91, 6.63),
             new Translation2d(12.83, 6.63),
-            new Translation2d(12.83, 8.4));
+            new Translation2d(12.83, 9.4));
     // Zone for scoring in the red alliance
     public static final Zone RED_SCORE_ZONE = new Zone(
             new Translation2d(11.97 - 0.4, 7.939 + 0.4),

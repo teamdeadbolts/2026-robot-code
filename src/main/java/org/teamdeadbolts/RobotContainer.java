@@ -22,6 +22,7 @@ import org.teamdeadbolts.commands.DriveCommand;
 import org.teamdeadbolts.commands.IntakeCommand;
 import org.teamdeadbolts.commands.ShootCommand;
 import org.teamdeadbolts.constants.VisionConstants;
+import org.teamdeadbolts.constants.ZoneConstants;
 import org.teamdeadbolts.subsystems.HopperSubsystem;
 import org.teamdeadbolts.subsystems.IndexerSubsystem;
 import org.teamdeadbolts.subsystems.IntakeSubsystem;
@@ -134,6 +135,13 @@ public class RobotContainer {
                         shooterSubsystem));
 
         primaryController.x().whileTrue(new RunCommand(() -> swerveSubsystem.resetGyro(), swerveSubsystem));
+
+        primaryController.povLeft().whileTrue(new RunCommand(() -> {
+            ZoneConstants.RED_BOTTOM_TRENCH_ZONE.visulize();
+            for (PhotonVisionIO cam : visionSubsystem.getCameras()) {
+                cam.findTransform();
+            }
+        }));
 
         primaryController
                 .a()
